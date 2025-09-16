@@ -166,7 +166,14 @@ export class BinanceService {
     return 'DOWNTREND';
   }
 
-  detectReversalCandle(candle: Candle, prevCandle?: Candle) {
+  detectReversalCandle(
+    candle: Candle,
+    prevCandle: Candle,
+    prevPrevCandle: Candle,
+  ): {
+    name: string;
+    trend: 'neutral' | 'up' | 'down';
+  } {
     if (
       !candle ||
       !candle.open ||
@@ -174,7 +181,7 @@ export class BinanceService {
       !candle.high ||
       !candle.low
     ) {
-      return [{ name: 'Invalid candle data', trend: 'neutral' }];
+      return { name: 'Invalid candle data', trend: 'neutral' };
     }
 
     const open = parseFloat(candle.open);
@@ -183,39 +190,43 @@ export class BinanceService {
     const low = parseFloat(candle.low);
 
     if ([open, close, high, low].some(isNaN)) {
-      return [{ name: 'Invalid candle data', trend: 'neutral' }];
+      return { name: 'Invalid candle data', trend: 'neutral' };
     }
 
     const body = Math.abs(close - open);
     const upperShadow = high - Math.max(open, close);
     const lowerShadow = Math.min(open, close) - low;
-    const results: { name: string; trend: 'up' | 'down' | 'neutral' }[] = [];
 
     // Hammer & Hanging Man
     if (lowerShadow >= 2 * body && upperShadow <= body) {
       if (close > open)
-        results.push({ name: 'Hammer (Bullish Reversal)', trend: 'up' });
-      else
-        results.push({ name: 'Hanging Man (Bearish Reversal)', trend: 'down' });
+        return { name: 'Hammer (Bullish Reversal)', trend: 'up' };
+      return { name: 'Hanging Man (Bearish Reversal)', trend: 'down' };
     }
 
     // Inverted Hammer & Shooting Star
     if (upperShadow >= 2 * body && lowerShadow <= body) {
       if (close > open)
-        results.push({
-          name: 'Inverted Hammer (Bullish Reversal)',
-          trend: 'up',
-        });
-      else
-        results.push({
-          name: 'Shooting Star (Bearish Reversal)',
-          trend: 'down',
-        });
+        return { name: 'Inverted Hammer (Bullish Reversal)', trend: 'up' };
+      return { name: 'Shooting Star (Bearish Reversal)', trend: 'down' };
     }
 
     // Doji
     if (body <= (high - low) * 0.1) {
-      results.push({ name: 'Doji (Indecision)', trend: 'neutral' });
+      // Kiểm tra xu hướng giảm mạnh: ít nhất 2 nến giảm liên tiếp
+      if (
+        prevCandle &&
+        prevPrevCandle &&
+        parseFloat(prevCandle.close) < parseFloat(prevCandle.open) &&
+        parseFloat(prevPrevCandle.close) < parseFloat(prevPrevCandle.open) &&
+        // Thêm điều kiện: giá giảm ít nhất 5% từ nến trước trước đến nến hiện tại
+        (parseFloat(prevPrevCandle.open) - close) /
+          parseFloat(prevPrevCandle.open) >=
+          0.05
+      ) {
+        return { name: 'Doji (Bullish Reversal)', trend: 'up' };
+      }
+      return { name: 'Doji (Indecision)', trend: 'neutral' };
     }
 
     // Bullish Engulfing
@@ -226,10 +237,7 @@ export class BinanceService {
       open < parseFloat(prevCandle.close) &&
       close > parseFloat(prevCandle.open)
     ) {
-      results.push({
-        name: 'Bullish Engulfing (Bullish Reversal)',
-        trend: 'up',
-      });
+      return { name: 'Bullish Engulfing (Bullish Reversal)', trend: 'up' };
     }
 
     // Bearish Engulfing
@@ -240,12 +248,9 @@ export class BinanceService {
       open > parseFloat(prevCandle.close) &&
       close < parseFloat(prevCandle.open)
     ) {
-      results.push({
-        name: 'Bearish Engulfing (Bearish Reversal)',
-        trend: 'down',
-      });
+      return { name: 'Bearish Engulfing (Bearish Reversal)', trend: 'down' };
     }
 
-    return results.length ? results : [];
+    return { name: 'No pattern detected', trend: 'neutral' };
   }
 }

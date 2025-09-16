@@ -3,6 +3,7 @@ import { Logger } from '@nestjs/common';
 import { IStrategy } from './strategy.interface';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { StrategyEvent, StrategyEventType } from '../events/strategy.event';
+import { Candle } from 'binance-api-node';
 
 export class EmaMacdStrategy implements IStrategy {
   private logger = new Logger('EmaMacdStrategy');
@@ -32,6 +33,8 @@ export class EmaMacdStrategy implements IStrategy {
   async start() {
     this.logger.log(`Starting EMA+MACD spot strategy for ${this.symbol}`);
 
+    let currentTrend: 'up' | 'down' | 'neutral' = 'neutral';
+
     // 1. Lấy nến lịch sử 1 phút trước khi subscribe
     const historicalCandles = await this.binanceService.getHistoricalCandles(
       this.symbol,
@@ -42,10 +45,27 @@ export class EmaMacdStrategy implements IStrategy {
 
     this.running = true;
 
+    const lastCandles: Candle[] = [];
+
     // Subscribe trade stream
     this.binanceService.subscribeCandles(this.symbol, '1m', (trade) => {
+      lastCandles.push(trade);
+      if (lastCandles.length > 3) {
+        lastCandles.shift();
+      }
+
       const price = Number(trade.close);
       this.prices.push(price);
+
+      const result = this.binanceService.detectReversalCandle(
+        lastCandles[lastCandles.length - 1],
+        lastCandles[lastCandles.length - 2],
+        lastCandles[lastCandles.length - 3],
+      );
+
+      currentTrend = result.trend;
+
+      console.log('result', result);
       if (this.prices.length > 500) this.prices.shift();
     });
 
@@ -129,6 +149,8 @@ export class EmaMacdStrategy implements IStrategy {
           trendUp &&
           lastMacd.MACD > lastMacd.signal &&
           lastRsi < this.rsiOversold &&
+          currentTrend &&
+          currentTrend === ('up' as any) &&
           !this.hasPosition
         ) {
           // BUY
