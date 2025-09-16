@@ -1,7 +1,8 @@
-import { EMA, MACD } from 'technicalindicators';
+import { EMA, MACD, RSI } from 'technicalindicators';
 import { Logger } from '@nestjs/common';
 import { IStrategy } from './strategy.interface';
 import { BinanceService } from 'src/modules/binance/binance.service';
+import { StrategyEvent, StrategyEventType } from '../events/strategy.event';
 
 export class EmaMacdStrategy implements IStrategy {
   private logger = new Logger('EmaMacdStrategy');
@@ -15,28 +16,52 @@ export class EmaMacdStrategy implements IStrategy {
   private macdSlowPeriod = 26;
   private macdSignalPeriod = 9;
 
+  // RSI
+
+  private rsiPeriod = 14; // thường dùng 14 candle
+  private rsiOverbought = 70;
+  private rsiOversold = 30;
+
   constructor(
     private readonly binanceService: BinanceService,
     private readonly symbol: string,
     private readonly tradeUsd: number,
+    private readonly emitEvent?: (event: StrategyEvent) => void,
   ) {}
 
   async start() {
     this.logger.log(`Starting EMA+MACD spot strategy for ${this.symbol}`);
+
+    // 1. Lấy nến lịch sử 1 phút trước khi subscribe
+    const historicalCandles = await this.binanceService.getHistoricalCandles(
+      this.symbol,
+      '5m',
+      100, // lấy 100 nến gần nhất
+    );
+    this.prices = historicalCandles.map((c) => Number(c.close));
+
     this.running = true;
 
-    // Subscribe price stream
-    this.binanceService.subscribeAggTrades(this.symbol, (trade) => {
-      const price = Number(trade.price);
+    // Subscribe trade stream
+    this.binanceService.subscribeCandles(this.symbol, '1m', (trade) => {
+      const price = Number(trade.close);
       this.prices.push(price);
       if (this.prices.length > 500) this.prices.shift();
     });
 
     while (this.running) {
       try {
-        const price =
-          this.prices[this.prices.length - 1] ||
-          (await this.binanceService.getPrice(this.symbol));
+        const trend = await this.binanceService.detectMarketTrend('BTCUSDT', {
+          candleInterval: '30m',
+          lookback: 96,
+          emaPeriod: 26,
+          atrPeriod: 14,
+          sidewayThresholdPct: 2,
+          slopeThresholdPct: 0.2,
+        });
+
+        console.log('Market trend:', trend); // UPTREND | DOWNTREND | SIDEWAY
+        const price = await this.binanceService.getPrice(this.symbol);
 
         console.log('price', price);
         if (
@@ -47,9 +72,22 @@ export class EmaMacdStrategy implements IStrategy {
               this.macdSlowPeriod + this.macdSignalPeriod,
             )
         ) {
-          await this.sleep(5000);
+          await this.sleep(3000);
           continue;
         }
+
+        // Tính RSI
+        const rsiValues = RSI.calculate({
+          values: this.prices,
+          period: this.rsiPeriod,
+        });
+        const lastRsi = rsiValues[rsiValues.length - 1];
+        if (!lastRsi) {
+          await this.sleep(3000);
+          continue;
+        }
+
+        console.log('lastRsi', lastRsi);
 
         // EMA
         const emaShort = EMA.calculate({
@@ -66,6 +104,9 @@ export class EmaMacdStrategy implements IStrategy {
         const trendUp = lastEmaShort > lastEmaLong;
         const trendDown = lastEmaShort < lastEmaLong;
 
+        console.log('trendUp', trendUp);
+        console.log('trendDown', trendDown);
+
         // MACD
         const macdResult = MACD.calculate({
           values: this.prices,
@@ -77,25 +118,43 @@ export class EmaMacdStrategy implements IStrategy {
         });
         const lastMacd = macdResult[macdResult.length - 1];
         if (!lastMacd || !lastMacd.MACD || !lastMacd.signal) {
-          await this.sleep(5000);
+          await this.sleep(3000);
           continue;
         }
 
+        console.log('lastMacd', lastMacd);
+
         // ==== Trading logic cho Spot ====
-        if (trendUp && lastMacd.MACD > lastMacd.signal && !this.hasPosition) {
+        if (
+          trendUp &&
+          lastMacd.MACD > lastMacd.signal &&
+          lastRsi < this.rsiOversold &&
+          !this.hasPosition
+        ) {
           // BUY
           const qty = this.usdToQty(price);
-          this.logger.log(`BUY ${qty} ${this.symbol} @ ${price}`);
-          await this.binanceService.placeMarketOrder(this.symbol, 'BUY', qty);
-          this.hasPosition = true;
+          if (qty > 0) {
+            this.logger.log(`BUY ${qty} ${this.symbol} @ ${price}`);
+            await this.binanceService.placeMarketOrder(this.symbol, 'BUY', qty);
+            this.hasPosition = true;
+            this.emitEvent?.({
+              type: StrategyEventType.BUY,
+              symbol: this.symbol,
+              price,
+              qty,
+              time: Date.now(),
+            });
+          }
         } else if (
           trendDown &&
           lastMacd.MACD < lastMacd.signal &&
+          lastRsi > this.rsiOverbought &&
+          lastMacd.signal &&
           this.hasPosition
         ) {
           // SELL: lấy số coin thực tế trong ví
           const balances = await this.binanceService.getAccount();
-          const asset = this.symbol.replace('USDT', ''); // ví dụ BTCUSDT -> BTC
+          const asset = this.symbol.replace('USDT', ''); // BTCUSDT -> BTC
           const free = Number(
             balances.balances.find((b) => b.asset === asset)?.free || 0,
           );
@@ -108,13 +167,20 @@ export class EmaMacdStrategy implements IStrategy {
               free,
             );
             this.hasPosition = false;
+            this.emitEvent?.({
+              type: StrategyEventType.SELL,
+              symbol: this.symbol,
+              price,
+              qty: free,
+              time: Date.now(),
+            });
           }
         }
       } catch (err) {
         this.logger.error('Strategy error: ' + JSON.stringify(err));
       }
 
-      await this.sleep(5000);
+      await this.sleep(3000);
     }
   }
 
@@ -124,7 +190,6 @@ export class EmaMacdStrategy implements IStrategy {
   }
 
   private usdToQty(price: number) {
-    // NOTE: bạn nên fetch stepSize từ exchangeInfo để làm tròn chính xác
     return Math.floor((this.tradeUsd / price) * 1e6) / 1e6;
   }
 

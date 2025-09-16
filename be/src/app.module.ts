@@ -3,9 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BinanceModule } from './modules/binance/binance.module';
 import { StrategyModule } from './modules/strategy/strategy.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
-  imports: [BinanceModule, StrategyModule],
+  imports: [BinanceModule, StrategyModule, EventEmitterModule.forRoot()],
   controllers: [AppController],
   providers: [AppService],
 })
