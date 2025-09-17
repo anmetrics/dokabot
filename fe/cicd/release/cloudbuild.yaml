@@ -1,0 +1,46 @@
+steps:
+  - id: 'prepare-secret'
+    name: 'gcr.io/cloud-builders/gcloud'
+    waitFor: ['-']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud secrets versions access latest --project=${PROJECT_ID} --secret=${_ENV}-${_APP_NAME} --format='get(payload.data)' | tr '_-' '/+' | base64 -d > .env
+        gcloud secrets versions access latest --project=doka-x --secret=doka-github-pkg-npmrc --format='get(payload.data)' | tr '_-' '/+' | base64 -d > .npmrc
+
+  - id: prepare-build
+    name: gcr.io/doka-x/jq
+    waitFor: ['prepare-secret']
+    entrypoint: /bin/sh
+    args:
+      - -c
+      - jq '{ name, dependencies, devDependencies, scripts }' < package.json > package.deps.json
+
+  - id: 'build-app-image'
+    name: 'gcr.io/kaniko-project/executor:latest'
+    waitFor: ['prepare-build']
+    args:
+      - --dockerfile=${_APP_DOCKER_FILE}
+      - --destination=gcr.io/${PROJECT_ID}/${_ENV}-${_APP_NAME}:latest
+      - --destination=gcr.io/${PROJECT_ID}/${_ENV}-${_APP_NAME}:$TAG_NAME
+      - --cache=true
+      - --cache-ttl=336h
+
+  - id: 'deploy-app'
+    name: 'gcr.io/cloud-builders/gcloud'
+    waitFor: ['build-app-image']
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        gcloud run deploy ${_ENV}-${_APP_NAME} \
+          --platform managed \
+          --region asia-northeast1 \
+          --allow-unauthenticated \
+          --image gcr.io/${PROJECT_ID}/${_ENV}-${_APP_NAME}:$TAG_NAME
+substitutions:
+  _ENV: staging
+  _APP_NAME: doka-frontend
+  _APP_DOCKER_FILE: ./cicd/release/Dockerfile
+timeout: 900s

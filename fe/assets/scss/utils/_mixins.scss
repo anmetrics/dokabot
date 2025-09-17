@@ -1,0 +1,53 @@
+@import './variables';
+
+/*==================================================
+MEDIA
+==================================================*/
+
+@mixin mediaquery-down($breakpoint: sm) {
+  @media only screen and (max-width: #{map-get($breakpoints, $breakpoint)}) {
+    @content;
+  }
+}
+
+@mixin mediaquery-up($breakpoint: sm) {
+  @media only screen and (min-width: #{map-get($breakpoints, $breakpoint)}) {
+    @content;
+  }
+}
+
+@mixin mediaquery-between($breakpoint1: xs, $breakpoint2: lg) {
+  @media only screen and (min-width: #{map-get($breakpoints, $breakpoint1)}) and (max-width: #{map-get($breakpoints, $breakpoint2)}) {
+    @content;
+  }
+}
+
+@mixin xs {
+  @include mediaquery-down(xs) {
+    @content;
+  }
+}
+
+@mixin sm {
+  @include mediaquery-between(xs, sm) {
+    @content;
+  }
+}
+
+@mixin md {
+  @include mediaquery-between(sm, md) {
+    @content;
+  }
+}
+
+@mixin lg {
+  @include mediaquery-between(md, lg) {
+    @content;
+  }
+}
+
+@mixin xl {
+  @include mediaquery-up(lg) {
+    @content;
+  }
+}

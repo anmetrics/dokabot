@@ -1,0 +1,192 @@
+@import './utils/variables';
+
+.v-btn {
+  font-size: 12px !important;
+  &.v-btn--disabled.v-btn--variant-elevated {
+    opacity: 0.62;
+  }
+  &.v-btn--size-x-large {
+    font-size: 16px !important;
+  }
+  &.v-btn--variant-plain.v-btn--size-default {
+    border-radius: 18px;
+    color: rgb(var(--v-theme-primary));
+    &:hover {
+      background-color: rgb(var(--v-theme-background));
+    }
+    &.v-btn--disabled {
+      opacity: 0.32;
+    }
+  }
+  &.v-btn--disabled.v-btn--variant-plain {
+    opacity: 0.32;
+  }
+}
+
+.v-checkbox, .v-radio-group, .v-radio {
+  .v-label {
+    opacity: 1;
+  }
+}
+
+.v-text-field {
+  .v-field--variant-outlined {
+    .v-field__input::placeholder {
+      color: rgb(var(--v-theme-text-placeholder));
+    }
+    &.v-field--focused {
+      .v-field__outline__start, 
+      .v-field__outline__end, 
+      .v-field__outline__notch::before, 
+      .v-field__outline__notch::after {
+        opacity: 1;
+        border-width: 1px;
+      }
+      .v-field__outline__start {
+        border-right-width: 0;
+      }
+      .v-field__outline__end {
+        border-left-width: 0;
+      }
+      .v-field__outline__notch::before,
+      .v-field__outline__notch::after {
+        border-top-width: 0;
+        border-right-width: 0;
+        border-left-width: 0;
+      }
+    }
+    &.v-field--disabled {
+      --v-disabled-opacity: 1;
+      .v-field__input {
+        background-color: rgb(var(--v-theme-background));
+      }
+      .v-field__outline {
+        --v-field-border-opacity: 1;
+      }
+      .v-field__outline__start,
+      .v-field__outline__end,
+      .v-field__outline__notch::before,
+      .v-field__outline__notch::after {
+        border-color: rgb(var(--v-theme-border));
+      }
+    }
+  }
+}
+
+.v-table.v-table--fixed-header
+{
+  .v-table__wrapper {
+    padding-bottom: 40px;
+    border-radius: 4px;
+    background-color: rgb(var(--v-theme-on-primary));
+    max-height: inherit;
+  }
+  .v-table__wrapper::-webkit-scrollbar {
+    display: none;
+  }
+  .v-table__wrapper > table {
+    > thead > tr > th {
+      border-bottom: 1.4px solid rgb(var(--v-theme-border)) !important;
+      background-color: rgb(var(--v-theme-on-primary)) !important;
+      font-size: 0.83rem;
+      color: rgb(var(--v-theme-on-text)) !important;
+      white-space: nowrap;
+    }
+    > tbody > tr > td {
+      font-size: 1rem;
+      max-width: 0;
+      &:not(.-unabridged) * {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+    }
+    > tbody > tr:last-child > td {
+      border-bottom: thin solid
+        rgba(var(--v-border-color), var(--v-border-opacity));
+    }
+  }
+}
+
+.v-pagination {
+  > .v-pagination__list {
+    > .v-pagination__prev > .v-btn.v-btn--disabled > .v-btn__content,
+    > .v-pagination__next > .v-btn.v-btn--disabled > .v-btn__content {
+      color: rgb(var(--v-theme-text-placeholder))
+    }
+    > .v-pagination__prev, > .v-pagination__next {
+      margin: unset;
+    }
+    > .v-pagination__item {
+      display: none;
+    }
+  }
+}
+
+.v-snackbar.v-snackbar--active {
+  > .v-overlay__content {
+    top: 65px !important;
+  }
+}
+
+.v-breadcrumbs {
+  > .v-breadcrumbs-item.v-breadcrumbs-item--disabled {
+    color: rgba(var(--v-theme-text)) !important;
+  }
+}
+
+.v-list {
+  > .v-list-item.v-list-item--active {
+    background-color: rgb(var(--v-theme-primary), 0.12);
+  }
+}
+
+.v-selection-control-group {
+  margin-left: -5px;
+  column-gap: 25px;
+}
+
+.v-dialog {
+  > .v-overlay__content {
+    background-color: rgb(var(--v-theme-on-primary));
+    padding: 25px;
+    border-radius: 8px;
+  }
+}
+
+.v-overlay > .v-overlay__content > .v-list.v-list--one-line {
+  padding: 0;
+  > .nodata {
+    padding: 5px 10px;
+  }
+  > .option {
+    display: flex;
+    align-items: center;
+    padding: 6px 16px;
+    min-height: 28px;
+    cursor: pointer;
+    > span {
+      min-width: 30px;
+    }
+    &:hover {
+      background-color: rgb(var(--v-theme-background));
+    }
+    &.-active {
+      color: rgb(var(--v-theme-primary));
+      background-color: rgb(var(--v-theme-primary), 0.12);
+    }
+  }
+}
+
+.v-select
+  > .v-input__control
+  > .v-field
+  > .v-field__field
+  > .v-field__input
+  > .v-select__selection {
+  .v-select__selection-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,10 @@
+a {
+  text-decoration: none;
+  &:visited {
+    color: inherit;
+  }
+}
+
+html {
+  font-size: 12px;
+}
