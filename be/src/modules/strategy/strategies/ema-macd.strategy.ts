@@ -67,142 +67,136 @@ export class EmaMacdStrategy implements IStrategy {
 
       console.log('result', result);
       if (this.prices.length > 500) this.prices.shift();
+
+      this.calcPrice(currentTrend);
     });
 
-    while (this.running) {
-      try {
-        const trend = await this.binanceService.detectMarketTrend('BTCUSDT', {
-          candleInterval: '30m',
-          lookback: 96,
-          emaPeriod: 26,
-          atrPeriod: 14,
-          sidewayThresholdPct: 2,
-          slopeThresholdPct: 0.2,
-        });
+    const marketTrend = await this.binanceService.detectMarketTrend('BTCUSDT', {
+      candleInterval: '30m',
+      lookback: 96,
+      emaPeriod: 26,
+      atrPeriod: 14,
+      sidewayThresholdPct: 2,
+      slopeThresholdPct: 0.2,
+    });
 
-        console.log('Market trend:', trend); // UPTREND | DOWNTREND | SIDEWAY
-        const price = await this.binanceService.getPrice(this.symbol);
+    console.log('Market trend:', marketTrend); // UPTREND | DOWNTREND | SIDEWAY
+  }
 
-        console.log('price', price);
-        if (
-          !price ||
-          this.prices.length <
-            Math.max(
-              this.emaLongPeriod,
-              this.macdSlowPeriod + this.macdSignalPeriod,
-            )
-        ) {
-          await this.sleep(3000);
-          continue;
-        }
+  async calcPrice(currentTrend: 'up' | 'down' | 'neutral') {
+    try {
+      const price = await this.binanceService.getPrice(this.symbol);
 
-        // Tính RSI
-        const rsiValues = RSI.calculate({
-          values: this.prices,
-          period: this.rsiPeriod,
-        });
-        const lastRsi = rsiValues[rsiValues.length - 1];
-        if (!lastRsi) {
-          await this.sleep(3000);
-          continue;
-        }
-
-        console.log('lastRsi', lastRsi);
-
-        // EMA
-        const emaShort = EMA.calculate({
-          period: this.emaShortPeriod,
-          values: this.prices,
-        });
-        const emaLong = EMA.calculate({
-          period: this.emaLongPeriod,
-          values: this.prices,
-        });
-        const lastEmaShort = emaShort[emaShort.length - 1];
-        const lastEmaLong = emaLong[emaLong.length - 1];
-
-        const trendUp = lastEmaShort > lastEmaLong;
-        const trendDown = lastEmaShort < lastEmaLong;
-
-        console.log('trendUp', trendUp);
-        console.log('trendDown', trendDown);
-
-        // MACD
-        const macdResult = MACD.calculate({
-          values: this.prices,
-          fastPeriod: this.macdFastPeriod,
-          slowPeriod: this.macdSlowPeriod,
-          signalPeriod: this.macdSignalPeriod,
-          SimpleMAOscillator: false,
-          SimpleMASignal: false,
-        });
-        const lastMacd = macdResult[macdResult.length - 1];
-        if (!lastMacd || !lastMacd.MACD || !lastMacd.signal) {
-          await this.sleep(3000);
-          continue;
-        }
-
-        console.log('lastMacd', lastMacd);
-
-        // ==== Trading logic cho Spot ====
-        if (
-          trendUp &&
-          lastMacd.MACD > lastMacd.signal &&
-          lastRsi < this.rsiOversold &&
-          currentTrend &&
-          currentTrend === ('up' as any) &&
-          !this.hasPosition
-        ) {
-          // BUY
-          const qty = this.usdToQty(price);
-          if (qty > 0) {
-            this.logger.log(`BUY ${qty} ${this.symbol} @ ${price}`);
-            await this.binanceService.placeMarketOrder(this.symbol, 'BUY', qty);
-            this.hasPosition = true;
-            this.emitEvent?.({
-              type: StrategyEventType.BUY,
-              symbol: this.symbol,
-              price,
-              qty,
-              time: Date.now(),
-            });
-          }
-        } else if (
-          trendDown &&
-          lastMacd.MACD < lastMacd.signal &&
-          lastRsi > this.rsiOverbought &&
-          lastMacd.signal &&
-          this.hasPosition
-        ) {
-          // SELL: lấy số coin thực tế trong ví
-          const balances = await this.binanceService.getAccount();
-          const asset = this.symbol.replace('USDT', ''); // BTCUSDT -> BTC
-          const free = Number(
-            balances.balances.find((b) => b.asset === asset)?.free || 0,
-          );
-
-          if (free > 0) {
-            this.logger.log(`SELL ${free} ${asset} @ ${price}`);
-            await this.binanceService.placeMarketOrder(
-              this.symbol,
-              'SELL',
-              free,
-            );
-            this.hasPosition = false;
-            this.emitEvent?.({
-              type: StrategyEventType.SELL,
-              symbol: this.symbol,
-              price,
-              qty: free,
-              time: Date.now(),
-            });
-          }
-        }
-      } catch (err) {
-        this.logger.error('Strategy error: ' + JSON.stringify(err));
+      console.log('price', price);
+      if (
+        !price ||
+        this.prices.length <
+          Math.max(
+            this.emaLongPeriod,
+            this.macdSlowPeriod + this.macdSignalPeriod,
+          )
+      ) {
+        return;
       }
 
-      await this.sleep(3000);
+      // Tính RSI
+      const rsiValues = RSI.calculate({
+        values: this.prices,
+        period: this.rsiPeriod,
+      });
+      const lastRsi = rsiValues[rsiValues.length - 1];
+      if (!lastRsi) {
+        return;
+      }
+
+      console.log('lastRsi', lastRsi);
+
+      // EMA
+      const emaShort = EMA.calculate({
+        period: this.emaShortPeriod,
+        values: this.prices,
+      });
+      const emaLong = EMA.calculate({
+        period: this.emaLongPeriod,
+        values: this.prices,
+      });
+      const lastEmaShort = emaShort[emaShort.length - 1];
+      const lastEmaLong = emaLong[emaLong.length - 1];
+
+      const trendUp = lastEmaShort > lastEmaLong;
+      const trendDown = lastEmaShort < lastEmaLong;
+
+      console.log('trendUp', trendUp);
+      console.log('trendDown', trendDown);
+
+      // MACD
+      const macdResult = MACD.calculate({
+        values: this.prices,
+        fastPeriod: this.macdFastPeriod,
+        slowPeriod: this.macdSlowPeriod,
+        signalPeriod: this.macdSignalPeriod,
+        SimpleMAOscillator: false,
+        SimpleMASignal: false,
+      });
+      const lastMacd = macdResult[macdResult.length - 1];
+      if (!lastMacd || !lastMacd.MACD || !lastMacd.signal) {
+        return;
+      }
+
+      console.log('lastMacd', lastMacd);
+
+      // ==== Trading logic cho Spot ====
+      if (
+        trendUp &&
+        lastMacd.MACD > lastMacd.signal &&
+        lastRsi < this.rsiOversold &&
+        currentTrend &&
+        currentTrend === ('up' as any) &&
+        !this.hasPosition
+      ) {
+        // BUY
+        const qty = this.usdToQty(price);
+        if (qty > 0) {
+          this.logger.log(`BUY ${qty} ${this.symbol} @ ${price}`);
+          await this.binanceService.placeMarketOrder(this.symbol, 'BUY', qty);
+          this.hasPosition = true;
+          this.emitEvent?.({
+            type: StrategyEventType.BUY,
+            symbol: this.symbol,
+            price,
+            qty,
+            time: Date.now(),
+          });
+        }
+      } else if (
+        trendDown &&
+        lastMacd.MACD < lastMacd.signal &&
+        lastRsi > this.rsiOverbought &&
+        lastMacd.signal &&
+        this.hasPosition
+      ) {
+        // SELL: lấy số coin thực tế trong ví
+        const balances = await this.binanceService.getAccount();
+        const asset = this.symbol.replace('USDT', ''); // BTCUSDT -> BTC
+        const free = Number(
+          balances.balances.find((b) => b.asset === asset)?.free || 0,
+        );
+
+        if (free > 0) {
+          this.logger.log(`SELL ${free} ${asset} @ ${price}`);
+          await this.binanceService.placeMarketOrder(this.symbol, 'SELL', free);
+          this.hasPosition = false;
+          this.emitEvent?.({
+            type: StrategyEventType.SELL,
+            symbol: this.symbol,
+            price,
+            qty: free,
+            time: Date.now(),
+          });
+        }
+      }
+    } catch (err) {
+      this.logger.error('Strategy error: ' + JSON.stringify(err));
     }
   }
 
