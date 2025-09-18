@@ -10,7 +10,7 @@ const { currentUser } = storeToRefs(authenticationStore)
     <nuxt-link to="/" class="logo">
       <img src="/images/logo.png" class="image" alt="logo" />
     </nuxt-link>
-    <div class="dokasan">Dokasan</div>
+    <div class="Dokabot">Dokabot</div>
     <v-spacer />
     <div v-if="!!currentUser.isLoggedIn" class="actions"></div>
   </header>
@@ -28,8 +28,8 @@ const { currentUser } = storeToRefs(authenticationStore)
     width: 30px;
   }
 
-  /* Style for the Dokasan text */
-  > div.dokasan {
+  /* Style for the Dokabot text */
+  > div.Dokabot {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; /* Modern, clean font */
     font-size: 1.5rem; /* Slightly larger size */
     font-weight: 600; /* Semi-bold for emphasis */

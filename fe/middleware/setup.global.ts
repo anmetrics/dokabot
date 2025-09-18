@@ -2,6 +2,7 @@ export default defineNuxtRouteMiddleware(to => {
   // Chỉ chạy trên client để tránh lỗi localStorage trên server
   if (process.client) {
     const token = localStorage.getItem('token') // Giả sử token lưu với key 'jwt'
+    return
 
     if (to.path.startsWith('/calc') || to.path.startsWith('/trade')) {
       return

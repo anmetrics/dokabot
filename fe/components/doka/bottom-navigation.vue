@@ -4,6 +4,7 @@ const router = useRouter()
 
 const items = [
   { icon: 'mdi-home', label: 'Home', to: '/claim' },
+  { icon: 'mdi-home', label: 'Config', to: '/config' },
   { icon: 'mdi-cash', label: 'Assets', to: '/assets' },
   { icon: 'mdi-transfer', label: 'Transactions', to: '/transactions' }
   // { icon: 'mdi-link', label: 'Stake', to: '/stake' },
@@ -17,13 +18,8 @@ function navigate(to: string) {
 
 <template>
   <v-bottom-navigation app grow height="64" class="mobile-bottom-nav">
-    <v-btn
-      v-for="item in items"
-      :key="item.to"
-      :icon="true"
-      :color="route.path === item.to ? 'primary' : 'default'"
-      @click="navigate(item.to)"
-    >
+    <v-btn v-for="item in items" :key="item.to" :icon="true" :color="route.path === item.to ? 'primary' : 'default'"
+      @click="navigate(item.to)">
       <v-icon>{{ item.icon }}</v-icon>
       <span class="text-caption d-block">{{ item.label }}</span>
     </v-btn>

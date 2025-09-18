@@ -25,7 +25,7 @@ const assets = ref([
     price: parseFloat(Number(asset.value?.totalUsdt).toFixed(10)) // Correct: 1 USDT = $1
   },
   {
-    name: 'Dokasan',
+    name: 'Dokabot',
     symbol: 'DOKA',
     balance: parseFloat(Number(asset.value?.totalDoka).toFixed(10)),
     price: parseFloat(Number(Number(asset.value?.totalDoka) * 0.2).toFixed(10)) // Corrected: 1 DOKA = $0.2

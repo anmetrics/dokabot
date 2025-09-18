@@ -25,38 +25,20 @@ function handleLogout() {
 <template>
   <!-- Số dư tài khoản -->
   <v-container class="pa-2" fluid>
-    <v-list-item
-      prepend-avatar="https://randomuser.me/api/portraits/men/1.jpg"
-      :title="authStore.currentUser?.username"
-      subtitle="Personal account"
-      class="balance-section"
-    />
+    <v-list-item prepend-avatar="https://randomuser.me/api/portraits/men/1.jpg" :title="authStore.currentUser?.username"
+      subtitle="Personal account" class="balance-section" />
 
     <!-- Menu -->
     <v-list>
-      <v-list-item
-        prepend-icon="mdi-home"
-        title="Home"
-        to="/claim"
-        class="ma-1"
-      />
-      <v-list-item
-        prepend-icon="mdi-cash"
-        title="Assets"
-        to="/assets"
-        class="ma-1"
-      />
-      <v-list-item
-        prepend-icon="mdi-transfer"
-        title="Transactions"
-        to="/transactions"
-        class="ma-1"
-      />
+      <v-list-item prepend-icon="mdi-home" title="Home" to="/claim" class="ma-1" />
+      <v-list-item prepend-icon="mdi-cash" title="Config" to="/config" class="ma-1" />
+      <v-list-item prepend-icon="mdi-cash" title="Assets" to="/assets" class="ma-1" />
+      <v-list-item prepend-icon="mdi-transfer" title="Transactions" to="/transactions" class="ma-1" />
       <!-- <v-list-item prepend-icon="mdi-link" title="Stake" to="/stake">
         <template #append>
           <v-badge content="12" color="primary" inline />
         </template>
-      </v-list-item> -->
+</v-list-item> -->
       <!-- <v-list-item
         prepend-icon="mdi-bank"
         title="Organization tree"
@@ -83,12 +65,7 @@ function handleLogout() {
   <div class="logout-wrapper">
     <v-container class="pa-2 pt-0" fluid>
       <v-list>
-        <v-list-item
-          prepend-icon="mdi-logout"
-          title="Logout"
-          class="logout-item"
-          @click="handleLogout"
-        />
+        <v-list-item prepend-icon="mdi-logout" title="Logout" class="logout-item" @click="handleLogout" />
       </v-list>
     </v-container>
   </div>
@@ -98,7 +75,8 @@ function handleLogout() {
   width: 250px !important;
   height: 100vh;
   box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
-  padding-top: 20px; /* Khoảng cách với top là 20px */
+  padding-top: 20px;
+  /* Khoảng cách với top là 20px */
 }
 
 .balance-section {
@@ -117,16 +95,20 @@ function handleLogout() {
 }
 
 .v-list-item--active {
-  background-color: #204274 !important; /* Màu nền xanh nhạt */
-  color: #ffffff !important; /* Màu chữ xanh đậm */
+  background-color: #204274 !important;
+  /* Màu nền xanh nhạt */
+  color: #ffffff !important;
+  /* Màu chữ xanh đậm */
 }
 
 .v-list-item {
-  border-radius: 10px; /* Bo góc 10px cho tất cả v-list-item */
+  border-radius: 10px;
+  /* Bo góc 10px cho tất cả v-list-item */
 }
 
 .v-list-item:hover {
-  background-color: #f0f0f0; /* Màu nền khi hover */
+  background-color: #f0f0f0;
+  /* Màu nền khi hover */
 }
 
 .logout-wrapper {
