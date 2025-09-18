@@ -5,12 +5,23 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import type { CandlestickData, IChartApi, ISeriesApi } from 'lightweight-charts'
+import type {
+  CandlestickData,
+  IChartApi,
+  ISeriesApi,
+  LogicalRange,
+  TimeRange
+} from 'lightweight-charts'
 import { createChart, ColorType, CandlestickSeries } from 'lightweight-charts'
 
 // Define props
 const props = defineProps<{
   klinesData: CandlestickData[]
+}>()
+
+// Define emits
+const emit = defineEmits<{
+  (e: 'load-more'): void
 }>()
 
 const chartContainer = ref<HTMLDivElement | null>(null)
@@ -46,22 +57,49 @@ onMounted(() => {
     wickDownColor: '#ef5350'
   })
 
+  const timeScale = chart.timeScale()
+
+  // Subscribe to visible logical range changes for infinite loading
+  const handleRangeChange = (range: LogicalRange | null) => {
+    if (range && range.from < 20 && props.klinesData.length > 0) {
+      // Buffer of 20 bars
+      emit('load-more')
+    }
+  }
+  timeScale.subscribeVisibleLogicalRangeChange(handleRangeChange)
+
   // Initial data load
   if (props.klinesData.length > 0) {
     candleSeries.setData(props.klinesData)
     chart.timeScale().fitContent()
   }
+
+  // Cleanup
+  onBeforeUnmount(() => {
+    timeScale.unsubscribeVisibleLogicalRangeChange(handleRangeChange)
+  })
 })
 
 // Watch for klinesData changes
 watch(
   () => props.klinesData,
-  newKlines => {
-    if (newKlines && newKlines.length > 0 && candleSeries) {
+  (newKlines, oldKlines) => {
+    if (newKlines && newKlines.length > 0 && candleSeries && chart) {
+      const safeOldKlines = oldKlines || []
+      const currentRange: TimeRange | null = chart.timeScale().getVisibleRange()
+      const wasAtEnd =
+        currentRange &&
+        safeOldKlines.length > 0 &&
+        currentRange.to >= safeOldKlines[safeOldKlines.length - 1].time
+
       candleSeries.setData(newKlines)
-      // Only call fitContent if needed (e.g., initial load or significant data change)
-      if (newKlines.length <= 1) {
-        chart?.timeScale().fitContent()
+
+      if (newKlines.length <= 1 || safeOldKlines.length === 0) {
+        chart.timeScale().fitContent()
+      } else if (wasAtEnd) {
+        chart.timeScale().scrollToRealTime()
+      } else if (currentRange) {
+        chart.timeScale().setVisibleRange(currentRange)
       }
     }
   },

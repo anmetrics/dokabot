@@ -35,11 +35,11 @@ export class EmaMacdStrategy implements IStrategy {
 
     let currentTrend: 'up' | 'down' | 'neutral' = 'neutral';
 
-    // 1. Lấy nến lịch sử 1 phút trước khi subscribe
+    // 1. Lấy nến lịch sử 15 phút trước khi subscribe
     const historicalCandles = await this.binanceService.getHistoricalCandles(
       this.symbol,
-      '5m',
-      100, // lấy 100 nến gần nhất
+      '15m',
+      192,
     );
     this.prices = historicalCandles.map((c) => Number(c.close));
 
