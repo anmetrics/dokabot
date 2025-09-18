@@ -24,6 +24,7 @@
     "@vee-validate/zod": "^4.9.5",
     "@zodios/core": "^10.9.0",
     "axios": "^1.4.0",
+    "binance-api-node": "^0.12.9",
     "date-fns": "^2.29.3",
     "date-fns-tz": "^2.0.0",
     "dayjs": "^1.11.7",

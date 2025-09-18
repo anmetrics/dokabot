@@ -1,53 +1,91 @@
+<!-- components/ChartsCandle.vue -->
 <template>
-    <div ref="chartContainer" style="height:500px; width:100%;"></div>
+  <div ref="chartContainer" style="height: 500px; width: 100%" />
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
-import { createChart, IChartApi, ISeriesApi, CandlestickData, CandlestickSeries } from 'lightweight-charts'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
+import type { CandlestickData, IChartApi, ISeriesApi } from 'lightweight-charts'
+import { createChart, ColorType, CandlestickSeries } from 'lightweight-charts'
 
-const props = defineProps<{ klines: Array<{ time: number; open: number; high: number; low: number; close: number }> }>()
+// Define props
+const props = defineProps<{
+  klinesData: CandlestickData[]
+}>()
 
 const chartContainer = ref<HTMLDivElement | null>(null)
 let chart: IChartApi | null = null
 let candleSeries: ISeriesApi<'Candlestick'> | null = null
 
+// Initialize chart on mount
 onMounted(() => {
-    if (!chartContainer.value) return
-    chart = createChart(chartContainer.value, {
-        layout: {
-            background: { color: '#111' },
-            textColor: '#DDD'
-        },
-        grid: {
-            vertLines: { color: '#222' },
-            horzLines: { color: '#222' }
-        },
-        width: chartContainer.value.clientWidth,
-        height: chartContainer.value.clientHeight
-    })
-    candleSeries = chart.addSeries(CandlestickSeries, {
-        upColor: '#26a69a',
-        downColor: '#ef5350',
-    })
-    candleSeries.setData([{
-        time: 1758076500000,
-        open: 116802.60000000,
-        high: 116888.00000000,
-        low: 116788.18000000,
-        close: 116870.37000000,
+  if (!chartContainer.value) return
 
+  chart = createChart(chartContainer.value, {
+    width: chartContainer.value.clientWidth,
+    height: chartContainer.value.clientHeight,
+    layout: {
+      background: { type: ColorType.Solid, color: '#111' },
+      textColor: '#DDD'
+    },
+    grid: {
+      vertLines: { color: '#222' },
+      horzLines: { color: '#222' }
+    },
+    timeScale: {
+      timeVisible: true,
+      secondsVisible: false
+    }
+  })
 
-    }] as CandlestickData[])
-    chart.timeScale().fitContent();
+  candleSeries = chart.addSeries(CandlestickSeries, {
+    upColor: '#26a69a',
+    downColor: '#ef5350',
+    borderVisible: false,
+    wickUpColor: '#26a69a',
+    wickDownColor: '#ef5350'
+  })
+
+  // Initial data load
+  if (props.klinesData.length > 0) {
+    candleSeries.setData(props.klinesData)
+    chart.timeScale().fitContent()
+  }
 })
 
-watch(() => props.klines, (newVal) => {
-    if (!candleSeries) return
-    candleSeries.setData(newVal as CandlestickData[])
-}, { deep: true })
+// Watch for klinesData changes
+watch(
+  () => props.klinesData,
+  newKlines => {
+    if (newKlines && newKlines.length > 0 && candleSeries) {
+      candleSeries.setData(newKlines)
+      // Only call fitContent if needed (e.g., initial load or significant data change)
+      if (newKlines.length <= 1) {
+        chart?.timeScale().fitContent()
+      }
+    }
+  },
+  { immediate: true }
+)
+
+// Handle window resize
+const resizeChart = () => {
+  if (chart && chartContainer.value) {
+    chart.resize(
+      chartContainer.value.clientWidth,
+      chartContainer.value.clientHeight
+    )
+  }
+}
+
+onMounted(() => {
+  window.addEventListener('resize', resizeChart)
+})
 
 onBeforeUnmount(() => {
-    chart?.remove()
+  window.removeEventListener('resize', resizeChart)
+  chart?.remove()
+  chart = null
+  candleSeries = null
 })
 </script>
