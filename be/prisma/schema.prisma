@@ -10,6 +10,60 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
+}
+
+
+model Strategy {
+  id          String     @id @default(uuid())
+  name        String
+  symbol      String
+  type        StrategyType
+  active      Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  settings    Setting[]
+  trades      Trade[]
+}
+
+enum StrategyType {
+  EMA_MACD
+  RSI_ONLY
+  BREAKOUT
+  CUSTOM
+}
+
+
+model Setting {
+  id          String   @id @default(uuid())
+  strategyId  String
+  key         String
+  value       String
+  description String?
+
+  strategy    Strategy @relation(fields: [strategyId], references: [id])
+
+  @@unique([strategyId, key])
+}
+
+enum TradeSide {
+  BUY
+  SELL
+}
+
+model Trade {
+  id          String   @id @default(uuid())
+  strategyId  String
+  symbol      String     // BTCUSDT
+  side        TradeSide  // BUY hoặc SELL
+
+  price       Float      // Giá mua hoặc bán
+  amountUsd   Float      // Tổng USD đã dùng/mua được
+  qty         Float      // Số lượng coin (ví dụ 0.01 BTC)
+  fee         Float
+
+  createdAt   DateTime @default(now())
+  strategy    Strategy @relation(fields: [strategyId], references: [id])
 }

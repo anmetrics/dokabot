@@ -4,5 +4,5 @@ export interface TradeEvent {
   side: 'BUY' | 'SELL';
   price: number;
   qty: number;
-  timestamp: Date;
+  timestamp: number;
 }

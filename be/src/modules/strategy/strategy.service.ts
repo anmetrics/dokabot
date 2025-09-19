@@ -1,15 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { BinanceService } from '../binance/binance.service';
 import { EmaMacdStrategy } from './strategies/ema-macd.strategy';
-import { EmaRsiStrategy } from './strategies/ema-rsi.strategy';
 import { IStrategy } from './strategies/strategy.interface';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 @Injectable()
 export class StrategyService {
   private logger = new Logger('StrategyService');
   private strategy: IStrategy;
 
-  constructor(private readonly binanceService: BinanceService) {}
+  constructor(
+    private readonly binanceService: BinanceService,
+    private readonly eventEmitter: EventEmitter2,
+  ) {}
 
   async startStrategy(name: string) {
     const symbol = (process.env.SYMBOL || 'BTCUSDT').toUpperCase();
@@ -20,9 +23,10 @@ export class StrategyService {
         this.binanceService,
         symbol,
         tradeUsd,
+        (event) => {
+          this.eventEmitter.emit('trade.executed', event);
+        },
       );
-    } else if (name === 'ema-rsi') {
-      this.strategy = new EmaRsiStrategy(this.binanceService, symbol, tradeUsd);
     } else {
       throw new Error('Strategy not found');
     }
