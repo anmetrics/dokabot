@@ -16,14 +16,12 @@ export class StrategyService {
 
   async startStrategy(name: string) {
     const symbol = (process.env.SYMBOL || 'BTCUSDT').toUpperCase();
-    const tradeUsd = Number(process.env.TRADE_QUANTITY_USD || '50');
 
     if (name === 'ema-macd') {
       this.strategy = new EmaMacdStrategy(
         this.binanceService,
         symbol,
-        tradeUsd,
-        (event) => {
+        (event: any) => {
           this.eventEmitter.emit('trade.executed', event);
         },
       );

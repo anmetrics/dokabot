@@ -2,14 +2,24 @@ import { EMA, MACD, RSI } from 'technicalindicators';
 import { Logger } from '@nestjs/common';
 import { IStrategy } from './strategy.interface';
 import { BinanceService } from 'src/modules/binance/binance.service';
-import { Candle } from 'binance-api-node';
+import { Candle, Order } from 'binance-api-node';
 import { TradeEvent } from '../events/trade.event';
+import Decimal from 'decimal.js';
+import { randomUUID } from 'crypto';
+
+type Position = {
+  id: string;
+  buyPrice: number;
+  qty: number;
+  usdSpent: number;
+};
 
 export class EmaMacdStrategy implements IStrategy {
   private logger = new Logger('EmaMacdStrategy');
   private prices: number[] = [];
   private running = false;
-  private hasPosition = false;
+
+  private cumulativeProfit = 0;
 
   private emaShortPeriod = 12;
   private emaLongPeriod = 26;
@@ -22,16 +32,17 @@ export class EmaMacdStrategy implements IStrategy {
   private rsiOversold = 30;
 
   // === Settings for sideway trading ===
-  private maxBuyPrice = 30000; // Chỉ mua nếu giá < 30,000
-  private minSellPrice = 31000; // Chỉ bán nếu giá > 31,000
-  private rebuyDropPct = 1.5; // Mua lần 2 nếu giá giảm > 1.5% so với lần mua 1
+  private maxBuyPrice = 1010;
+  private rebuyDropPct = 1;
 
-  private lastBuyPrice: number | null = null;
+  // Quản lý nhiều vị thế
+  private positions: Position[] = [];
+  private maxPositions = 4;
+  private tradePerBuyUsd = 10; // mỗi lần mua 10$
 
   constructor(
     private readonly binanceService: BinanceService,
     private readonly symbol: string,
-    private readonly tradeUsd: number,
     private readonly emitEvent?: (event: TradeEvent) => void,
   ) {}
 
@@ -42,7 +53,7 @@ export class EmaMacdStrategy implements IStrategy {
     const historicalCandles = await this.binanceService.getHistoricalCandles(
       this.symbol,
       '5m',
-      192,
+      120,
     );
     this.prices = historicalCandles.map((c) => Number(c.close));
     this.running = true;
@@ -66,21 +77,21 @@ export class EmaMacdStrategy implements IStrategy {
       console.log('analysis: ', result);
 
       currentTrend = result.trend;
-      if (this.prices.length > 240) this.prices.shift();
+      if (this.prices.length > 120) this.prices.shift();
 
       this.calcPrice(currentTrend);
     });
 
-    const marketTrend = await this.binanceService.detectMarketTrend('BTCUSDT', {
-      candleInterval: '5m',
-      lookback: 96,
-      emaPeriod: 26,
-      atrPeriod: 14,
-      sidewayThresholdPct: 2,
-      slopeThresholdPct: 0.2,
-    });
+    // const marketTrend = await this.binanceService.detectMarketTrend('BTCUSDT', {
+    //   candleInterval: '5m',
+    //   lookback: 96,
+    //   emaPeriod: 26,
+    //   atrPeriod: 14,
+    //   sidewayThresholdPct: 2,
+    //   slopeThresholdPct: 0.2,
+    // });
 
-    console.log('Market trend:', marketTrend); // UPTREND | DOWNTREND | SIDEWAY
+    // console.log('Market trend:', marketTrend); // UPTREND | DOWNTREND | SIDEWAY
   }
 
   async calcPrice(currentTrend: 'up' | 'down' | 'neutral') {
@@ -129,48 +140,54 @@ export class EmaMacdStrategy implements IStrategy {
       const lastMacd = macdResult[macdResult.length - 1];
       if (!lastMacd || !lastMacd.MACD || !lastMacd.signal) return;
 
-      console.log('TREND: ', trendUp ? 'Up' : trendDown ? 'DOWN' : 'UNKNOWN');
-
-      console.log('RSI: ', lastRsi);
-
-      console.log('lastMacd: ', lastMacd);
-
       // === BUY logic ===
       if (
+        this.positions.length < this.maxPositions &&
         trendUp &&
         lastMacd.MACD > lastMacd.signal &&
         lastRsi < this.rsiOversold &&
         currentTrend === 'up' &&
-        !this.hasPosition &&
         price < this.maxBuyPrice &&
-        (this.lastBuyPrice === null ||
-          price < this.lastBuyPrice * (1 - this.rebuyDropPct / 100))
+        (this.positions.length === 0 ||
+          price <
+            Math.min(...this.positions.map((p) => p.buyPrice)) *
+              (1 - this.rebuyDropPct / 100))
       ) {
-        const qty = this.usdToQty(price);
+        const qty = this.usdToQty(price, this.tradePerBuyUsd);
         if (qty > 0) {
-          this.logger.log(`BUY ${qty} ${this.symbol} @ ${price}`);
-          // await this.binanceService.placeMarketOrder(this.symbol, 'BUY', qty);
-          this.hasPosition = true;
-          this.lastBuyPrice = price;
-
-          this.emitEvent?.({
-            side: 'BUY',
-            symbol: this.symbol,
-            price,
+          console.log('----------------');
+          console.log(`BUY ${qty} ${this.symbol} @ ${price}`);
+          const order = await this.binanceService.placeMarketOrder(
+            this.symbol,
+            'BUY',
             qty,
-            timestamp: Date.now(),
-            strategy: '',
+          );
+          console.log('----------------');
+
+          this.positions.push({
+            id: randomUUID(),
+            buyPrice: price,
+            qty,
+            usdSpent: await this.getFeeFromOrder(order),
           });
+
+          // this.emitEvent?.({
+          //   side: 'BUY',
+          //   symbol: this.symbol,
+          //   price,
+          //   qty,
+          //   timestamp: Date.now(),
+          //   strategy: 'EmaMacdStrategy',
+          // });
         }
       }
 
-      // === SELL logic ===
+      // === SELL logic (theo từng position) ===
       else if (
         trendDown &&
         lastMacd.MACD < lastMacd.signal &&
         lastRsi > this.rsiOverbought &&
-        this.hasPosition &&
-        price > this.minSellPrice
+        this.positions.length > 0
       ) {
         const balances = await this.binanceService.getAccount();
         const asset = this.symbol.replace('USDT', '');
@@ -178,20 +195,52 @@ export class EmaMacdStrategy implements IStrategy {
           balances.balances.find((b) => b.asset === asset)?.free || 0,
         );
 
-        if (free > 0) {
-          this.logger.log(`SELL ${free} ${asset} @ ${price}`);
-          // await this.binanceService.placeMarketOrder(this.symbol, 'SELL', free);
-          this.hasPosition = false;
-          this.lastBuyPrice = null;
+        const sellable = this.positions.filter(
+          (pos) => price > pos.buyPrice * 1.005,
+        );
 
-          this.emitEvent?.({
-            side: 'SELL',
-            symbol: this.symbol,
-            price,
-            qty: free,
-            timestamp: Date.now(),
-            strategy: '',
-          });
+        // Tính tổng qty cần bán
+        const totalQty = sellable.reduce(
+          (sum, pos) => sum.plus(new Decimal(pos.qty)),
+          new Decimal(0),
+        );
+
+        if (totalQty.lessThanOrEqualTo(0)) return;
+
+        if (totalQty.lessThanOrEqualTo(free)) {
+          // === Tính lãi/lỗ ===
+          // Cộng dồn vào cumulativeProfit
+
+          const order = await this.binanceService.placeMarketOrder(
+            this.symbol,
+            'SELL',
+            totalQty.toNumber(),
+          );
+
+          const currentProfit = await this.getRevenueFromSellOrder(order);
+          this.cumulativeProfit += currentProfit;
+
+          console.log('--------------------------');
+          console.log(
+            `SELL ${totalQty.toNumber()} ${asset} @ ${price}, Tổng lãi / lỗ: ${this.cumulativeProfit}USDT`,
+          );
+          console.log(
+            `PROFIT THIS SELL: ${currentProfit.toFixed(4)} USDT | CUMULATIVE PROFIT: ${this.cumulativeProfit.toFixed(4)} USDT`,
+          );
+          console.log('--------------------------');
+
+          // this.emitEvent?.({
+          //   side: 'SELL',
+          //   symbol: this.symbol,
+          //   price,
+          //   qty: free,
+          //   timestamp: Date.now(),
+          //   strategy: '',
+          // });
+
+          // Xoá các position đã bán
+          const soldIds = new Set(sellable.map((item) => item.id));
+          this.positions = this.positions.filter((pos) => !soldIds.has(pos.id));
         }
       }
     } catch (err) {
@@ -204,11 +253,60 @@ export class EmaMacdStrategy implements IStrategy {
     this.logger.log(`Stopped EMA+MACD strategy for ${this.symbol}`);
   }
 
-  private usdToQty(price: number) {
-    return Math.floor((this.tradeUsd / price) * 1e6) / 1e6;
+  private usdToQty(price: number, usd: number) {
+    return Math.floor((usd / price) * 1e6) / 1e6;
   }
 
-  private sleep(ms: number) {
-    return new Promise((res) => setTimeout(res, ms));
+  private async getFeeFromOrder(order: Order) {
+    let totalFeeUSDT = 0;
+
+    if (order.fills) {
+      for (const fill of order.fills) {
+        const commission = parseFloat(fill.commission);
+        const asset = fill.commissionAsset;
+
+        if (asset === 'USDT') {
+          totalFeeUSDT += commission;
+        } else if (asset === this.symbol.replace('USDT', '')) {
+          // phí cùng loại với đồng trade (vd: BTC trong BTCUSDT)
+          totalFeeUSDT += commission * parseFloat(fill.price);
+        } else {
+          // phí bằng đồng khác (vd: BNB)
+          const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
+          totalFeeUSDT += commission * assetPrice;
+        }
+      }
+    }
+
+    return totalFeeUSDT;
+  }
+
+  private async getRevenueFromSellOrder(order: Order) {
+    let revenueUSDT = 0;
+    if (order.fills) {
+      for (const fill of order.fills) {
+        const fillQty = parseFloat(fill.qty);
+        const fillPrice = parseFloat(fill.price);
+        const gross = fillQty * fillPrice;
+
+        // Trừ fee
+        let feeUSDT = 0;
+        const commission = parseFloat(fill.commission);
+        const asset = fill.commissionAsset;
+
+        if (asset === 'USDT') {
+          feeUSDT = commission;
+        } else if (asset === this.symbol.replace('USDT', '')) {
+          feeUSDT = commission * fillPrice;
+        } else {
+          const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
+          feeUSDT = commission * assetPrice;
+        }
+
+        revenueUSDT += gross - feeUSDT;
+      }
+    }
+
+    return revenueUSDT;
   }
 }

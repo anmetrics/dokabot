@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import Binance, {
   Candle,
   CandleChartInterval_LT,
+  OrderSide_LT,
   OrderType,
 } from 'binance-api-node';
 import { OrderbookEvent } from './events/orderbook.event';
@@ -53,11 +54,7 @@ export class BinanceService {
     return Number(res[symbol]);
   }
 
-  async placeMarketOrder(
-    symbol: string,
-    side: 'BUY' | 'SELL',
-    quantity: number,
-  ) {
+  async placeMarketOrder(symbol: string, side: OrderSide_LT, quantity: number) {
     if (!this.client) throw new Error('Client not initialized');
     try {
       const order = await this.client.order({
