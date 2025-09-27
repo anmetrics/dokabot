@@ -29,6 +29,8 @@ export class BinanceService {
     const apiSecret = process.env.BINANCE_API_SECRET || '';
     const useTestnet = !!process.env.BINANCE_TESTNET;
 
+    console.log('useTestnet:', useTestnet);
+
     this.client = Binance({
       apiKey,
       apiSecret,
