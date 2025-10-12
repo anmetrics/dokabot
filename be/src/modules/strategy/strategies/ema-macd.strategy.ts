@@ -7,6 +7,7 @@ import { TradeEvent } from '../events/trade.event';
 import Decimal from 'decimal.js';
 import { randomUUID } from 'crypto';
 import { loadPositions, savePositions } from '../helpers/savePosition';
+import { formatDate } from '../helpers/formatDate';
 
 type Position = {
   id: string;
@@ -28,15 +29,15 @@ export class EmaMacdStrategy implements IStrategy {
   // private macdSlowPeriod = 26;
   // private macdSignalPeriod = 9;
 
-  private emaShortPeriod = 6; // Giảm từ 12
-  private emaLongPeriod = 12; // Giảm từ 26
-  private macdFastPeriod = 6; // Giảm từ 12
-  private macdSlowPeriod = 12; // Giảm từ 26
-  private macdSignalPeriod = 5; // Giảm từ 9
+  private emaShortPeriod = 3;
+  private emaLongPeriod = 6;
+  private macdFastPeriod = 6;
+  private macdSlowPeriod = 12;
+  private macdSignalPeriod = 5;
 
-  private rsiPeriod = 14;
-  private rsiOverbought = 60;
-  private rsiOversold = 40;
+  private rsiPeriod = 7;
+  private rsiOverbought = 64;
+  private rsiOversold = 32;
 
   // === Settings for sideway trading ===
   private maxBuyPrice = 1250;
@@ -133,7 +134,7 @@ export class EmaMacdStrategy implements IStrategy {
       const lastEmaShort = emaShort[emaShort.length - 1];
       const lastEmaLong = emaLong[emaLong.length - 1];
 
-      const trendUp = lastEmaShort > lastEmaLong;
+      // const trendUp = lastEmaShort > lastEmaLong; // chậm quá
       const trendDown = lastEmaShort < lastEmaLong;
 
       const macdResult = MACD.calculate({
@@ -164,10 +165,27 @@ export class EmaMacdStrategy implements IStrategy {
       if (lastCandles.length < 3) return;
 
       const [_, c2, c3] = lastCandles.slice(-3); // 3 cây cuối
+
       const isBullishReversal =
         Number(c2.close) < Number(c2.open) && // trước đó là nến đỏ
         Number(c3.close) > Number(c3.open) && // hiện tại là nến xanh
         Number(c3.close) > Number(c2.open); // đóng cửa cao hơn open trước
+
+      const isBullishReversalEarly =
+        c2.close < c2.open && // nến đỏ trước
+        c3.close > c3.open && // nến xanh hiện tại
+        c3.close > c2.close; // đóng cửa cao hơn nến đỏ
+
+      // Bullish Engulfing: dựa trên 2 cây cuối (c2 và c3)
+      const isBullishEngulfing =
+        c2.close < c2.open && // nến đỏ trước
+        c3.close > c3.open && // nến xanh hiện tại
+        c3.open < c2.close && // mở dưới nến đỏ
+        c3.close > c2.open; // đóng trên nến đỏ
+
+      const prevVolume = lastCandles[lastCandles.length - 2].volume;
+      const currentVolume = c3.volume;
+      const volumeSpike = Number(currentVolume) > Number(prevVolume) * 1.45; // tăng 45% so với nến trước
 
       const prevMacd =
         macdResult.length >= 2 ? macdResult[macdResult.length - 2] : undefined;
@@ -179,11 +197,12 @@ export class EmaMacdStrategy implements IStrategy {
       // Check buy
       const isValidBuy =
         this.positions.length < this.maxPositions &&
-        trendUp &&
-        lastRsi < this.rsiOversold &&
-        // emaTurningUp &&
-        // isBullishReversal &&
-        lastMacd.MACD > lastMacd.signal &&
+        isBullishEngulfing &&
+        rsiRising &&
+        emaTurningUp &&
+        volumeSpike &&
+        lastRsi < this.rsiOversold && // oversold mạnh hơn
+        lastRsi > prevRsi && // RSI bắt đầu tăng → đảo chiều
         price < this.maxBuyPrice &&
         (this.positions.length === 0 ||
           price <
@@ -197,35 +216,87 @@ export class EmaMacdStrategy implements IStrategy {
         lastRsi > this.rsiOverbought &&
         this.positions.length > 0;
 
+      // ================= Separator =================
       console.log(
-        'BUY check =>',
-        {
-          trendUp: trendUp,
-          pos: this.positions.length < this.maxPositions,
-          macd: lastMacd.MACD > lastMacd.signal,
-          rsi: lastRsi < this.rsiOversold,
-          price: price < this.maxBuyPrice,
-          rebuy:
-            this.positions.length === 0 ||
-            price <
-              Math.min(...this.positions.map((p) => p.buyPrice)) *
-                (1 - this.rebuyDropPct / 100),
-        },
-        ', is_valid_buy:',
-        isValidBuy,
+        '\x1b[33m%s\x1b[0m',
+        '=============================',
+        formatDate(new Date()),
+      );
+
+      // ================= BUY LOG =================
+      console.log('\x1b[32m%s\x1b[0m', '===== BUY CHECK =====');
+      console.log(
+        'isBullishReversalEarly  :',
+        isBullishReversalEarly ? '\x1b[32mTRUE\x1b[0m' : '\x1b[31mFALSE\x1b[0m',
       );
       console.log(
-        'SELL check =>',
-        {
-          trendDown: trendDown,
-          macd: lastMacd.MACD < lastMacd.signal,
-          rsi: lastRsi > this.rsiOverbought,
-          hasPosition: this.positions.length > 0,
-        },
-        ', is_valid_sell: ',
-        isValidSell,
+        'EMA Turning Up :',
+        emaTurningUp ? '\x1b[32mTRUE\x1b[0m' : '\x1b[31mFALSE\x1b[0m',
       );
-      console.log('=============================');
+      console.log(
+        'Bullish Reversal:',
+        isBullishReversal ? '\x1b[32mTRUE\x1b[0m' : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'RSI < Oversold :',
+        lastRsi < this.rsiOversold
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'MACD Bullish   :',
+        lastMacd.MACD > lastMacd.signal
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'Price < MaxBuy :',
+        price < this.maxBuyPrice
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'Rebuy Condition:',
+        this.positions.length === 0 ||
+          price <
+            Math.min(...this.positions.map((p) => p.buyPrice)) *
+              (1 - this.rebuyDropPct / 100)
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        '=> IS VALID BUY :',
+        isValidBuy ? '\x1b[32mTRUE\x1b[0m' : '\x1b[31mFALSE\x1b[0m',
+      );
+
+      // ================= SELL LOG =================
+      console.log('\x1b[31m%s\x1b[0m', '===== SELL CHECK =====');
+      console.log(
+        'Trend Down     :',
+        trendDown ? '\x1b[32mTRUE\x1b[0m' : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'MACD Bearish   :',
+        lastMacd.MACD < lastMacd.signal
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'RSI > Overbought :',
+        lastRsi > this.rsiOverbought
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        'Has Position   :',
+        this.positions.length > 0
+          ? '\x1b[32mTRUE\x1b[0m'
+          : '\x1b[31mFALSE\x1b[0m',
+      );
+      console.log(
+        '=> IS VALID SELL:',
+        isValidSell ? '\x1b[32mTRUE\x1b[0m' : '\x1b[31mFALSE\x1b[0m',
+      );
 
       if (isValidBuy) {
         const qty = this.usdToQty(price, this.tradePerBuyUsd);
@@ -281,6 +352,12 @@ export class EmaMacdStrategy implements IStrategy {
           new Decimal(0),
         );
 
+        // Tính tổng vốn bỏ ra cho các vị thế bán
+        const totalUsdSpent = sellable.reduce(
+          (sum, pos) => sum + pos.usdSpent,
+          0,
+        );
+
         console.log('totalQty:', totalQty, 'free:', free);
 
         if (totalQty.lessThanOrEqualTo(0)) return;
@@ -295,7 +372,8 @@ export class EmaMacdStrategy implements IStrategy {
             this.adjustToStepSize(totalQty.toNumber()),
           );
 
-          const currentProfit = await this.getRevenueFromSellOrder(order);
+          const revenue = await this.getRevenueFromSellOrder(order);
+          const currentProfit = revenue - totalUsdSpent; // Trừ vốn bỏ ra
           this.cumulativeProfit += currentProfit;
 
           console.log('--------------------------');
