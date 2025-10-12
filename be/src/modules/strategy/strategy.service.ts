@@ -29,7 +29,8 @@ export class StrategyService {
       throw new Error('Strategy not found');
     }
 
-    await this.strategy.start();
+    await this.strategy.startAll();
+
     this.logger.log(`Started strategy: ${name}`);
   }
 

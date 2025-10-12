@@ -1,4 +1,4 @@
 export interface IStrategy {
-  start(): Promise<void>;
+  startAll(): Promise<void>;
   stop(): void;
 }
