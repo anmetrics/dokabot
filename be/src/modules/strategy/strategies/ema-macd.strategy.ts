@@ -28,7 +28,8 @@ export class EmaMacdStrategy implements IStrategy {
 
   private maxPositions = 5;
   private maxBuyPrice = 1280;
-  private rebuyDropPct = 1.2;
+  // 2%
+  private rebuyDropPct = 0.02;
   private tradePerBuyUsd = 50;
 
   private emaFastPeriod = 7;
@@ -37,8 +38,8 @@ export class EmaMacdStrategy implements IStrategy {
   private macdSlowPeriod = 21;
   private macdSignalPeriod = 5;
   private rsiPeriod = 14;
-  private rsiOverbought = 65;
-  private rsiOversold = 35;
+  private rsiOverbought = 70;
+  private rsiOversold = 30;
 
   private timeframeData: Record<string, TimeframeData> = {};
 
@@ -57,10 +58,10 @@ export class EmaMacdStrategy implements IStrategy {
   }
 
   async startAll() {
-    await Promise.all([this.start('1m'), this.start('15m')]);
+    await Promise.all([this.start('5m')]);
   }
 
-  private async start(timeframe: '1m' | '15m') {
+  private async start(timeframe: '5m' | '15m') {
     this.logger.log(
       `Starting EMA7 x EMA99 ${timeframe} strategy for ${this.symbol}`,
     );
@@ -171,15 +172,34 @@ export class EmaMacdStrategy implements IStrategy {
       const ema7_25_BearishCross =
         prevEmaFast > prevEma25 && lastEmaFast < lastEma25 && trendDown;
 
+      // Kiểm tra số nến xác nhận sau khi cắt
+      const confirmationCandles = 2;
+      const emaBullishCrossConfirmed =
+        emaBullishCross &&
+        this.isTrendConfirmed(
+          lastCandles,
+          confirmationCandles,
+          emaFast,
+          emaSlow,
+          true,
+        );
+      const emaBearishCrossConfirmed =
+        emaBearishCross &&
+        this.isTrendConfirmed(
+          lastCandles,
+          confirmationCandles,
+          emaFast,
+          emaSlow,
+          false,
+        );
+
       // === Check Buy ===
       const isValidBuy =
+        rsiRising &&
         this.positions.length < this.maxPositions &&
-        (emaBullishCross ||
+        (emaBullishCrossConfirmed ||
           ema7_25_BullishCross ||
-          (macdBullishCross &&
-            rsiRising &&
-            isBullishEngulfing &&
-            volumeSpike)) &&
+          (macdBullishCross && isBullishEngulfing && volumeSpike)) &&
         price < this.maxBuyPrice &&
         (this.positions.length === 0 ||
           price <
@@ -189,7 +209,7 @@ export class EmaMacdStrategy implements IStrategy {
       // === Check Sell ===
       const isValidSell =
         this.positions.length > 0 &&
-        (emaBearishCross ||
+        (emaBearishCrossConfirmed ||
           ema7_25_BearishCross ||
           (lastRsi > this.rsiOverbought && trendDown));
 
@@ -210,6 +230,7 @@ export class EmaMacdStrategy implements IStrategy {
       console.log('EMA Bullish Cross  :', emaBullishCross);
       console.log('EMA7-25 Bullish    :', ema7_25_BullishCross);
       console.log('MACD Bullish Cross :', macdBullishCross);
+      console.log('EMA Bullish Confirm:', emaBullishCrossConfirmed);
       console.log('=> IS VALID BUY    :', isValidBuy);
 
       console.log('\x1b[31m%s\x1b[0m', '===== SELL CHECK =====');
@@ -218,6 +239,7 @@ export class EmaMacdStrategy implements IStrategy {
       console.log('EMA7-25 Bearish    :', ema7_25_BearishCross);
       console.log('MACD Bearish       :', lastMacd.MACD < lastMacd.signal);
       console.log('RSI > Overbought   :', lastRsi > this.rsiOverbought);
+      console.log('EMA Bearish Confirm:', emaBearishCrossConfirmed);
       console.log('Has Position       :', this.positions.length > 0);
       console.log('=> IS VALID SELL   :', isValidSell);
 
@@ -337,5 +359,49 @@ export class EmaMacdStrategy implements IStrategy {
       }
     }
     return revenueUSDT;
+  }
+
+  /**
+   * Xác nhận xu hướng:
+   * - Nhận mảng emaFastArr và emaSlowArr (tương ứng từng nến)
+   * - Kiểm tra khoảng cách (emaFast - emaSlow) phải:
+   *    + luôn giữ cùng phía (dương cho bullish, âm cho bearish)
+   *    + và "mở rộng dần" (curr > prev cho bullish, curr < prev cho bearish)
+   * - Nếu ema fast cắt ngược (về phía khác) -> trả về false
+   */
+  private isTrendConfirmed(
+    candles: Candle[],
+    confirmationCandles: number,
+    emaFastArr: number[],
+    emaSlowArr: number[],
+    isBullish: boolean,
+  ): boolean {
+    if (
+      emaFastArr.length < confirmationCandles + 1 ||
+      emaSlowArr.length < confirmationCandles + 1
+    )
+      return false;
+
+    const fastSlice = emaFastArr.slice(-confirmationCandles - 1);
+    const slowSlice = emaSlowArr.slice(-confirmationCandles - 1);
+
+    const lastFast = fastSlice[fastSlice.length - 1];
+    const lastSlow = slowSlice[slowSlice.length - 1];
+
+    // ❌ Nếu EMA vừa cắt ngược lại → loại ngay
+    if (isBullish && lastFast <= lastSlow) return false;
+    if (!isBullish && lastFast >= lastSlow) return false;
+
+    // ✅ Kiểm tra độ “mở rộng” của khoảng cách
+    const distances = fastSlice.map((v, i) => v - slowSlice[i]);
+    for (let i = 1; i < distances.length; i++) {
+      const prev = distances[i - 1];
+      const curr = distances[i];
+
+      if (isBullish && curr <= prev) return false;
+      if (!isBullish && curr >= prev) return false;
+    }
+
+    return true;
   }
 }
