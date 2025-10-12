@@ -6,6 +6,7 @@ import { Candle, Order } from 'binance-api-node';
 import { TradeEvent } from '../events/trade.event';
 import Decimal from 'decimal.js';
 import { randomUUID } from 'crypto';
+import { loadPositions, savePositions } from '../helpers/savePosition';
 
 type Position = {
   id: string;
@@ -34,22 +35,16 @@ export class EmaMacdStrategy implements IStrategy {
   private macdSignalPeriod = 5; // Giảm từ 9
 
   private rsiPeriod = 14;
-  private rsiOverbought = 68;
-  private rsiOversold = 32;
+  private rsiOverbought = 60;
+  private rsiOversold = 40;
 
   // === Settings for sideway trading ===
   private maxBuyPrice = 1250;
   private rebuyDropPct = 1.1;
 
   // Quản lý nhiều vị thế
-  private positions: Position[] = [
-    {
-      id: randomUUID(),
-      buyPrice: 1145,
-      qty: 0.008,
-      usdSpent: 10,
-    },
-  ];
+  private positions: Position[] = [];
+
   private maxPositions = 5;
   private tradePerBuyUsd = 20; // mỗi lần mua 10$
 
@@ -57,7 +52,15 @@ export class EmaMacdStrategy implements IStrategy {
     private readonly binanceService: BinanceService,
     private readonly symbol: string,
     private readonly emitEvent?: (event: TradeEvent) => void,
-  ) {}
+  ) {
+    this.positions = loadPositions();
+    console.log(
+      'CURRENT_POSITION:',
+      this.positions,
+      'length: ',
+      this.positions.length,
+    );
+  }
 
   async start() {
     this.logger.log(`Starting EMA+MACD spot strategy for ${this.symbol}`);
@@ -173,32 +176,8 @@ export class EmaMacdStrategy implements IStrategy {
       const macdPeaking =
         lastMacd.MACD < prevMacd.MACD && lastMacd.MACD > lastMacd.signal;
 
-      console.log('=== CHECK_BUY CONDITIONS ===');
-      console.log('BUY cond check =>', {
-        trendUp: trendUp,
-        pos: this.positions.length < this.maxPositions,
-        macd: lastMacd.MACD > lastMacd.signal,
-        rsi: lastRsi < this.rsiOversold,
-        price: price < this.maxBuyPrice,
-        rebuy:
-          this.positions.length === 0 ||
-          price <
-            Math.min(...this.positions.map((p) => p.buyPrice)) *
-              (1 - this.rebuyDropPct / 100),
-      });
-      console.log('=============================');
-
-      console.log('=== CHECK_SELL CONDITIONS ===');
-      console.log('SELL cond check =>', {
-        trendDown: trendDown,
-        macd: lastMacd.MACD < lastMacd.signal,
-        rsi: lastRsi > this.rsiOverbought,
-        hasPosition: this.positions.length > 0,
-      });
-
-      console.log('=============================');
-
-      if (
+      // Check buy
+      const isValidBuy =
         this.positions.length < this.maxPositions &&
         trendUp &&
         lastRsi < this.rsiOversold &&
@@ -209,8 +188,46 @@ export class EmaMacdStrategy implements IStrategy {
         (this.positions.length === 0 ||
           price <
             Math.min(...this.positions.map((p) => p.buyPrice)) *
-              (1 - this.rebuyDropPct / 100))
-      ) {
+              (1 - this.rebuyDropPct / 100));
+
+      //  Check sell
+      const isValidSell =
+        (trendDown || macdPeaking) &&
+        lastMacd.MACD < lastMacd.signal &&
+        lastRsi > this.rsiOverbought &&
+        this.positions.length > 0;
+
+      console.log(
+        'BUY check =>',
+        {
+          trendUp: trendUp,
+          pos: this.positions.length < this.maxPositions,
+          macd: lastMacd.MACD > lastMacd.signal,
+          rsi: lastRsi < this.rsiOversold,
+          price: price < this.maxBuyPrice,
+          rebuy:
+            this.positions.length === 0 ||
+            price <
+              Math.min(...this.positions.map((p) => p.buyPrice)) *
+                (1 - this.rebuyDropPct / 100),
+        },
+        ', is_valid_buy:',
+        isValidBuy,
+      );
+      console.log(
+        'SELL check =>',
+        {
+          trendDown: trendDown,
+          macd: lastMacd.MACD < lastMacd.signal,
+          rsi: lastRsi > this.rsiOverbought,
+          hasPosition: this.positions.length > 0,
+        },
+        ', is_valid_sell: ',
+        isValidSell,
+      );
+      console.log('=============================');
+
+      if (isValidBuy) {
         const qty = this.usdToQty(price, this.tradePerBuyUsd);
         if (qty > 0) {
           console.log('----------------');
@@ -228,6 +245,7 @@ export class EmaMacdStrategy implements IStrategy {
             qty,
             usdSpent: await this.getFeeFromOrder(order),
           });
+          savePositions(this.positions);
 
           // this.emitEvent?.({
           //   side: 'BUY',
@@ -301,6 +319,7 @@ export class EmaMacdStrategy implements IStrategy {
           // Xoá các position đã bán
           const soldIds = new Set(sellable.map((item) => item.id));
           this.positions = this.positions.filter((pos) => !soldIds.has(pos.id));
+          savePositions(this.positions);
         }
       }
     } catch (err) {
