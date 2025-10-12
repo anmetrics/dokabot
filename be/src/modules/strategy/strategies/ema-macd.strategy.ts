@@ -48,11 +48,11 @@ export class EmaMacdStrategy implements IStrategy {
   private macdSlowPeriod = 21;
   private macdSignalPeriod = 5;
   private rsiPeriod = 14;
-  private rsiOverbought = 70;
-  private rsiOversold = 35;
+  private rsiOverbought = 80;
+  private rsiOversold = 50;
 
   // EMA confirmation params
-  private confirmationCandles = 2;
+  private confirmationCandles = 3;
   private minDistancePct = 0.001;
   private distanceTolerancePct = 0.001;
 
@@ -121,7 +121,17 @@ export class EmaMacdStrategy implements IStrategy {
       });
       const lastRsi = rsiValues[rsiValues.length - 1];
       const prevRsi = rsiValues[rsiValues.length - 2];
-      const rsiRising = lastRsi > prevRsi && lastRsi < this.rsiOversold;
+
+      const rsiLookback = 3;
+      const recentRsi = rsiValues.slice(-rsiLookback);
+      const rsiSlope = recentRsi[rsiLookback - 1] - recentRsi[0];
+
+      const wasOversold = rsiValues.slice(-5).some((v) => v < this.rsiOversold);
+      const rsiBouncing = wasOversold && lastRsi > this.rsiOversold + 3;
+
+      const rsiRising = rsiSlope > 4 || rsiBouncing;
+      const rsiFalling = rsiSlope < -10;
+
 
       // === EMA ===
       const emaFast = EMA.calculate({
@@ -209,24 +219,35 @@ export class EmaMacdStrategy implements IStrategy {
         Number(c2.close) < Number(c2.open) &&
         Number(c3.close) > Number(c2.open);
 
+      const bearishEngulfing =
+        Number(c2.close) > Number(c2.open) &&
+        Number(c3.close) < Number(c2.open);
+
+      const volumeSpikeDown =
+        Number(c3.volume) > Number(c2.volume) * 1.21 &&
+        Number(c3.close) < Number(c2.close);
+
+
       // === Check Buy ===
 
       const rebuyCondition =
-  this.positions.length > 3
-    ? price < Math.min(...this.positions.map((p) => p.buyPrice)) * (1 - this.rebuyDropPct)
-    : true; 
+        this.positions.length > 3
+          ? price <
+          Math.min(...this.positions.map((p) => p.buyPrice)) *
+          (1 - this.rebuyDropPct)
+          : true;
 
+      const lastBuyTime =
+        this.positions.length > 0
+          ? Math.max(...this.positions.map((p) => p.buyTime || 0))
+          : 0;
 
-    const lastBuyTime = this.positions.length > 0 
-  ? Math.max(...this.positions.map((p) => p.buyTime || 0)) 
-  : 0;
-  
-const now = Date.now();
-const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
+      const now = Date.now();
+      const timeDiffOk =
+        lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
 
-    
       const isValidBuy =
-      timeDiffOk &&
+        timeDiffOk &&
         this.positions.length < this.maxPositions &&
         (emaBullishConfirmed ||
           ema7_25_BullishConfirmed ||
@@ -235,20 +256,50 @@ const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
             isBullishEngulfing &&
             volumeSpike)) &&
         price < this.maxBuyPrice &&
-    rebuyCondition;
+        rebuyCondition;
 
       // === Check Sell ===
+
+      const earlySellable = rsiFalling && bearishEngulfing && volumeSpikeDown;
       const isValidSell =
-        trendDown &&
         this.positions.length > 0 &&
         (emaBearishConfirmed ||
-          ema7_25_BearishConfirmed ||
-          lastRsi > this.rsiOverbought);
+          ema7_25_BearishConfirmed || earlySellable ||
+          (trendDown && lastRsi > this.rsiOverbought));
 
       // === LOG ===
       console.log('====================', formatDate(new Date()));
+
+      // Human-friendly print
+
+      console.log('====================', formatDate(new Date()));
+      console.log(`[${timeframe}] PRICE: ${Number(price).toFixed(8)}`);
+      console.log(
+        `[${timeframe}] RSI: last=${lastRsi?.toFixed(3)} prev=${prevRsi?.toFixed(3)} rising=${rsiRising}`,
+      );
+      console.log(
+        `[${timeframe}] EMA fast(last/prev)=${lastEmaFast?.toFixed(6)}/${prevEmaFast?.toFixed(6)} slow(last/prev)=${lastEmaSlow?.toFixed(6)}/${prevEmaSlow?.toFixed(6)} mid(last/prev)=${lastEmaMid?.toFixed(6)}/${prevEmaMid?.toFixed(6)}`,
+      );
+      console.log(
+        `[${timeframe}] EMA cross: bullish: ${emaBullishCross} bullishConfirmed=${emaBullishConfirmed} bullish7x25=${ema7_25_BullishCross} bullish7x25Confirmed=${ema7_25_BullishConfirmed} bearish=${emaBearishCross} bearishConfirmed=${emaBearishConfirmed}`,
+      );
+      console.log(
+        `[${timeframe}] MACD: prev(MACD/signal)=${prevMacd ? prevMacd.MACD.toFixed(6) : 'n/a'}/${prevMacd ? prevMacd.signal.toFixed(6) : 'n/a'} last=${lastMacd.MACD.toFixed(6)}/${lastMacd.signal.toFixed(6)} macdBullishCross=${macdBullishCross}`,
+      );
+      console.log(
+        `[${timeframe}] Candle pattern: bullishEngulfing=${isBullishEngulfing} volumeSpike=${volumeSpike} (c3.vol=${Number(c3.volume)} prev=${Number(lastCandles[lastCandles.length - 2].volume)})`,
+      );
+      console.log(
+        `[${timeframe}] TimeDiffOK: ${timeDiffOk} (lastBuyTime=${lastBuyTime} now=${now})`,
+      );
+      console.log(
+        `[${timeframe}] BUY allowed by limits: maxPositions(${this.positions.length} < ${this.maxPositions})=${this.positions.length < this.maxPositions} price<maxBuyPrice(${price} < ${this.maxBuyPrice})=${price < this.maxBuyPrice}`,
+      );
+      console.log(
+        `[${timeframe}] Final checks -> isValidBuy=${isValidBuy} isValidSell=${isValidSell}`,
+      );
+
       console.log('Price:', price.toFixed(2), 'RSI:', lastRsi.toFixed(2));
-      console.log('Valid BUY:', isValidBuy, 'Valid SELL:', isValidSell);
 
       // === Execute Buy ===
       if (isValidBuy) {
@@ -267,7 +318,7 @@ const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
             qty,
             usdSpent: await this.getFeeFromOrder(order),
             totalQtyActual: +totalQty,
-            buyTime: Date.now()
+            buyTime: Date.now(),
           });
           savePositions(this.positions);
           console.log(`[${timeframe}] BUY ${qty} ${this.symbol} @ ${price}`);
