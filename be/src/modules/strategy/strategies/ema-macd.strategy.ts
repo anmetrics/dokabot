@@ -6,14 +6,23 @@ import { Candle, Order } from 'binance-api-node';
 import { TradeEvent } from '../events/trade.event';
 import Decimal from 'decimal.js';
 import { randomUUID } from 'crypto';
-import { loadPositions, savePositions } from '../helpers/savePosition';
+import {
+  loadPositions,
+  savePositions,
+  logSellSuccess,
+  SellSuccessLog,
+  logTotalProfit,
+} from '../helpers/savePosition';
 import { formatDate } from '../helpers/formatDate';
+import { getActualBoughtQtyAndFee } from '../helpers/crypto';
 
 type Position = {
   id: string;
   buyPrice: number;
   qty: number;
   usdSpent: number;
+  totalQtyActual: number;
+  buyTime: number;
 };
 
 type TimeframeData = {
@@ -27,25 +36,25 @@ export class EmaMacdStrategy implements IStrategy {
   private positions: Position[] = [];
 
   private maxPositions = 5;
-  private maxBuyPrice = 1280;
-  // 2%
-  private rebuyDropPct = 0.02;
+  private maxBuyPrice = 1500;
+  private rebuyDropPct = 2.8; // giá giảm bao nhiêu % thì rebuy
   private tradePerBuyUsd = 50;
 
-  // indicator periods
+  // Indicator periods
   private emaFastPeriod = 7;
   private emaSlowPeriod = 99;
+  private emaMidPeriod = 25; // EMA25 để xác nhận cross nhanh
   private macdFastPeriod = 8;
   private macdSlowPeriod = 21;
   private macdSignalPeriod = 5;
   private rsiPeriod = 14;
   private rsiOverbought = 70;
-  private rsiOversold = 30;
+  private rsiOversold = 35;
 
-  // confirmation settings
-  private confirmationCandles = 2; // số nến dùng để confirm trend
-  private distanceTolerancePct = 0.001; // 0.1% tolerance khi kiểm tra mở rộng khoảng cách
-  private minDistancePct = 0.001; // yêu cầu khoảng cách tối thiểu (0.1% of slow ema)
+  // EMA confirmation params
+  private confirmationCandles = 2;
+  private minDistancePct = 0.001;
+  private distanceTolerancePct = 0.001;
 
   private timeframeData: Record<string, TimeframeData> = {};
 
@@ -55,16 +64,21 @@ export class EmaMacdStrategy implements IStrategy {
     private readonly emitEvent?: (event: TradeEvent) => void,
   ) {
     this.positions = loadPositions();
-    this.logger.log(`Loaded positions: ${this.positions.length}`);
+    console.log(
+      'CURRENT_POSITION:',
+      this.positions,
+      'length:',
+      this.positions.length,
+    );
   }
 
   async startAll() {
-    await Promise.all([this.start('5m')]);
+    await Promise.all([this.start('1m')]);
   }
 
-  private async start(timeframe: '5m' | '15m') {
+  private async start(timeframe: '1m' | '15m') {
     this.logger.log(
-      `Starting EMA${this.emaFastPeriod} x EMA${this.emaSlowPeriod} ${timeframe} strategy for ${this.symbol}`,
+      `Starting EMA7 x EMA99 strategy for ${this.symbol} [${timeframe}]`,
     );
 
     const historicalCandles = await this.binanceService.getHistoricalCandles(
@@ -72,6 +86,7 @@ export class EmaMacdStrategy implements IStrategy {
       timeframe,
       500,
     );
+
     this.timeframeData[timeframe] = {
       prices: historicalCandles.map((c) => Number(c.close)),
       lastCandles: historicalCandles.slice(-3) as unknown as Candle[],
@@ -85,9 +100,7 @@ export class EmaMacdStrategy implements IStrategy {
       data.prices.push(Number(trade.close));
       if (data.prices.length > 500) data.prices.shift();
 
-      this.calcPrice(timeframe).catch((err) =>
-        this.logger.error('calcPrice error', err),
-      );
+      this.calcPrice(timeframe);
     });
   }
 
@@ -108,11 +121,7 @@ export class EmaMacdStrategy implements IStrategy {
       });
       const lastRsi = rsiValues[rsiValues.length - 1];
       const prevRsi = rsiValues[rsiValues.length - 2];
-      const rsiRising =
-        lastRsi !== undefined &&
-        prevRsi !== undefined &&
-        lastRsi > prevRsi &&
-        lastRsi < this.rsiOversold;
+      const rsiRising = lastRsi > prevRsi && lastRsi < this.rsiOversold;
 
       // === EMA ===
       const emaFast = EMA.calculate({
@@ -123,18 +132,45 @@ export class EmaMacdStrategy implements IStrategy {
         period: this.emaSlowPeriod,
         values: prices,
       });
+      const emaMid = EMA.calculate({
+        period: this.emaMidPeriod,
+        values: prices,
+      });
+
       const lastEmaFast = emaFast[emaFast.length - 1];
       const prevEmaFast = emaFast[emaFast.length - 2];
       const lastEmaSlow = emaSlow[emaSlow.length - 1];
       const prevEmaSlow = emaSlow[emaSlow.length - 2];
+      const lastEmaMid = emaMid[emaMid.length - 1];
+      const prevEmaMid = emaMid[emaMid.length - 2];
+
+      const trendUp = lastEmaFast > lastEmaSlow;
+      const trendDown = lastEmaFast < lastEmaSlow;
 
       const emaBullishCross =
         prevEmaFast < prevEmaSlow && lastEmaFast > lastEmaSlow;
       const emaBearishCross =
         prevEmaFast > prevEmaSlow && lastEmaFast < lastEmaSlow;
 
-      const trendUp = lastEmaFast > lastEmaSlow;
-      const trendDown = lastEmaFast < lastEmaSlow;
+      const ema7_25_BullishCross =
+        prevEmaFast < prevEmaMid && lastEmaFast > lastEmaMid && trendUp;
+      const ema7_25_BearishCross =
+        prevEmaFast > prevEmaMid && lastEmaFast < lastEmaMid && trendDown;
+
+      // Confirm EMA cross
+      const emaBullishConfirmed =
+        emaBullishCross &&
+        this.confirmEmaCross(emaFast, emaSlow, this.confirmationCandles, true);
+      const emaBearishConfirmed =
+        emaBearishCross &&
+        this.confirmEmaCross(emaFast, emaSlow, this.confirmationCandles, false);
+
+      const ema7_25_BullishConfirmed =
+        ema7_25_BullishCross &&
+        this.confirmEmaCross(emaFast, emaMid, this.confirmationCandles, true);
+      const ema7_25_BearishConfirmed =
+        ema7_25_BearishCross &&
+        this.confirmEmaCross(emaFast, emaMid, this.confirmationCandles, false);
 
       // === MACD ===
       const macdResult = MACD.calculate({
@@ -145,10 +181,10 @@ export class EmaMacdStrategy implements IStrategy {
         SimpleMAOscillator: false,
         SimpleMASignal: false,
       });
-
       const lastMacd = macdResult[macdResult.length - 1];
       const prevMacd =
         macdResult.length >= 2 ? macdResult[macdResult.length - 2] : undefined;
+
       if (
         !prevMacd ||
         !prevMacd.MACD ||
@@ -159,9 +195,11 @@ export class EmaMacdStrategy implements IStrategy {
       )
         return;
       const macdBullishCross =
-        prevMacd.MACD < prevMacd.signal && lastMacd.MACD > lastMacd.signal;
-      const macdBearish = lastMacd.MACD < lastMacd.signal;
+        prevMacd &&
+        prevMacd.MACD < prevMacd.signal &&
+        lastMacd.MACD > lastMacd.signal;
 
+      // === Candle pattern / Volume spike ===
       if (lastCandles.length < 3) return;
       const [_, c2, c3] = lastCandles.slice(-3);
       const volumeSpike =
@@ -171,103 +209,46 @@ export class EmaMacdStrategy implements IStrategy {
         Number(c2.close) < Number(c2.open) &&
         Number(c3.close) > Number(c2.open);
 
-      // EMA 25
-      const ema25 = EMA.calculate({ period: 25, values: prices });
-      const lastEma25 = ema25[ema25.length - 1];
-      const prevEma25 = ema25[ema25.length - 2];
-
-      const ema7_25_BullishCross =
-        prevEmaFast < prevEma25 && lastEmaFast > lastEma25 && trendUp;
-      const ema7_25_BearishCross =
-        prevEmaFast > prevEma25 && lastEmaFast < lastEma25 && trendDown;
-
-      // Confirm EMA7-25 crosses with distance check (optional but reduces false signals)
-      const ema7_25_BullishConfirmed =
-        ema7_25_BullishCross &&
-        this.isTrendConfirmedSimple(
-          emaFast,
-          ema25,
-          this.confirmationCandles,
-          true,
-        );
-      const ema7_25_BearishConfirmed =
-        ema7_25_BearishCross &&
-        this.isTrendConfirmedSimple(
-          emaFast,
-          ema25,
-          this.confirmationCandles,
-          false,
-        );
-
-      // Confirm main EMA cross (7 x 99)
-      const emaBullishCrossConfirmed =
-        emaBullishCross &&
-        this.isTrendConfirmedSimple(
-          emaFast,
-          emaSlow,
-          this.confirmationCandles,
-          true,
-        );
-      const emaBearishCrossConfirmed =
-        emaBearishCross &&
-        this.isTrendConfirmedSimple(
-          emaFast,
-          emaSlow,
-          this.confirmationCandles,
-          false,
-        );
-
       // === Check Buy ===
+
+      const rebuyCondition =
+  this.positions.length > 3
+    ? price < Math.min(...this.positions.map((p) => p.buyPrice)) * (1 - this.rebuyDropPct)
+    : true; 
+
+
+    const lastBuyTime = this.positions.length > 0 
+  ? Math.max(...this.positions.map((p) => p.buyTime || 0)) 
+  : 0;
+  
+const now = Date.now();
+const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
+
+    
       const isValidBuy =
-        rsiRising &&
+      timeDiffOk &&
         this.positions.length < this.maxPositions &&
-        (emaBullishCrossConfirmed ||
+        (emaBullishConfirmed ||
           ema7_25_BullishConfirmed ||
-          (macdBullishCross && isBullishEngulfing && volumeSpike)) &&
+          (macdBullishCross &&
+            rsiRising &&
+            isBullishEngulfing &&
+            volumeSpike)) &&
         price < this.maxBuyPrice &&
-        (this.positions.length === 0 ||
-          price <
-            Math.min(...this.positions.map((p) => p.buyPrice)) *
-              (1 - this.rebuyDropPct));
+    rebuyCondition;
 
       // === Check Sell ===
       const isValidSell =
+        trendDown &&
         this.positions.length > 0 &&
-        (emaBearishCrossConfirmed ||
+        (emaBearishConfirmed ||
           ema7_25_BearishConfirmed ||
-          (lastRsi > this.rsiOverbought && trendDown));
+          lastRsi > this.rsiOverbought);
 
-      // === LOG CHECK DETAIL ===
-      console.log(
-        '\x1b[33m%s\x1b[0m',
-        '=============================',
-        formatDate(new Date()),
-      );
-      console.log('Timeframe          :', timeframe);
-      console.log('Current Price      :', price.toFixed(2));
-      console.log('Current RSI        :', lastRsi?.toFixed(2));
-
-      console.log('\x1b[32m%s\x1b[0m', '===== BUY CHECK =====');
-      console.log('Bullish Engulfing  :', isBullishEngulfing);
-      console.log('RSI Rising/Oversold:', rsiRising);
-      console.log('Volume Spike       :', volumeSpike);
-      console.log('EMA Bullish Cross  :', emaBullishCross);
-      console.log('EMA7-25 Bullish    :', ema7_25_BullishCross);
-      console.log('EMA7-25 Confirmed  :', ema7_25_BullishConfirmed);
-      console.log('MACD Bullish Cross :', macdBullishCross);
-      console.log('EMA Bullish Confirm:', emaBullishCrossConfirmed);
-      console.log('=> IS VALID BUY    :', isValidBuy);
-
-      console.log('\x1b[31m%s\x1b[0m', '===== SELL CHECK =====');
-      console.log('Trend Down         :', trendDown);
-      console.log('EMA Bearish Cross  :', emaBearishCross);
-      console.log('EMA7-25 Bearish    :', ema7_25_BearishCross);
-      console.log('EMA7-25 Confirmed  :', ema7_25_BearishConfirmed);
-      console.log('MACD Bearish       :', macdBearish);
-      console.log('RSI > Overbought   :', lastRsi > this.rsiOverbought);
-      console.log('EMA Bearish Confirm:', emaBearishCrossConfirmed);
-      console.log('Has Position       :', this.positions.length > 0);
-      console.log('=> IS VALID SELL   :', isValidSell);
+      // === LOG ===
+      console.log('====================', formatDate(new Date()));
+      console.log('Price:', price.toFixed(2), 'RSI:', lastRsi.toFixed(2));
+      console.log('Valid BUY:', isValidBuy, 'Valid SELL:', isValidSell);
 
       // === Execute Buy ===
       if (isValidBuy) {
@@ -278,11 +259,15 @@ export class EmaMacdStrategy implements IStrategy {
             'BUY',
             qty,
           );
+          const { totalQty } = getActualBoughtQtyAndFee(order);
+
           this.positions.push({
             id: randomUUID(),
             buyPrice: price,
             qty,
             usdSpent: await this.getFeeFromOrder(order),
+            totalQtyActual: +totalQty,
+            buyTime: Date.now()
           });
           savePositions(this.positions);
           console.log(`[${timeframe}] BUY ${qty} ${this.symbol} @ ${price}`);
@@ -298,7 +283,7 @@ export class EmaMacdStrategy implements IStrategy {
         );
 
         const sellable = this.positions.filter(
-          (pos) => price > pos.buyPrice * 1.006,
+          (pos) => price > pos.buyPrice * 1.0087,
         );
         const totalQty = sellable.reduce(
           (sum, pos) => sum.plus(new Decimal(pos.qty)),
@@ -316,8 +301,9 @@ export class EmaMacdStrategy implements IStrategy {
           'SELL',
           this.adjustToStepSize(totalQty.toNumber()),
         );
-        const revenue = await this.getRevenueFromSellOrder(order);
-        const profit = revenue - totalUsdSpent;
+
+        const revenueUsdt = await this.getRevenueFromSellOrder(order);
+        const profit = revenueUsdt - totalUsdSpent;
         this.cumulativeProfit += profit;
 
         const soldIds = new Set(sellable.map((p) => p.id));
@@ -327,16 +313,31 @@ export class EmaMacdStrategy implements IStrategy {
         console.log(
           `[${timeframe}] SELL ${totalQty.toNumber()} ${asset} @ ${price}, Profit: ${profit.toFixed(4)}, Cumulative: ${this.cumulativeProfit.toFixed(4)}`,
         );
+
+        const sellLog: SellSuccessLog = {
+          symbol: this.symbol,
+          buyPrices: sellable.map((p) => p.buyPrice),
+          sellPrice: price,
+          totalAmountBuyActual: sellable.reduce(
+            (sum, p) => sum + p.totalQtyActual,
+            0,
+          ),
+          totalAmountBuyUsdtSpent: totalUsdSpent,
+          totalProfit: profit,
+          totalRevenueUsdt: revenueUsdt,
+        };
+
+        logSellSuccess(sellLog);
       }
     } catch (err) {
       console.error(`[${timeframe}] Strategy error:`, err);
+    } finally {
+      logTotalProfit();
     }
   }
 
   stop() {
-    this.logger.log(
-      `Stopped EMA${this.emaFastPeriod} x EMA${this.emaSlowPeriod} strategy for ${this.symbol}`,
-    );
+    this.logger.log(`Stopped EMA7 x EMA99 strategy for ${this.symbol}`);
   }
 
   private adjustToStepSize(qty: number, stepSize = 0.001) {
@@ -349,17 +350,16 @@ export class EmaMacdStrategy implements IStrategy {
 
   private async getFeeFromOrder(order: Order) {
     let totalFeeUSDT = 0;
-    if (order.fills) {
-      for (const fill of order.fills) {
-        const commission = parseFloat(fill.commission);
-        const asset = fill.commissionAsset;
-        if (asset === 'USDT') totalFeeUSDT += commission;
-        else if (asset === this.symbol.replace('USDT', ''))
-          totalFeeUSDT += commission * parseFloat(fill.price);
-        else {
-          const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
-          totalFeeUSDT += commission * assetPrice;
-        }
+    if (!order.fills) return 0;
+    for (const fill of order.fills) {
+      const commission = parseFloat(fill.commission);
+      const asset = fill.commissionAsset;
+      if (asset === 'USDT') totalFeeUSDT += commission;
+      else if (asset === this.symbol.replace('USDT', ''))
+        totalFeeUSDT += commission * parseFloat(fill.price);
+      else {
+        const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
+        totalFeeUSDT += commission * assetPrice;
       }
     }
     return totalFeeUSDT;
@@ -367,64 +367,58 @@ export class EmaMacdStrategy implements IStrategy {
 
   private async getRevenueFromSellOrder(order: Order) {
     let revenueUSDT = 0;
-    if (order.fills) {
-      for (const fill of order.fills) {
-        const qty = parseFloat(fill.qty);
-        const price = parseFloat(fill.price);
-        let feeUSDT = 0;
-        const commission = parseFloat(fill.commission);
-        const asset = fill.commissionAsset;
+    if (!order.fills) return 0;
+    for (const fill of order.fills) {
+      const qty = parseFloat(fill.qty);
+      const price = parseFloat(fill.price);
+      let feeUSDT = 0;
+      const commission = parseFloat(fill.commission);
+      const asset = fill.commissionAsset;
 
-        if (asset === 'USDT') feeUSDT = commission;
-        else if (asset === this.symbol.replace('USDT', ''))
-          feeUSDT = commission * price;
-        else {
-          const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
-          feeUSDT = commission * assetPrice;
-        }
-
-        revenueUSDT += qty * price - feeUSDT;
+      if (asset === 'USDT') feeUSDT = commission;
+      else if (asset === this.symbol.replace('USDT', ''))
+        feeUSDT = commission * price;
+      else {
+        const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
+        feeUSDT = commission * assetPrice;
       }
+
+      revenueUSDT += qty * price - feeUSDT;
     }
     return revenueUSDT;
   }
 
-  // Simplified trend confirmation that checks whether distance (fast - slow) keeps expanding
-  // confirmationCandles: số nến dùng để so sánh (ví dụ 2 => dùng 3 giá trị: prev-prev, prev, last)
-  private isTrendConfirmedSimple(
-    emaFastArr: number[],
-    emaSlowArr: number[],
-    confirmationCandles: number,
+  /**
+   * Xác nhận EMA cross chắc chắn, giảm tín hiệu nhiễu khi sideway
+   */
+  private confirmEmaCross(
+    emaFast: number[],
+    emaSlow: number[],
+    lookback = 2,
     isBullish: boolean,
-  ) {
-    if (
-      emaFastArr.length < confirmationCandles + 1 ||
-      emaSlowArr.length < confirmationCandles + 1
-    )
+  ): boolean {
+    if (emaFast.length < lookback + 1 || emaSlow.length < lookback + 1)
       return false;
 
-    const fastSlice = emaFastArr.slice(-confirmationCandles - 1);
-    const slowSlice = emaSlowArr.slice(-confirmationCandles - 1);
+    const fastSlice = emaFast.slice(-lookback - 1);
+    const slowSlice = emaSlow.slice(-lookback - 1);
 
     const distances = fastSlice.map((v, i) => v - slowSlice[i]);
-    const last = distances[distances.length - 1];
-    // const prev = distances[distances.length - 2];
+    const lastDistance = distances[distances.length - 1];
 
-    // phải cùng phía
-    if (isBullish && last <= 0) return false;
-    if (!isBullish && last >= 0) return false;
+    if (isBullish && lastDistance <= 0) return false;
+    if (!isBullish && lastDistance >= 0) return false;
 
-    // yêu cầu khoảng cách tối thiểu
     const minDistance =
       Math.abs(slowSlice[slowSlice.length - 1]) * this.minDistancePct;
-    if (Math.abs(last) < minDistance) return false;
+    if (Math.abs(lastDistance) < minDistance) return false;
 
-    // kiểm tra mở rộng tổng thể: tính slope đơn giản (last - first)
-    const first = distances[0];
-    const expansion = isBullish ? last - first : first - last; // phải dương để coi là mở rộng
-    // cho phép một tolerance nhỏ vì EMA có thể rung
-    const tolerance = Math.abs(first) * this.distanceTolerancePct;
+    const firstDistance = distances[0];
+    const expansion = isBullish
+      ? lastDistance - firstDistance
+      : firstDistance - lastDistance;
+    const tolerance = Math.abs(firstDistance) * this.distanceTolerancePct;
 
-    return expansion > -tolerance; // nếu expansion âm nhiều hơn tolerance => reject
+    return expansion > -tolerance;
   }
 }

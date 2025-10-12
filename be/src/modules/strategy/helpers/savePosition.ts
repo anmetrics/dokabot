@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { formatDate } from './formatDate';
 
 // Lưu file positions relative với root project
 const FILE_PATH = path.resolve(process.cwd(), 'src/positions.json');
@@ -26,5 +27,80 @@ export const savePositions = (positions: any[]) => {
     fs.writeFileSync(FILE_PATH, JSON.stringify(positions, null, 2), 'utf-8');
   } catch (err) {
     console.error('Failed to save positions', err);
+  }
+};
+
+const SELL_SUCCESS_FILE = path.resolve(process.cwd(), 'src/sell_success.json');
+
+const ensureFileExists = (filePath: string) => {
+  if (!fs.existsSync(filePath)) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+    fs.writeFileSync(filePath, JSON.stringify([], null, 2), 'utf-8');
+  }
+};
+
+export interface SellPositionInfo {
+  id: string;
+  buyPrice: number;
+  qty: number;
+  usdSpent: number;
+}
+
+export interface SellSuccessLog {
+  symbol: string;
+  time?: string;
+  buyPrices: number[];
+  sellPrice: number;
+  totalAmountBuyActual: number; // tổng token thực nhận sau phí mua
+  totalAmountBuyUsdtSpent: number; // tổng USDT đã chi
+  totalProfit: number; // lợi nhuận thực nhận
+  totalRevenueUsdt: number; // tổng USDT nhận được sau bán
+}
+
+export const logSellSuccess = (sellData: SellSuccessLog) => {
+  try {
+    ensureFileExists(SELL_SUCCESS_FILE);
+    const raw = fs.readFileSync(SELL_SUCCESS_FILE, 'utf-8');
+    const list: SellSuccessLog[] = JSON.parse(raw);
+
+    list.push({
+      ...sellData,
+      time: formatDate(new Date()),
+    });
+
+    fs.writeFileSync(SELL_SUCCESS_FILE, JSON.stringify(list, null, 2), 'utf-8');
+  } catch (err) {
+    console.error('Failed to log sell success', err);
+  }
+};
+
+export const logTotalProfit = () => {
+  try {
+    if (!fs.existsSync(SELL_SUCCESS_FILE)) {
+      console.log('No sell logs found.');
+      return;
+    }
+
+    const raw = fs.readFileSync(SELL_SUCCESS_FILE, 'utf-8');
+    const list: SellSuccessLog[] = JSON.parse(raw);
+
+    const totalProfit = list.reduce((sum, log) => sum + log.totalProfit, 0);
+    const totalRevenue = list.reduce(
+      (sum, log) => sum + log.totalRevenueUsdt,
+      0,
+    );
+    const totalSpent = list.reduce(
+      (sum, log) => sum + log.totalAmountBuyUsdtSpent,
+      0,
+    );
+
+    console.log('==================== TOTAL SELL SUMMARY ====================');
+    console.log('Total Sell Count   :', list.length);
+    console.log('Total Profit (USDT):', totalProfit.toFixed(4));
+    console.log('Total Revenue (USDT):', totalRevenue.toFixed(4));
+    console.log('Total Spent (USDT)  :', totalSpent.toFixed(4));
+    console.log('===========================================================');
+  } catch (err) {
+    console.error('Failed to calculate total profit', err);
   }
 };
