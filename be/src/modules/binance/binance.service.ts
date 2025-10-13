@@ -3,6 +3,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import Binance, {
   Candle,
   CandleChartInterval_LT,
+  Order,
   OrderSide_LT,
   OrderType,
 } from 'binance-api-node';
@@ -278,5 +279,28 @@ export class BinanceService {
     }
 
     return { name: 'No pattern detected', trend: 'neutral' };
+  }
+
+  async getRevenueFromSellOrder(originalSymbol: string, order: Order) {
+    let revenueUSDT = 0;
+    if (!order.fills) return 0;
+    for (const fill of order.fills) {
+      const qty = parseFloat(fill.qty);
+      const price = parseFloat(fill.price);
+      let feeUSDT = 0;
+      const commission = parseFloat(fill.commission);
+      const asset = fill.commissionAsset;
+
+      if (asset === 'USDT') feeUSDT = commission;
+      else if (asset === originalSymbol.replace('USDT', ''))
+        feeUSDT = commission * price;
+      else {
+        const assetPrice = await this.getPrice(`${asset}USDT`);
+        feeUSDT = commission * assetPrice;
+      }
+
+      revenueUSDT += qty * price - feeUSDT;
+    }
+    return revenueUSDT;
   }
 }

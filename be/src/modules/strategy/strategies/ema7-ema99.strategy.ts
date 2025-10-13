@@ -1,6 +1,5 @@
 import { EMA, MACD, RSI } from 'technicalindicators';
 import { Logger } from '@nestjs/common';
-import { IStrategy } from './strategy.interface';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle, Order } from 'binance-api-node';
 import { TradeEvent } from '../events/trade.event';
@@ -12,25 +11,18 @@ import {
   logSellSuccess,
   SellSuccessLog,
   logTotalProfit,
+  Position,
 } from '../helpers/savePosition';
 import { formatDate } from '../helpers/formatDate';
 import { getActualBoughtQtyAndFee } from '../helpers/crypto';
-
-type Position = {
-  id: string;
-  buyPrice: number;
-  qty: number;
-  usdSpent: number;
-  totalQtyActual: number;
-  buyTime: number;
-};
+import { IStrategy, STRATEGIES } from './index';
 
 type TimeframeData = {
   prices: number[];
   lastCandles: Candle[];
 };
 
-export class EmaMacdStrategy implements IStrategy {
+export class Ema7Ema99Strategy implements IStrategy {
   private logger = new Logger('EmaMacdStrategy');
   private cumulativeProfit = 0;
   private positions: Position[] = [];
@@ -63,7 +55,7 @@ export class EmaMacdStrategy implements IStrategy {
     private readonly symbol: string,
     private readonly emitEvent?: (event: TradeEvent) => void,
   ) {
-    this.positions = loadPositions();
+    this.positions = loadPositions(STRATEGIES.EMA7_EMA99);
     console.log(
       'CURRENT_POSITION:',
       this.positions,
@@ -212,21 +204,23 @@ export class EmaMacdStrategy implements IStrategy {
       // === Check Buy ===
 
       const rebuyCondition =
-  this.positions.length > 3
-    ? price < Math.min(...this.positions.map((p) => p.buyPrice)) * (1 - this.rebuyDropPct)
-    : true; 
+        this.positions.length > 3
+          ? price <
+            Math.min(...this.positions.map((p) => p.buyPrice)) *
+              (1 - this.rebuyDropPct)
+          : true;
 
+      const lastBuyTime =
+        this.positions.length > 0
+          ? Math.max(...this.positions.map((p) => p.buyTime || 0))
+          : 0;
 
-    const lastBuyTime = this.positions.length > 0 
-  ? Math.max(...this.positions.map((p) => p.buyTime || 0)) 
-  : 0;
-  
-const now = Date.now();
-const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
+      const now = Date.now();
+      const timeDiffOk =
+        lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
 
-    
       const isValidBuy =
-      timeDiffOk &&
+        timeDiffOk &&
         this.positions.length < this.maxPositions &&
         (emaBullishConfirmed ||
           ema7_25_BullishConfirmed ||
@@ -235,7 +229,7 @@ const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
             isBullishEngulfing &&
             volumeSpike)) &&
         price < this.maxBuyPrice &&
-    rebuyCondition;
+        rebuyCondition;
 
       // === Check Sell ===
       const isValidSell =
@@ -263,11 +257,12 @@ const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
 
           this.positions.push({
             id: randomUUID(),
+            strategy: STRATEGIES.EMA7_EMA99,
             buyPrice: price,
             qty,
             usdSpent: await this.getFeeFromOrder(order),
             totalQtyActual: +totalQty,
-            buyTime: Date.now()
+            buyTime: Date.now(),
           });
           savePositions(this.positions);
           console.log(`[${timeframe}] BUY ${qty} ${this.symbol} @ ${price}`);
@@ -302,7 +297,10 @@ const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
           this.adjustToStepSize(totalQty.toNumber()),
         );
 
-        const revenueUsdt = await this.getRevenueFromSellOrder(order);
+        const revenueUsdt = await this.binanceService.getRevenueFromSellOrder(
+          this.symbol,
+          order,
+        );
         const profit = revenueUsdt - totalUsdSpent;
         this.cumulativeProfit += profit;
 
@@ -363,29 +361,6 @@ const timeDiffOk = lastBuyTime === 0 || now - lastBuyTime >= 10 * 60 * 1000;
       }
     }
     return totalFeeUSDT;
-  }
-
-  private async getRevenueFromSellOrder(order: Order) {
-    let revenueUSDT = 0;
-    if (!order.fills) return 0;
-    for (const fill of order.fills) {
-      const qty = parseFloat(fill.qty);
-      const price = parseFloat(fill.price);
-      let feeUSDT = 0;
-      const commission = parseFloat(fill.commission);
-      const asset = fill.commissionAsset;
-
-      if (asset === 'USDT') feeUSDT = commission;
-      else if (asset === this.symbol.replace('USDT', ''))
-        feeUSDT = commission * price;
-      else {
-        const assetPrice = await this.binanceService.getPrice(`${asset}USDT`);
-        feeUSDT = commission * assetPrice;
-      }
-
-      revenueUSDT += qty * price - feeUSDT;
-    }
-    return revenueUSDT;
   }
 
   /**

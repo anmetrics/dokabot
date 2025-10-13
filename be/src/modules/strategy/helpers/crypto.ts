@@ -23,3 +23,7 @@ export const getActualBoughtQtyAndFee = (
     totalFee: totalFee.toNumber(),
   };
 };
+
+export const adjustToStepSize = (qty: number, stepSize = 0.001) => {
+  return parseFloat((Math.floor(qty / stepSize) * stepSize).toFixed(3));
+};
