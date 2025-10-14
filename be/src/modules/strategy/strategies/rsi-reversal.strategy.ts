@@ -40,7 +40,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
   private rsiBuyThreshold = 20;
   private rsiSellThreshold = 80;
-  private minProfitPct = 0.027;
+  private minProfitPct = 0.03;
 
   private cooldownMs = 2 * 60 * 1000; // 2 phút
   private lastTradeTime = 0;
@@ -139,7 +139,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
         const dcaIndex = dcaTimes + 1;
 
-        const extraDropPct = dcaIndex > 1 ? (dcaIndex - 1) * 0.01 * 1.48 : 0;
+        const extraDropPct = dcaIndex > 1 ? (dcaIndex - 1) * 0.01 * 1.6 : 0;
         const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT - extraDropPct;
 
         const isDcaValid =
