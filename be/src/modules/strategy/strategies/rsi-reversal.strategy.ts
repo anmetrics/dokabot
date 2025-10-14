@@ -10,20 +10,11 @@ import {
   logSellSuccess,
   logTotalProfit,
   SellSuccessLog,
+  Position,
 } from '../helpers/savePosition';
 import { formatDate } from '../helpers/formatDate';
 import { adjustToStepSize, getActualBoughtQtyAndFee } from '../helpers/crypto';
 import Decimal from 'decimal.js';
-
-type Position = {
-  id: string;
-  buyPrice: number;
-  qty: number;
-  usdSpent: number;
-  totalQtyActual: number;
-  buyTime: number;
-  dcaIndex: number;
-};
 
 type TimeframeData = {
   closes: number[];
@@ -40,16 +31,18 @@ export class RsiReversalDcaStrategy implements IStrategy {
   // === CONFIG ===
   private baseBuyUsd = 50;
   private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
-  private dcaMultiplier = 2; // mỗi lần DCA sau gấp đôi lần trước
+  private dcaMultiplier = 1.8; // mỗi lần DCA sau gấp x.x lần trước
 
-  private rsiPeriod = 7;
-  private atrPeriod = 7;
+  private DCA_PRICE_DROP_PCT = 0.034;
 
-  private rsiBuyThreshold = 26;
+  private rsiPeriod = 8;
+  private atrPeriod = 8;
+
+  private rsiBuyThreshold = 20;
   private rsiSellThreshold = 80;
-  private minProfitPct = 0.012;
+  private minProfitPct = 0.027;
 
-  private cooldownMs = 4 * 60 * 1000; // 5 phút
+  private cooldownMs = 2 * 60 * 1000; // 2 phút
   private lastTradeTime = 0;
 
   private timeframeData: Record<string, TimeframeData> = {};
@@ -62,7 +55,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
   }
 
   async startAll() {
-    await this.start('1m');
+    await this.start('3m');
   }
 
   private async start(timeframe: '1m' | '3m' | '5m') {
@@ -144,6 +137,16 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
         const dcaTimes = this.positions.length - 1;
 
+        const dcaIndex = dcaTimes + 1;
+
+        const extraDropPct = dcaIndex > 1 ? (dcaIndex - 1) * 0.01 * 1.48 : 0;
+        const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT - extraDropPct;
+
+        const isDcaValid =
+          dcaTimes < this.maxDcaTimes &&
+          price < minBuyPrice - lastAtr &&
+          price < minBuyPrice * DCA_PERCENT;
+
         // Chỉ DCA nếu giá giảm ít nhất 1×ATR so với minBuyPrice
         console.log(
           'minBuyPrice:',
@@ -152,16 +155,13 @@ export class RsiReversalDcaStrategy implements IStrategy {
           dcaTimes < this.maxDcaTimes,
           ' price < minBuyPrice - lastAtr :',
           price < minBuyPrice - lastAtr,
-          'price < minBuyPrice * 0.965:',
-          price < minBuyPrice * 0.965,
+          'DCA_PERCENT:',
+          DCA_PERCENT,
+          'minBuyPrice * DCA_PERCENT: ',
+          minBuyPrice * DCA_PERCENT,
         );
-        if (
-          this.positions.length === 0 ||
-          (dcaTimes < this.maxDcaTimes &&
-            price < minBuyPrice - lastAtr &&
-            price < minBuyPrice * 0.965)
-        ) {
-          await this.buyPosition(price, dcaTimes + 1 || 0);
+        if (this.positions.length === 0 || isDcaValid) {
+          await this.buyPosition(price, dcaIndex || 0);
           this.lastTradeTime = now;
         }
       }
@@ -183,41 +183,38 @@ export class RsiReversalDcaStrategy implements IStrategy {
         const soldIds: string[] = [];
         for (const pos of sellablePositions) {
           const soldPos = await this.sellPosition(pos, price, timeframe);
-          soldIds.push(soldPos.id);
+          if (soldPos?.id) soldIds.push(soldPos.id);
         }
 
         this.positions = this.positions.filter((p) => !soldIds.includes(p.id));
         savePositions(this.positions);
       }
+      logTotalProfit(price);
     } catch (e) {
       console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
     } finally {
-      logTotalProfit();
       console.log('CURRENT_POSITIONS:', this.positions);
     }
   }
 
   private async buyPosition(price: number, dcaIndex: number) {
     const usdToSpend = this.baseBuyUsd * Math.pow(this.dcaMultiplier, dcaIndex);
-    const qty = adjustToStepSize(usdToSpend / price);
 
     const balances = await this.binanceService.getAccount();
-    const asset = this.symbol.replace('USDT', '');
-    const free = Number(
-      balances.balances.find((b) => b.asset === asset)?.free || 0,
+    const freeUsdt = Number(
+      balances.balances.find((b) => b.asset === 'USDT')?.free || 0,
     );
 
-    const sellable = this.positions.filter(
-      (pos) => price > pos.buyPrice * 1.0087,
-    );
-    const totalQty = sellable.reduce(
-      (sum, pos) => sum.plus(new Decimal(pos.qty)),
-      new Decimal(0),
-    );
-
-    if (totalQty.lessThanOrEqualTo(0) || totalQty.greaterThan(free)) {
-      console.log('NOT ENOUGH TOKEN TO SELL : ', totalQty);
+    if (freeUsdt < usdToSpend) {
+      console.log(
+        `[DCA ${dcaIndex}] Not enough USDT (${freeUsdt.toFixed(
+          2,
+        )}) to buy need ${usdToSpend.toFixed(2)} USD`,
+      );
+      return;
     }
+
+    const qty = adjustToStepSize(usdToSpend / price);
 
     const order = await this.binanceService.placeMarketOrder(
       this.symbol,
@@ -244,6 +241,24 @@ export class RsiReversalDcaStrategy implements IStrategy {
   }
 
   private async sellPosition(pos: Position, price: number, timeframe: string) {
+    const balances = await this.binanceService.getAccount();
+    const asset = this.symbol.replace('USDT', '');
+    const free = Number(
+      balances.balances.find((b) => b.asset === asset)?.free || 0,
+    );
+    const sellable = this.positions.filter(
+      (pos) => price > pos.buyPrice * (1 + this.minProfitPct),
+    );
+    const totalQty = sellable.reduce(
+      (sum, pos) => sum.plus(new Decimal(pos.qty)),
+      new Decimal(0),
+    );
+
+    if (totalQty.lessThanOrEqualTo(0) || totalQty.greaterThan(free)) {
+      console.log('NOT ENOUGH TOKEN TO SELL : ', totalQty);
+      return;
+    }
+
     const order = await this.binanceService.placeMarketOrder(
       this.symbol,
       'SELL',

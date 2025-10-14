@@ -5,7 +5,17 @@ import { formatDate } from './formatDate';
 // Lưu file positions relative với root project
 const FILE_PATH = path.resolve(process.cwd(), 'src/positions.json');
 
-export const loadPositions = (): any[] => {
+export type Position = {
+  id: string;
+  buyPrice: number;
+  qty: number;
+  usdSpent: number;
+  totalQtyActual: number;
+  buyTime: number;
+  dcaIndex: number;
+};
+
+export const loadPositions = (): Position[] => {
   try {
     if (!fs.existsSync(FILE_PATH)) {
       // Tạo folder nếu chưa tồn tại
@@ -74,7 +84,7 @@ export const logSellSuccess = (sellData: SellSuccessLog) => {
   }
 };
 
-export const logTotalProfit = () => {
+export const logTotalProfit = (currentPrice: number) => {
   try {
     if (!fs.existsSync(SELL_SUCCESS_FILE)) {
       console.log('No sell logs found.');
@@ -99,6 +109,29 @@ export const logTotalProfit = () => {
     console.log('Total Profit (USDT):', totalProfit.toFixed(4));
     console.log('Total Revenue (USDT):', totalRevenue.toFixed(4));
     console.log('Total Spent (USDT)  :', totalSpent.toFixed(4));
+    console.log('===========================================================');
+
+    // ========== PHẦN TỔNG HỢP VỊ THẾ HIỆN TẠI ==========
+    const positions = loadPositions();
+    if (positions.length === 0) {
+      console.log('No open positions.');
+      return;
+    }
+
+    const totalQty = positions.reduce((sum, p) => sum + p.qty, 0);
+    const totalUsdSpent = positions.reduce((sum, p) => sum + p.usdSpent, 0);
+    const avgBuyPrice = totalQty > 0 ? totalUsdSpent / totalQty : 0;
+
+    const currentValue = currentPrice * totalQty;
+    const unrealizedPnL = currentValue - totalUsdSpent;
+
+    console.log('==================== OPEN POSITIONS SUMMARY ================');
+    console.log('Total Quantity       :', totalQty.toFixed(8));
+    console.log('Avg Buy Price        :', avgBuyPrice.toFixed(4));
+    console.log('Current Price        :', currentPrice.toFixed(4));
+    console.log('Total Spent (Open)   :', totalUsdSpent.toFixed(4), 'USDT');
+    console.log('Current Value        :', currentValue.toFixed(4), 'USDT');
+    console.log('Unrealized PnL       :', unrealizedPnL.toFixed(4), 'USDT');
     console.log('===========================================================');
   } catch (err) {
     console.error('Failed to calculate total profit', err);
