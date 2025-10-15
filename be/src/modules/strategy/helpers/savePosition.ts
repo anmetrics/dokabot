@@ -3,7 +3,6 @@ import * as path from 'path';
 import { formatDate } from './formatDate';
 
 // Lưu file positions relative với root project
-const FILE_PATH = path.resolve(process.cwd(), 'src/positions.json');
 
 export type Position = {
   id: string;
@@ -15,26 +14,39 @@ export type Position = {
   dcaIndex: number;
 };
 
-export const loadPositions = (): Position[] => {
+const getFilePath = (strategy: string) => {
+  const folderPath = path.resolve(process.cwd(), 'src');
+  if (!fs.existsSync(folderPath)) {
+    fs.mkdirSync(folderPath, { recursive: true });
+  }
+  return path.join(folderPath, `${strategy}.json`);
+};
+
+export const loadPositions = (symbol: string): Position[] => {
   try {
-    if (!fs.existsSync(FILE_PATH)) {
-      // Tạo folder nếu chưa tồn tại
-      fs.mkdirSync(path.dirname(FILE_PATH), { recursive: true });
-      fs.writeFileSync(FILE_PATH, JSON.stringify([], null, 2), 'utf-8');
+    const filePath = getFilePath(symbol);
+
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, JSON.stringify([], null, 2), 'utf-8');
       return [];
     }
-    const raw = fs.readFileSync(FILE_PATH, 'utf-8');
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return JSON.parse(raw);
+
+    const raw = fs.readFileSync(filePath, 'utf-8');
+    const data: Position[] = JSON.parse(raw || '[]');
+    return data;
   } catch (err) {
-    console.error('Failed to load positions, creating new one', err);
+    console.error(`❌ Failed to load positions for ${symbol}:`, err);
     return [];
   }
 };
 
-export const savePositions = (positions: any[]) => {
+export const savePositions = (symbol: string, positions: Position[]) => {
   try {
-    fs.writeFileSync(FILE_PATH, JSON.stringify(positions, null, 2), 'utf-8');
+    fs.writeFileSync(
+      getFilePath(symbol),
+      JSON.stringify(positions, null, 2),
+      'utf-8',
+    );
   } catch (err) {
     console.error('Failed to save positions', err);
   }
@@ -86,54 +98,121 @@ export const logSellSuccess = (sellData: SellSuccessLog) => {
 
 export const logTotalProfit = (currentPrice: number) => {
   try {
-    if (!fs.existsSync(SELL_SUCCESS_FILE)) {
-      console.log('No sell logs found.');
-      return;
+    const symbols = ['BNBUSDT', 'BTCUSDT'];
+
+    let list: SellSuccessLog[] = [];
+    if (fs.existsSync(SELL_SUCCESS_FILE)) {
+      const raw = fs.readFileSync(SELL_SUCCESS_FILE, 'utf-8');
+      list = JSON.parse(raw);
     }
 
-    const raw = fs.readFileSync(SELL_SUCCESS_FILE, 'utf-8');
-    const list: SellSuccessLog[] = JSON.parse(raw);
+    let grandProfit = 0;
+    let grandRevenue = 0;
+    let grandSpent = 0;
 
-    const totalProfit = list.reduce((sum, log) => sum + log.totalProfit, 0);
-    const totalRevenue = list.reduce(
-      (sum, log) => sum + log.totalRevenueUsdt,
-      0,
+    const result: any = {
+      symbols: [],
+      grandTotal: {
+        totalProfit: 0,
+        totalRevenue: 0,
+        totalSpent: 0,
+      },
+    };
+
+    console.log(
+      '==================== TOTAL SUMMARY PER SYMBOL ====================',
     );
-    const totalSpent = list.reduce(
-      (sum, log) => sum + log.totalAmountBuyUsdtSpent,
-      0,
-    );
 
-    console.log('==================== TOTAL SELL SUMMARY ====================');
-    console.log('Total Sell Count   :', list.length);
-    console.log('Total Profit (USDT):', totalProfit.toFixed(4));
-    console.log('Total Revenue (USDT):', totalRevenue.toFixed(4));
-    console.log('Total Spent (USDT)  :', totalSpent.toFixed(4));
-    console.log('===========================================================');
+    for (const symbol of symbols) {
+      console.log(`\n--- Symbol: ${symbol} ---`);
 
-    // ========== PHẦN TỔNG HỢP VỊ THẾ HIỆN TẠI ==========
-    const positions = loadPositions();
-    if (positions.length === 0) {
-      console.log('No open positions.');
-      return;
+      const symbolData: any = {
+        symbol,
+        sellSummary: null,
+        openPositions: null,
+      };
+
+      // ===================== SELL LOG SUMMARY =====================
+      const logs = list.filter((log) => log.symbol === symbol);
+      if (logs.length > 0) {
+        const totalProfit = logs.reduce((sum, log) => sum + log.totalProfit, 0);
+        const totalRevenue = logs.reduce(
+          (sum, log) => sum + log.totalRevenueUsdt,
+          0,
+        );
+        const totalSpent = logs.reduce(
+          (sum, log) => sum + log.totalAmountBuyUsdtSpent,
+          0,
+        );
+
+        console.log('Total Sell Count    :', logs.length);
+        console.log('Total Profit (USDT) :', totalProfit.toFixed(4));
+        console.log('Total Revenue (USDT):', totalRevenue.toFixed(4));
+        console.log('Total Spent (USDT)  :', totalSpent.toFixed(4));
+
+        symbolData.sellSummary = {
+          totalSellCount: logs.length,
+          totalProfit,
+          totalRevenue,
+          totalSpent,
+        };
+
+        grandProfit += totalProfit;
+        grandRevenue += totalRevenue;
+        grandSpent += totalSpent;
+      } else {
+        console.log('No sell records found.');
+      }
+
+      // ===================== OPEN POSITIONS SUMMARY =====================
+      const positions: Position[] = loadPositions(symbol);
+      if (positions.length > 0) {
+        const totalQty = positions.reduce((sum, p) => sum + p.qty, 0);
+        const totalUsdSpent = positions.reduce((sum, p) => sum + p.usdSpent, 0);
+        const avgBuyPrice = totalQty > 0 ? totalUsdSpent / totalQty : 0;
+
+        const currentValue = currentPrice * totalQty;
+        const unrealizedPnL = currentValue - totalUsdSpent;
+
+        console.log('>>> OPEN POSITIONS SUMMARY');
+        console.log('Total Quantity       :', totalQty.toFixed(8));
+        console.log('Avg Buy Price        :', avgBuyPrice.toFixed(4));
+        console.log('Current Price        :', currentPrice.toFixed(4));
+        console.log('Total Spent (Open)   :', totalUsdSpent.toFixed(4), 'USDT');
+        console.log('Current Value        :', currentValue.toFixed(4), 'USDT');
+        console.log('Unrealized PnL       :', unrealizedPnL.toFixed(4), 'USDT');
+
+        symbolData.openPositions = {
+          totalQty,
+          avgBuyPrice,
+          currentPrice,
+          totalSpentOpen: totalUsdSpent,
+          currentValue,
+          unrealizedPnL,
+        };
+      } else {
+        console.log('>>> No open positions.');
+      }
+
+      result.symbols.push(symbolData);
     }
 
-    const totalQty = positions.reduce((sum, p) => sum + p.qty, 0);
-    const totalUsdSpent = positions.reduce((sum, p) => sum + p.usdSpent, 0);
-    const avgBuyPrice = totalQty > 0 ? totalUsdSpent / totalQty : 0;
+    result.grandTotal = {
+      totalProfit: grandProfit,
+      totalRevenue: grandRevenue,
+      totalSpent: grandSpent,
+    };
 
-    const currentValue = currentPrice * totalQty;
-    const unrealizedPnL = currentValue - totalUsdSpent;
+    console.log('\n==================== GRAND TOTAL ====================');
+    console.log('Total Profit (USDT) :', grandProfit.toFixed(4));
+    console.log('Total Revenue (USDT):', grandRevenue.toFixed(4));
+    console.log('Total Spent (USDT)  :', grandSpent.toFixed(4));
+    console.log('=====================================================');
 
-    console.log('==================== OPEN POSITIONS SUMMARY ================');
-    console.log('Total Quantity       :', totalQty.toFixed(8));
-    console.log('Avg Buy Price        :', avgBuyPrice.toFixed(4));
-    console.log('Current Price        :', currentPrice.toFixed(4));
-    console.log('Total Spent (Open)   :', totalUsdSpent.toFixed(4), 'USDT');
-    console.log('Current Value        :', currentValue.toFixed(4), 'USDT');
-    console.log('Unrealized PnL       :', unrealizedPnL.toFixed(4), 'USDT');
-    console.log('===========================================================');
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return result;
   } catch (err) {
     console.error('Failed to calculate total profit', err);
+    throw err;
   }
 };

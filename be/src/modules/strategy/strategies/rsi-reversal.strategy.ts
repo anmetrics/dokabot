@@ -1,6 +1,5 @@
 import { RSI, ATR } from 'technicalindicators';
 import { Logger } from '@nestjs/common';
-import { IStrategy } from './strategy.interface';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
@@ -8,13 +7,13 @@ import {
   loadPositions,
   savePositions,
   logSellSuccess,
-  logTotalProfit,
   SellSuccessLog,
   Position,
 } from '../helpers/savePosition';
 import { formatDate } from '../helpers/formatDate';
 import { adjustToStepSize, getActualBoughtQtyAndFee } from '../helpers/crypto';
 import Decimal from 'decimal.js';
+import { IStrategy } from '../strategy.interface';
 
 type TimeframeData = {
   closes: number[];
@@ -29,7 +28,6 @@ export class RsiReversalDcaStrategy implements IStrategy {
   private cumulativeProfit = 0;
 
   // === CONFIG ===
-  private baseBuyUsd = 50;
   private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 1.8; // mỗi lần DCA sau gấp x.x lần trước
 
@@ -40,7 +38,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
   private rsiBuyThreshold = 20;
   private rsiSellThreshold = 80;
-  private minProfitPct = 0.03;
+  private minProfitPct = 0.027;
 
   private cooldownMs = 2 * 60 * 1000; // 2 phút
   private lastTradeTime = 0;
@@ -50,18 +48,22 @@ export class RsiReversalDcaStrategy implements IStrategy {
   constructor(
     private readonly binanceService: BinanceService,
     private readonly symbol: string,
-  ) {
-    this.positions = loadPositions();
-  }
+    private readonly baseBuyUsd: number,
+    private readonly timeframe: '1m' | '3m' | '5m' | '15m' | '30m',
+  ) {}
 
   async startAll() {
-    await this.start('3m');
+    this.positions = loadPositions(this.symbol);
+    await this.start(this.timeframe);
   }
 
-  private async start(timeframe: '1m' | '3m' | '5m') {
-    this.logger.log(
-      `Starting RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]`,
+  private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
+    console.log(
+      `Starting RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}`,
     );
+    console.log(this.positions);
+
+    console.log('-------------------');
 
     const historicalCandles = await this.binanceService.getHistoricalCandles(
       this.symbol,
@@ -120,6 +122,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
       console.log('--', formatDate(new Date()), '--');
+      console.log('SYMBOL:', this.symbol);
       console.log(
         'RSI:',
         lastRsi.toFixed(2),
@@ -172,10 +175,12 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
       // === SELL với trailing ATR để tránh bán quá sớm ===
       if (this.positions.length > 0) {
-        const sellablePositions = this.positions.filter(
-          (pos) => price >= pos.buyPrice * (1 + this.minProfitPct),
-        );
-
+        const sellablePositions = this.positions.filter((pos) => {
+          const dynamicMinProfitPct = this.getDynamicMinProfitPct(
+            pos?.dcaIndex || 0,
+          );
+          return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
+        });
         if (!sellablePositions.length) {
           return;
         }
@@ -187,9 +192,8 @@ export class RsiReversalDcaStrategy implements IStrategy {
         }
 
         this.positions = this.positions.filter((p) => !soldIds.includes(p.id));
-        savePositions(this.positions);
+        savePositions(this.symbol, this.positions);
       }
-      logTotalProfit(price);
     } catch (e) {
       console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
     } finally {
@@ -234,10 +238,16 @@ export class RsiReversalDcaStrategy implements IStrategy {
     };
 
     this.positions.push(pos);
-    savePositions(this.positions);
+    savePositions(this.symbol, this.positions);
     console.log(
       `[DCA ${dcaIndex}] BUY ${qty} ${this.symbol} @ ${price} USD=${usdToSpend}`,
     );
+  }
+
+  private getDynamicMinProfitPct(dcaIndex: number) {
+    const base = this.minProfitPct;
+    const increment = 0.005;
+    return base + dcaIndex * increment;
   }
 
   private async sellPosition(pos: Position, price: number, timeframe: string) {
@@ -274,7 +284,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
     this.cumulativeProfit += profit;
 
     this.positions = this.positions.filter((p) => p.id === pos.id);
-    savePositions(this.positions);
+    savePositions(this.symbol, this.positions);
 
     const sellLog: SellSuccessLog = {
       symbol: this.symbol,
