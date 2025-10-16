@@ -21,12 +21,14 @@ export class StrategyService {
       'BTCUSDT',
       50,
       '5m',
+      0.011,
     );
     this.strategy2 = new RsiReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
       100,
       '3m',
+      0.024,
     );
 
     this.strategy1.startAll();

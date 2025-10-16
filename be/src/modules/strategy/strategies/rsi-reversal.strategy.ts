@@ -38,7 +38,6 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
   private rsiBuyThreshold = 20;
   private rsiSellThreshold = 80;
-  private minProfitPct = 0.027;
 
   private cooldownMs = 2 * 60 * 1000; // 2 phút
   private lastTradeTime = 0;
@@ -50,6 +49,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
     private readonly symbol: string,
     private readonly baseBuyUsd: number,
     private readonly timeframe: '1m' | '3m' | '5m' | '15m' | '30m',
+    private readonly minProfitPct: number,
   ) {}
 
   async startAll() {
@@ -59,7 +59,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}`,
+      `Starting RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
     );
     console.log(this.positions);
 
