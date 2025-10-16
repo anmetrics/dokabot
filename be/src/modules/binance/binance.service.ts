@@ -10,6 +10,7 @@ import Binance, {
 import { OrderbookEvent } from './events/orderbook.event';
 import { MarketTrend } from './binance.enum';
 import { ATR, EMA } from 'technicalindicators';
+import { logTotalProfit } from '../strategy/helpers/savePosition';
 
 type ReversalPattern = {
   name: string;
@@ -302,5 +303,18 @@ export class BinanceService {
     }
 
     return { name: 'No pattern detected', trend: 'neutral' };
+  }
+
+  async getLog() {
+    const bnbPrice = await this.getPrice('BNBUSDT');
+    const btcPrice = await this.getPrice('BNBUSDT');
+    const log = logTotalProfit({
+      BNBUSDT: bnbPrice,
+      BTCUSDT: btcPrice,
+    });
+
+    return {
+      log,
+    };
   }
 }

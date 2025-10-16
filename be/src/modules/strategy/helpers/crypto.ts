@@ -24,6 +24,16 @@ export const getActualBoughtQtyAndFee = (
   };
 };
 
-export const adjustToStepSize = (qty: number, stepSize = 0.001) => {
-  return parseFloat((Math.floor(qty / stepSize) * stepSize).toFixed(3));
+export const adjustToStepSize = (qty: number, symbol: string) => {
+  let stepSize = 0.00001;
+
+  if (symbol === 'BNBUSDT') {
+    stepSize = 0.001;
+  } else if (symbol === 'BTCUSDT') {
+    stepSize = 0.00001;
+  }
+
+  return parseFloat(
+    (Math.floor(qty / stepSize) * stepSize).toFixed(stepSize === 0.001 ? 3 : 5),
+  );
 };

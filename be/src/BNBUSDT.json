@@ -1,8 +1,14 @@
 [
   {
     "id": "6029abe4-dbfa-42b2-aa49-f8012b244997",
-    "buyPrice": 1157,
-    "qty": 0.043,
-    "usdSpent": 0.04975143
+    "buyPrice": 1257.9,
+    "qty": 0.159,
+    "usdSpent": 200.01
+  },
+  {
+    "id": "6029abe4-dbfa-42b2-aa49-f8012b244997",
+    "buyPrice": 1300.9,
+    "qty": 0.076,
+    "usdSpent": 98
   }
 ]

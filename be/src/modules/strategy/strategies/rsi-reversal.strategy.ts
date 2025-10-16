@@ -218,7 +218,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
       return;
     }
 
-    const qty = adjustToStepSize(usdToSpend / price);
+    const qty = adjustToStepSize(usdToSpend / price, this.symbol);
 
     const order = await this.binanceService.placeMarketOrder(
       this.symbol,
@@ -272,7 +272,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
     const order = await this.binanceService.placeMarketOrder(
       this.symbol,
       'SELL',
-      adjustToStepSize(pos.qty),
+      adjustToStepSize(pos.qty, this.symbol),
     );
 
     const revenueUsdt = await this.binanceService.getRevenueFromSellOrder(
