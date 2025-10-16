@@ -101,7 +101,7 @@ export const logTotalProfit = (prices: {
   BTCUSDT: number;
 }) => {
   try {
-    const symbols = ['BNBUSDT', 'BTCUSDT'];
+    const symbols = ['BNBUSDT', 'BTCUSDT', 'BNBUSDT_MINI'];
 
     let list: SellSuccessLog[] = [];
     if (fs.existsSync(SELL_SUCCESS_FILE)) {
@@ -174,13 +174,16 @@ export const logTotalProfit = (prices: {
         const totalUsdSpent = positions.reduce((sum, p) => sum + p.usdSpent, 0);
         const avgBuyPrice = totalQty > 0 ? totalUsdSpent / totalQty : 0;
 
-        const currentValue = prices[symbol] * totalQty;
+        const currentValue = prices[symbol.replace('_MINI', '')] * totalQty;
         const unrealizedPnL = currentValue - totalUsdSpent;
 
         console.log('>>> OPEN POSITIONS SUMMARY');
         console.log('Total Quantity       :', totalQty.toFixed(8));
         console.log('Avg Buy Price        :', avgBuyPrice.toFixed(4));
-        console.log('Current Price        :', prices[symbol].toFixed(4));
+        console.log(
+          'Current Price        :',
+          prices[symbol.replace('_MINI', '')].toFixed(4),
+        );
         console.log('Total Spent (Open)   :', totalUsdSpent.toFixed(4), 'USDT');
         console.log('Current Value        :', currentValue.toFixed(4), 'USDT');
         console.log('Unrealized PnL       :', unrealizedPnL.toFixed(4), 'USDT');
@@ -188,7 +191,7 @@ export const logTotalProfit = (prices: {
         symbolData.openPositions = {
           totalQty,
           avgBuyPrice,
-          currentPrice: prices[symbol],
+          currentPrice: prices[symbol.replace('_MINI', '')],
           totalSpentOpen: totalUsdSpent,
           currentValue,
           unrealizedPnL,

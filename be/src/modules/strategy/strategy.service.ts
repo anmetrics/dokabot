@@ -3,12 +3,14 @@ import { BinanceService } from '../binance/binance.service';
 import { IStrategy } from './strategy.interface';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RsiReversalDcaStrategy } from './strategies/rsi-reversal.strategy';
+import { MiniReversalDcaStrategy } from './strategies/mini-rsi-reversal.strategy';
 
 @Injectable()
 export class StrategyService {
   private logger = new Logger('StrategyService');
   private strategy1: IStrategy;
   private strategy2: IStrategy;
+  private strategy3: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -21,7 +23,7 @@ export class StrategyService {
       'BTCUSDT',
       50,
       '5m',
-      0.011,
+      0.01,
     );
     this.strategy2 = new RsiReversalDcaStrategy(
       this.binanceService,
@@ -31,8 +33,18 @@ export class StrategyService {
       0.024,
     );
 
+    this.strategy3 = new MiniReversalDcaStrategy(
+      this.binanceService,
+      'BNBUSDT',
+      10,
+      '3m',
+      0.004,
+      1300,
+    );
+
     this.strategy1.startAll();
     this.strategy2.startAll();
+    this.strategy3.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }

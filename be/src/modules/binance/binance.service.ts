@@ -11,6 +11,9 @@ import { OrderbookEvent } from './events/orderbook.event';
 import { MarketTrend } from './binance.enum';
 import { ATR, EMA } from 'technicalindicators';
 import { logTotalProfit } from '../strategy/helpers/savePosition';
+import { formatProfitLog } from '../strategy/helpers/logger';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { TelegramService } from '../telegram/telegram.service';
 
 type ReversalPattern = {
   name: string;
@@ -22,7 +25,10 @@ export class BinanceService {
   private client: ReturnType<typeof Binance> | null = null;
   private logger = new Logger('BinanceService');
 
-  constructor(private eventEmitter: EventEmitter2) {
+  constructor(
+    private eventEmitter: EventEmitter2,
+    private readonly telegramService: TelegramService,
+  ) {
     this.init();
   }
 
@@ -305,9 +311,19 @@ export class BinanceService {
     return { name: 'No pattern detected', trend: 'neutral' };
   }
 
+  @Cron(CronExpression.EVERY_2_HOURS)
+  async sendLog() {
+    try {
+      const { log } = await this.getLog();
+      await this.telegramService.sendMessage(formatProfitLog(log));
+    } catch (error) {
+      console.error('❌ ReflectReportJob failed:', error);
+    }
+  }
+
   async getLog() {
     const bnbPrice = await this.getPrice('BNBUSDT');
-    const btcPrice = await this.getPrice('BNBUSDT');
+    const btcPrice = await this.getPrice('BTCUSDT');
     const log = logTotalProfit({
       BNBUSDT: bnbPrice,
       BTCUSDT: btcPrice,

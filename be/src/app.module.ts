@@ -6,15 +6,17 @@ import { StrategyModule } from './modules/strategy/strategy.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
+import { TelegramModule } from './modules/telegram/telegram.module';
 
 @Global()
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
+    TelegramModule,
     BinanceModule,
     StrategyModule,
-    EventEmitterModule.forRoot(),
-    ScheduleModule.forRoot(),
   ],
   controllers: [AppController],
   providers: [AppService],
