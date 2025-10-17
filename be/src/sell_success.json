@@ -1,0 +1,14 @@
+[
+  {
+    "symbol": "BNBUSDT",
+    "buyPrices": [
+      1067.53
+    ],
+    "sellPrice": 1072.88,
+    "totalAmountBuyActual": 0.009,
+    "totalAmountBuyUsdtSpent": 10,
+    "totalProfit": -0.35319646000000127,
+    "totalRevenueUsdt": 9.646803539999999,
+    "time": "2025-10-17 20:19"
+  }
+]
