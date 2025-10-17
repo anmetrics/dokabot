@@ -31,13 +31,13 @@ export class MiniReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 1; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.03;
+  private DCA_PRICE_DROP_PCT = 0.02;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
-  private rsiBuyThreshold = 20;
-  private rsiSellThreshold = 80;
+  private rsiBuyThreshold = 19;
+  private rsiSellThreshold = 81;
 
   private cooldownMs = 1 * 60 * 1000; // 1 phút
   private lastTradeTime = 0;
@@ -250,7 +250,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.007;
+    const increment = 0.0005;
     return base + dcaIndex * increment;
   }
 

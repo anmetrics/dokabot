@@ -37,8 +37,8 @@ export class StrategyService {
       this.binanceService,
       'BNBUSDT',
       10,
-      '3m',
-      0.004,
+      '1m',
+      0.005,
       1300,
     );
 

@@ -101,7 +101,7 @@ export const logTotalProfit = (prices: {
   BTCUSDT: number;
 }) => {
   try {
-    const symbols = ['BNBUSDT', 'BTCUSDT', 'BNBUSDT_MINI'];
+    const symbols = ['BNBUSDT', 'BTCUSDT'];
 
     let list: SellSuccessLog[] = [];
     if (fs.existsSync(SELL_SUCCESS_FILE)) {
