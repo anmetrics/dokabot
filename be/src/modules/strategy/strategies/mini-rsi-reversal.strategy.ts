@@ -11,7 +11,7 @@ import {
   Position,
 } from '../helpers/savePosition';
 import { formatDate } from '../helpers/formatDate';
-import { adjustToStepSize, getActualBoughtQtyAndFee } from '../helpers/crypto';
+import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
 
@@ -229,13 +229,17 @@ export class MiniReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
-    const { totalQty: totalQtyActual } = getActualBoughtQtyAndFee(order);
+    const {
+      totalQty: totalQtyActual,
+      totalSpent,
+      avgPrice,
+    } = getActualBought(order);
 
     const pos: Position = {
       id: randomUUID(),
-      buyPrice: price,
+      buyPrice: avgPrice,
       qty,
-      usdSpent: usdToSpend,
+      usdSpent: totalSpent,
       buyTime: Date.now(),
       totalQtyActual,
       dcaIndex,
