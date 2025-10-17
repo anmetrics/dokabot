@@ -11,7 +11,7 @@ import {
   Position,
 } from '../helpers/savePosition';
 import { formatDate } from '../helpers/formatDate';
-import { adjustToStepSize, getActualBoughtQtyAndFee } from '../helpers/crypto';
+import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
 
@@ -225,7 +225,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
-    const { totalQty: totalQtyActual } = getActualBoughtQtyAndFee(order);
+    const { totalQty: totalQtyActual } = getActualBought(order);
 
     const pos: Position = {
       id: randomUUID(),

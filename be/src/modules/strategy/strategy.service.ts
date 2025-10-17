@@ -11,6 +11,7 @@ export class StrategyService {
   private strategy1: IStrategy;
   private strategy2: IStrategy;
   private strategy3: IStrategy;
+  private strategy4: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -41,10 +42,19 @@ export class StrategyService {
       0.005,
       1300,
     );
+    this.strategy4 = new MiniReversalDcaStrategy(
+      this.binanceService,
+      'BTCUSDT',
+      10,
+      '1m',
+      0.005,
+      118000,
+    );
 
     this.strategy1.startAll();
     this.strategy2.startAll();
     this.strategy3.startAll();
+    this.strategy4.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }
