@@ -1,5 +1,5 @@
 export function formatProfitLog(log: any): string {
-  let text = '🧮 Reflect Profit Summary\n\n';
+  let text = '';
 
   for (const symbolData of log.symbols) {
     const { symbol, sellSummary, openPositions } = symbolData;

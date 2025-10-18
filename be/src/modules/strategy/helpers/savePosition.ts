@@ -96,12 +96,16 @@ export const logSellSuccess = (sellData: SellSuccessLog) => {
   }
 };
 
-export const logTotalProfit = (prices: {
-  BNBUSDT: number;
-  BTCUSDT: number;
-}) => {
+export const logTotalProfit = (
+  prices: {
+    BNBUSDT: number;
+    BTCUSDT: number;
+    SOLUSDT: number;
+  },
+  symbol: 'BNBUSDT' | 'BTCUSDT' | 'SOLUSDT',
+) => {
   try {
-    const symbols = ['BNBUSDT', 'BTCUSDT'];
+    const symbols = [symbol];
 
     let list: SellSuccessLog[] = [];
     if (fs.existsSync(SELL_SUCCESS_FILE)) {

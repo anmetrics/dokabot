@@ -314,20 +314,30 @@ export class BinanceService {
   @Cron(CronExpression.EVERY_2_HOURS)
   async sendLog() {
     try {
-      const { log } = await this.getLog();
-      await this.telegramService.sendMessage(formatProfitLog(log));
+      const { log: BNBUSDTLog } = await this.getLog('BNBUSDT');
+      const { log: BTCUSDTLog } = await this.getLog('BTCUSDT');
+      const { log: SOLUSDTLog } = await this.getLog('SOLUSDT');
+
+      await this.telegramService.sendMessage(formatProfitLog(BNBUSDTLog));
+      await this.telegramService.sendMessage(formatProfitLog(BTCUSDTLog));
+      await this.telegramService.sendMessage(formatProfitLog(SOLUSDTLog));
     } catch (error) {
       console.error('❌ ReflectReportJob failed:', error);
     }
   }
 
-  async getLog() {
+  async getLog(symbol: 'BNBUSDT' | 'BTCUSDT' | 'SOLUSDT') {
     const bnbPrice = await this.getPrice('BNBUSDT');
     const btcPrice = await this.getPrice('BTCUSDT');
-    const log = logTotalProfit({
-      BNBUSDT: bnbPrice,
-      BTCUSDT: btcPrice,
-    });
+    const solPrice = await this.getPrice('SOLUSDT');
+    const log = logTotalProfit(
+      {
+        BNBUSDT: bnbPrice,
+        BTCUSDT: btcPrice,
+        SOLUSDT: solPrice,
+      },
+      symbol,
+    );
 
     return {
       log,
