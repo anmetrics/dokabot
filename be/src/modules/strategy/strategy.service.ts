@@ -35,30 +35,32 @@ export class StrategyService {
       0.024,
     );
 
+    // Mini sclaping
+
     this.strategy3 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      10,
+      30,
       '1m',
       0.005,
-      1300,
+      1260,
     );
     this.strategy4 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      10,
+      30,
       '1m',
       0.005,
-      118000,
+      111000,
     );
 
     this.strategy5 = new MiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      10,
+      30,
       '1m',
       0.005,
-      210,
+      212,
     );
 
     this.strategy1.startAll();
