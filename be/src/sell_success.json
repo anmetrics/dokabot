@@ -1,1 +1,26 @@
-[]
+[
+  {
+    "symbol": "BNBUSDT",
+    "buyPrices": [
+      1081.3013013013012
+    ],
+    "sellPrice": 1089.84,
+    "totalAmountBuyActual": 0.009,
+    "totalAmountBuyUsdtSpent": 9.72198,
+    "totalProfit": 0.07668152999999833,
+    "totalRevenueUsdt": 9.798661529999999,
+    "time": "2025-10-18 06:03"
+  },
+  {
+    "symbol": "BNBUSDT",
+    "buyPrices": [
+      1088.5185185185185
+    ],
+    "sellPrice": 1095.8,
+    "totalAmountBuyActual": 0.009,
+    "totalAmountBuyUsdtSpent": 9.78687,
+    "totalProfit": 0.06726599999999827,
+    "totalRevenueUsdt": 9.854135999999999,
+    "time": "2025-10-18 14:40"
+  }
+]
