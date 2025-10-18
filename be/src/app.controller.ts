@@ -11,6 +11,6 @@ export class AppController {
 
   @Get()
   getLog() {
-    return this.binanceService.getLog();
+    // return this.binanceService.getLog();
   }
 }
