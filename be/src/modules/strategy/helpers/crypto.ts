@@ -38,7 +38,7 @@ export const getActualBought = (
 export const adjustToStepSize = (qty: number, symbol: string) => {
   let stepSize = 0.00001;
 
-  if (symbol === 'BNBUSDT') {
+  if (symbol === 'BNBUSDT' || symbol === 'SOLUSDT') {
     stepSize = 0.001;
   } else if (symbol === 'BTCUSDT') {
     stepSize = 0.00001;

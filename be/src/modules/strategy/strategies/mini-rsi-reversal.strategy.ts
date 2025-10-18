@@ -10,7 +10,6 @@ import {
   SellSuccessLog,
   Position,
 } from '../helpers/savePosition';
-import { formatDate } from '../helpers/formatDate';
 import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
@@ -121,17 +120,6 @@ export class MiniReversalDcaStrategy implements IStrategy {
       const now = Date.now();
       const cooldownOk =
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
-
-      console.log('--', formatDate(new Date()), '--');
-      console.log('SYMBOL:', this.symbol);
-      console.log(
-        'RSI:',
-        lastRsi.toFixed(2),
-        'ATR:',
-        lastAtr.toFixed(2),
-        'CURRENT_PRICE:',
-        price,
-      );
 
       // === BUY or DCA với ATR filter ===
       if (lastRsi <= this.rsiBuyThreshold && cooldownOk) {
