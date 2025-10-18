@@ -173,6 +173,11 @@ export const logTotalProfit = (
 
       // ===================== OPEN POSITIONS SUMMARY =====================
       const positions: Position[] = loadPositions(symbol);
+      const positionsMini: Position[] = loadPositions(symbol + '_MINI');
+      if (positionsMini?.length) {
+        positions.push(...positionsMini);
+      }
+
       if (positions.length > 0) {
         const totalQty = positions.reduce((sum, p) => sum + p.qty, 0);
         const totalUsdSpent = positions.reduce((sum, p) => sum + p.usdSpent, 0);
