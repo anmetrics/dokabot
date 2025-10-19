@@ -42,16 +42,16 @@ export class StrategyService {
       'BNBUSDT',
       50,
       '1m',
-      0.005,
-      1260,
+      0.0055,
+      1350,
     );
     this.strategy4 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
       50,
       '1m',
-      0.005,
-      111000,
+      0.0055,
+      112000,
     );
 
     this.strategy5 = new MiniReversalDcaStrategy(
@@ -59,7 +59,7 @@ export class StrategyService {
       'SOLUSDT',
       50,
       '1m',
-      0.005,
+      0.0055,
       212,
     );
 
