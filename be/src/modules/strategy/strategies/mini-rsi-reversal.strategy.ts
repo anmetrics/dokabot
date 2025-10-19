@@ -196,6 +196,15 @@ export class MiniReversalDcaStrategy implements IStrategy {
   private async buyPosition(price: number, dcaIndex: number) {
     const usdToSpend = this.baseBuyUsd;
 
+    // Check root positions
+
+    const rootPositions = loadPositions(this.symbol) || [];
+
+    // eslint-disable-next-line no-unsafe-optional-chaining
+    const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
+
+    if (rootPositions?.length && price > rootMinBuyPrice * 1.05) return;
+
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(
       balances.balances.find((b) => b.asset === 'USDT')?.free || 0,

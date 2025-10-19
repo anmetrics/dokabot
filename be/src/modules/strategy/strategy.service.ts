@@ -13,6 +13,7 @@ export class StrategyService {
   private strategy3: IStrategy;
   private strategy4: IStrategy;
   private strategy5: IStrategy;
+  private strategy6: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -31,6 +32,13 @@ export class StrategyService {
       this.binanceService,
       'BNBUSDT',
       100,
+      '3m',
+      0.024,
+    );
+    this.strategy6 = new RsiReversalDcaStrategy(
+      this.binanceService,
+      'SOLUSDT',
+      10,
       '3m',
       0.024,
     );
