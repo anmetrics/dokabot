@@ -22,5 +22,89 @@
     "totalProfit": 0.06726599999999827,
     "totalRevenueUsdt": 9.854135999999999,
     "time": "2025-10-18 14:40"
+  },
+  {
+    "symbol": "SOLUSDT",
+    "buyPrices": [
+      186.2862862862863
+    ],
+    "sellPrice": 187.79,
+    "totalAmountBuyActual": 0.161,
+    "totalAmountBuyUsdtSpent": 29.9621,
+    "totalProfit": 0.24024742000000288,
+    "totalRevenueUsdt": 30.202347420000002,
+    "time": "2025-10-18 22:30"
+  },
+  {
+    "symbol": "SOLUSDT",
+    "buyPrices": [
+      185.97597597597598
+    ],
+    "sellPrice": 187.53,
+    "totalAmountBuyActual": 0.161,
+    "totalAmountBuyUsdtSpent": 29.91219,
+    "totalProfit": 0.2499476700000045,
+    "totalRevenueUsdt": 30.162137670000003,
+    "time": "2025-10-19 05:21"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "buyPrices": [
+      106952.02202202202
+    ],
+    "sellPrice": 107816.5,
+    "totalAmountBuyActual": 0.00009,
+    "totalAmountBuyUsdtSpent": 9.6160563,
+    "totalProfit": 0.07381593000000031,
+    "totalRevenueUsdt": 9.68987223,
+    "time": "2025-10-19 09:49"
+  },
+  {
+    "symbol": "SOLUSDT",
+    "buyPrices": [
+      185.4954954954955
+    ],
+    "sellPrice": 188.04,
+    "totalAmountBuyActual": 0.161,
+    "totalAmountBuyUsdtSpent": 29.83491,
+    "totalProfit": 0.42533946,
+    "totalRevenueUsdt": 30.26024946,
+    "time": "2025-10-19 09:50"
+  },
+  {
+    "symbol": "BNBUSDT",
+    "buyPrices": [
+      1095.915915915916
+    ],
+    "sellPrice": 1102.25,
+    "totalAmountBuyActual": 0.027,
+    "totalAmountBuyUsdtSpent": 29.56014,
+    "totalProfit": 0.16653356999999502,
+    "totalRevenueUsdt": 29.726673569999996,
+    "time": "2025-10-19 10:27"
+  },
+  {
+    "symbol": "BNBUSDT",
+    "buyPrices": [
+      1096.1061061061062
+    ],
+    "sellPrice": 1101.92,
+    "totalAmountBuyActual": 0.027,
+    "totalAmountBuyUsdtSpent": 29.56527,
+    "totalProfit": 0.15196302000000017,
+    "totalRevenueUsdt": 29.717233020000002,
+    "time": "2025-10-19 13:42"
+  },
+  {
+    "symbol": "SOLUSDT",
+    "buyPrices": [
+      188.52852852852854
+    ],
+    "sellPrice": 190.25,
+    "totalAmountBuyActual": 0.159,
+    "totalAmountBuyUsdtSpent": 29.94606,
+    "totalProfit": 0.2718518400000036,
+    "totalRevenueUsdt": 30.217911840000003,
+    "time": "2025-10-19 13:43"
   }
 ]
