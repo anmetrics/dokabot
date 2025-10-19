@@ -203,7 +203,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
     // eslint-disable-next-line no-unsafe-optional-chaining
     const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
 
-    if (rootPositions?.length && price > rootMinBuyPrice * 1.05) return;
+    if (rootPositions?.length && price > rootMinBuyPrice * 1.04) return;
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(

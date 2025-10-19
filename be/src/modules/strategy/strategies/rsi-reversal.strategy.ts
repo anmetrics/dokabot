@@ -241,7 +241,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.007;
+    const increment = 0.008;
     return base + dcaIndex * increment;
   }
 

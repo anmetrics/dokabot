@@ -24,23 +24,23 @@ export class StrategyService {
     this.strategy1 = new RsiReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      50,
+      90,
       '5m',
-      0.01,
+      0.02,
     );
     this.strategy2 = new RsiReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      100,
+      120,
       '3m',
-      0.024,
+      0.03,
     );
     this.strategy6 = new RsiReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      10,
+      20,
       '3m',
-      0.024,
+      0.025,
     );
 
     // Mini sclaping
@@ -50,7 +50,7 @@ export class StrategyService {
       'BNBUSDT',
       50,
       '1m',
-      0.0055,
+      0.006,
       1350,
     );
     this.strategy4 = new MiniReversalDcaStrategy(
@@ -58,7 +58,7 @@ export class StrategyService {
       'BTCUSDT',
       50,
       '1m',
-      0.0055,
+      0.006,
       112000,
     );
 
@@ -67,7 +67,7 @@ export class StrategyService {
       'SOLUSDT',
       50,
       '1m',
-      0.0055,
+      0.006,
       212,
     );
 
@@ -76,6 +76,7 @@ export class StrategyService {
     this.strategy3.startAll();
     this.strategy4.startAll();
     this.strategy5.startAll();
+     this.strategy6.startAll()
 
     this.logger.log(`Started strategy: ${name}`);
   }
