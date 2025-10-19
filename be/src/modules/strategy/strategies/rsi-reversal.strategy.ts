@@ -185,14 +185,9 @@ export class RsiReversalDcaStrategy implements IStrategy {
           return;
         }
 
-        const soldIds: string[] = [];
         for (const pos of sellablePositions) {
-          const soldPos = await this.sellPosition(pos, price, timeframe);
-          if (soldPos?.id) soldIds.push(soldPos.id);
+           await this.sellPosition(pos, price, timeframe);
         }
-
-        this.positions = this.positions.filter((p) => !soldIds.includes(p.id));
-        savePositions(this.symbol, this.positions);
       }
     } catch (e) {
       console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
@@ -256,16 +251,9 @@ export class RsiReversalDcaStrategy implements IStrategy {
     const free = Number(
       balances.balances.find((b) => b.asset === asset)?.free || 0,
     );
-    const sellable = this.positions.filter(
-      (pos) => price > pos.buyPrice * (1 + this.minProfitPct),
-    );
-    const totalQty = sellable.reduce(
-      (sum, pos) => sum.plus(new Decimal(pos.qty)),
-      new Decimal(0),
-    );
 
-    if (totalQty.lessThanOrEqualTo(0) || totalQty.greaterThan(free)) {
-      console.log('NOT ENOUGH TOKEN TO SELL : ', totalQty);
+    if (new Decimal(pos.qty).greaterThan(free)) {
+      console.log('NOT ENOUGH TOKEN TO SELL : ', pos.qty);
       return;
     }
 
@@ -283,7 +271,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
     const profit = revenueUsdt - pos.usdSpent;
     this.cumulativeProfit += profit;
 
-    this.positions = this.positions.filter((p) => p.id === pos.id);
+    this.positions = this.positions.filter((p) => p.id !== pos.id);
     savePositions(this.symbol, this.positions);
 
     const sellLog: SellSuccessLog = {

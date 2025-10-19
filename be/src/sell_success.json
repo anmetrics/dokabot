@@ -118,5 +118,17 @@
     "totalProfit": -0.9179378000000007,
     "totalRevenueUsdt": 28.1584108,
     "time": "2025-10-19 14:20"
+  },
+  {
+    "symbol": "BTCUSDT",
+    "buyPrices": [
+      107020
+    ],
+    "sellPrice": 108904.55,
+    "totalAmountBuyActual": 0.00084,
+    "totalAmountBuyUsdtSpent": 90,
+    "totalProfit": 1.411293200000003,
+    "totalRevenueUsdt": 91.4112932,
+    "time": "2025-10-19 16:45"
   }
 ]
