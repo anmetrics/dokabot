@@ -7,5 +7,14 @@
     "buyTime": 1760943780479,
     "totalQtyActual": 0.043956,
     "dcaIndex": 0
+  },
+  {
+    "id": "499aed33-f7ab-4bba-bfdd-5aaab39b8218",
+    "buyPrice": 1094.8181514848181,
+    "qty": 0.045,
+    "usdSpent": 49.21755,
+    "buyTime": 1760976120144,
+    "totalQtyActual": 0.044955,
+    "dcaIndex": 1
   }
 ]
