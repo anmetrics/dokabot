@@ -30,7 +30,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 1; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.028;
+  private DCA_PRICE_DROP_PCT = 0.032;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
@@ -203,7 +203,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
     // eslint-disable-next-line no-unsafe-optional-chaining
     const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
 
-    if (rootPositions?.length && price > rootMinBuyPrice * 1.04) return;
+    if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(
