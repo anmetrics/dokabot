@@ -1,18 +1,10 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { formatDate } from './formatDate';
+import { Position } from 'generated/prisma';
+import { BinanceService } from 'src/modules/binance/binance.service';
 
 // Lưu file positions relative với root project
-
-export type Position = {
-  id: string;
-  buyPrice: number;
-  qty: number;
-  usdSpent: number;
-  totalQtyActual: number;
-  buyTime: number;
-  dcaIndex: number;
-};
 
 const getFilePath = (strategy: string) => {
   const folderPath = path.resolve(process.cwd(), 'src');
@@ -20,24 +12,6 @@ const getFilePath = (strategy: string) => {
     fs.mkdirSync(folderPath, { recursive: true });
   }
   return path.join(folderPath, `${strategy}.json`);
-};
-
-export const loadPositions = (symbol: string): Position[] => {
-  try {
-    const filePath = getFilePath(symbol);
-
-    if (!fs.existsSync(filePath)) {
-      fs.writeFileSync(filePath, JSON.stringify([], null, 2), 'utf-8');
-      return [];
-    }
-
-    const raw = fs.readFileSync(filePath, 'utf-8');
-    const data: Position[] = JSON.parse(raw || '[]');
-    return data;
-  } catch (err) {
-    console.error(`❌ Failed to load positions for ${symbol}:`, err);
-    return [];
-  }
 };
 
 export const savePositions = (symbol: string, positions: Position[]) => {
@@ -96,7 +70,8 @@ export const logSellSuccess = (sellData: SellSuccessLog) => {
   }
 };
 
-export const logTotalProfit = (
+export const logTotalProfit = async (
+  binanceService: BinanceService,
   prices: {
     BNBUSDT: number;
     BTCUSDT: number;
@@ -172,14 +147,19 @@ export const logTotalProfit = (
       }
 
       // ===================== OPEN POSITIONS SUMMARY =====================
-      const positions: Position[] = loadPositions(symbol);
-      const positionsMini: Position[] = loadPositions(symbol + '_MINI');
+      const positions: Position[] =
+        await binanceService.getOpenPositions(symbol);
+      const positionsMini: Position[] = await binanceService.getOpenPositions(
+        symbol + '_MINI',
+      );
       if (positionsMini?.length) {
         positions.push(...positionsMini);
       }
 
       if (positions.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const totalQty = positions.reduce((sum, p) => sum + p.qty, 0);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-return
         const totalUsdSpent = positions.reduce((sum, p) => sum + p.usdSpent, 0);
         const avgBuyPrice = totalQty > 0 ? totalUsdSpent / totalQty : 0;
 

@@ -14,6 +14,8 @@ import { logTotalProfit } from '../strategy/helpers/savePosition';
 import { formatProfitLog } from '../strategy/helpers/logger';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TelegramService } from '../telegram/telegram.service';
+import { PrismaService } from 'src/prisma.service';
+import { Prisma } from 'generated/prisma';
 
 type ReversalPattern = {
   name: string;
@@ -28,6 +30,7 @@ export class BinanceService {
   constructor(
     private eventEmitter: EventEmitter2,
     private readonly telegramService: TelegramService,
+    private readonly prismaService: PrismaService,
   ) {
     this.init();
   }
@@ -330,7 +333,9 @@ export class BinanceService {
     const bnbPrice = await this.getPrice('BNBUSDT');
     const btcPrice = await this.getPrice('BTCUSDT');
     const solPrice = await this.getPrice('SOLUSDT');
+
     const log = logTotalProfit(
+      this,
       {
         BNBUSDT: bnbPrice,
         BTCUSDT: btcPrice,
@@ -342,5 +347,31 @@ export class BinanceService {
     return {
       log,
     };
+  }
+
+  async getOpenPositions(strategy: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.prismaService.position.findMany({
+      where: {
+        strategy: strategy,
+      },
+      orderBy: {
+        buyPrice: 'asc',
+      },
+    });
+  }
+
+  async savePosition(data: Prisma.PositionCreateInput) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.prismaService.position.create({
+      data,
+    });
+  }
+
+  async deletePosition(id: string) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.prismaService.position.delete({
+      where: { id },
+    });
   }
 }

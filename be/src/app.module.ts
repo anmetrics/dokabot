@@ -7,10 +7,12 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
+import { SharedModule } from './modules/shared/shared.module';
 
 @Global()
 @Module({
   imports: [
+    SharedModule,
     ConfigModule.forRoot(),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),

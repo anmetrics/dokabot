@@ -68,7 +68,7 @@ export class StrategyService {
       50,
       '1m',
       0.008,
-      194,
+      189,
     );
 
     this.strategy1.startAll();
@@ -76,7 +76,7 @@ export class StrategyService {
     this.strategy3.startAll();
     this.strategy4.startAll();
     this.strategy5.startAll();
-     this.strategy6.startAll()
+    this.strategy6.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }

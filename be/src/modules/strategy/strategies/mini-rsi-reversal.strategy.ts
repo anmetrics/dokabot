@@ -3,16 +3,11 @@ import { Logger } from '@nestjs/common';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
-import {
-  loadPositions,
-  savePositions,
-  logSellSuccess,
-  SellSuccessLog,
-  Position,
-} from '../helpers/savePosition';
+import { logSellSuccess, SellSuccessLog } from '../helpers/savePosition';
 import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
+import { Position } from 'generated/prisma';
 
 type TimeframeData = {
   closes: number[];
@@ -23,14 +18,13 @@ type TimeframeData = {
 
 export class MiniReversalDcaStrategy implements IStrategy {
   private logger = new Logger('MiniRsiReversalStrategy');
-  private positions: Position[] = [];
   private cumulativeProfit = 0;
 
   // === CONFIG ===
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 1; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.032;
+  private DCA_PRICE_DROP_PCT = 0.029;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
@@ -53,7 +47,6 @@ export class MiniReversalDcaStrategy implements IStrategy {
   ) {}
 
   async startAll() {
-    this.positions = loadPositions(this.symbol + '_MINI');
     await this.start(this.timeframe);
   }
 
@@ -61,7 +54,10 @@ export class MiniReversalDcaStrategy implements IStrategy {
     console.log(
       `Starting MINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
     );
-    console.log(this.positions);
+    const positions = await this.binanceService.getOpenPositions(
+      this.symbol + '_MINI',
+    );
+    console.log(this.symbol + '_MINI:', positions);
 
     console.log('-------------------');
 
@@ -121,13 +117,18 @@ export class MiniReversalDcaStrategy implements IStrategy {
       const cooldownOk =
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
+      const openPositions = await this.binanceService.getOpenPositions(
+        this.symbol + '_MINI',
+      );
+
       // === BUY or DCA với ATR filter ===
       if (lastRsi <= this.rsiBuyThreshold && cooldownOk) {
-        const minBuyPrice = this.positions.length
-          ? Math.min(...this.positions.map((p) => p.buyPrice))
+        const minBuyPrice = openPositions.length
+          ? // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
+            Math.min(...openPositions.map((p) => p.buyPrice))
           : price;
 
-        const dcaTimes = this.positions.length - 1;
+        const dcaTimes = openPositions.length - 1;
 
         const dcaIndex = dcaTimes + 1;
 
@@ -153,7 +154,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
           'maxBuyPrice:',
           this.maxBuyPrice,
         );
-        if (this.positions.length === 0 || isDcaValid) {
+        if (openPositions.length === 0 || isDcaValid) {
           if (price < this.maxBuyPrice) {
             await this.buyPosition(price, dcaIndex || 0);
             this.lastTradeTime = now;
@@ -166,8 +167,8 @@ export class MiniReversalDcaStrategy implements IStrategy {
       }
 
       // === SELL với trailing ATR để tránh bán quá sớm ===
-      if (this.positions.length > 0) {
-        const sellablePositions = this.positions.filter((pos) => {
+      if (openPositions.length > 0) {
+        const sellablePositions = openPositions.filter((pos) => {
           const dynamicMinProfitPct = this.getDynamicMinProfitPct(
             pos?.dcaIndex || 0,
           );
@@ -184,7 +185,10 @@ export class MiniReversalDcaStrategy implements IStrategy {
     } catch (e) {
       console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
     } finally {
-      console.log('CURRENT_POSITIONS:', this.positions);
+      const openPositions = await this.binanceService.getOpenPositions(
+        this.symbol + '_MINI',
+      );
+      console.log('CURRENT_POSITIONS:', openPositions);
     }
   }
 
@@ -193,9 +197,11 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
     // Check root positions
 
-    const rootPositions = loadPositions(this.symbol) || [];
+    const rootPositions = await this.binanceService.getOpenPositions(
+      this.symbol,
+    );
 
-    // eslint-disable-next-line no-unsafe-optional-chaining
+    // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
     const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
 
     if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
@@ -227,18 +233,16 @@ export class MiniReversalDcaStrategy implements IStrategy {
       avgPrice,
     } = getActualBought(order);
 
-    const pos: Position = {
+    await this.binanceService.savePosition({
       id: randomUUID(),
       buyPrice: avgPrice,
       qty,
       usdSpent: totalSpent,
-      buyTime: Date.now(),
       totalQtyActual,
       dcaIndex,
-    };
-
-    this.positions.push(pos);
-    savePositions(this.symbol + '_MINI', this.positions);
+      strategy: this.symbol + '_MINI',
+      symbol: this.symbol,
+    });
     console.log(
       `[DCA ${dcaIndex}] BUY ${qty} ${this.symbol} @ ${price} USD=${usdToSpend}`,
     );
@@ -276,8 +280,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
     const profit = revenueUsdt - pos.usdSpent;
     this.cumulativeProfit += profit;
 
-    this.positions = this.positions.filter((p) => p.id !== pos.id);
-    savePositions(this.symbol, this.positions);
+    await this.binanceService.deletePosition(pos.id);
 
     const sellLog: SellSuccessLog = {
       symbol: this.symbol,
@@ -294,6 +297,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
       `[${timeframe}] SELL (DCA ${pos.dcaIndex}) ${pos.qty} ${this.symbol} @ ${price} — Profit: ${profit.toFixed(2)}`,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return pos;
   }
 

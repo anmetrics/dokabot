@@ -14,56 +14,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Position {
+  id             String   @id @default(uuid())
+  buyPrice       Float @map("buy_price")
+  strategy       String   @map("strategy")
+    symbol       String   @map("symbol")
+  qty            Float @map("qty")
+  usdSpent       Float @map("usd_spent")
+  totalQtyActual Float  @map("total_qty_actual")
+  dcaIndex       Int @map("dca_index")
 
-model Strategy {
-  id          String     @id @default(uuid())
-  name        String
-  symbol      String
-  type        StrategyType
-  active      Boolean    @default(true)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  createdAt   DateTime  @default(now()) @map("created_at") 
+  updatedAt      DateTime? @updatedAt  @map("updated_at") 
 
-  settings    Setting[]
-  trades      Trade[]
+   @@map("positions")
 }
 
-enum StrategyType {
-  EMA_MACD
-  RSI_ONLY
-  BREAKOUT
-  CUSTOM
-}
+model SellSuccess {
+  id                       String   @id @default(uuid())
+  symbol                   String   @map("symbol")
+  buyPrices                 Json   @map("buy_prices")
+  sellPrice                Float  @map("sell_prices")
+  totalAmountBuyActual     Float @map("total_amount_buy_actual")
+  totalAmountBuyUsdtSpent  Float @map("total_amount_buy_usd_spent")
+  totalProfit              Float  @map("total_profit")
+  totalRevenueUsdt         Float @map("total_revenue_usdt")
 
+  createdAt   DateTime  @default(now()) @map("created_at") 
+  updatedAt      DateTime? @updatedAt  @map("updated_at") 
 
-model Setting {
-  id          String   @id @default(uuid())
-  strategyId  String
-  key         String
-  value       String
-  description String?
-
-  strategy    Strategy @relation(fields: [strategyId], references: [id])
-
-  @@unique([strategyId, key])
-}
-
-enum TradeSide {
-  BUY
-  SELL
-}
-
-model Trade {
-  id          String   @id @default(uuid())
-  strategyId  String
-  symbol      String     // BTCUSDT
-  side        TradeSide  // BUY hoặc SELL
-
-  price       Float      // Giá mua hoặc bán
-  amountUsd   Float      // Tổng USD đã dùng/mua được
-  qty         Float      // Số lượng coin (ví dụ 0.01 BTC)
-  fee         Float
-
-  createdAt   DateTime @default(now())
-  strategy    Strategy @relation(fields: [strategyId], references: [id])
+  @@map("sell_successes")
 }
