@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "7a195ba1-5677-4e0e-ad95-9cdd50886fa0",
+    "buyPrice": 110868.35835835835,
+    "qty": 0.00045,
+    "usdSpent": 49.8408705,
+    "buyTime": 1760957340229,
+    "totalQtyActual": 0.00044955,
+    "dcaIndex": 0
+  }
+]

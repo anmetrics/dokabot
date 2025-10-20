@@ -51,7 +51,7 @@ export class StrategyService {
       50,
       '1m',
       0.006,
-      1350,
+      1200,
     );
     this.strategy4 = new MiniReversalDcaStrategy(
       this.binanceService,
@@ -59,7 +59,7 @@ export class StrategyService {
       50,
       '1m',
       0.006,
-      112000,
+      111000,
     );
 
     this.strategy5 = new MiniReversalDcaStrategy(
@@ -68,7 +68,7 @@ export class StrategyService {
       50,
       '1m',
       0.006,
-      212,
+      194,
     );
 
     this.strategy1.startAll();
