@@ -40,7 +40,7 @@ export class StrategyService {
       'SOLUSDT',
       20,
       '3m',
-      0.025,
+      0.03,
     );
 
     // Mini sclaping

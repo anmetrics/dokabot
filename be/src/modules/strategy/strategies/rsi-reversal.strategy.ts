@@ -186,7 +186,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
         }
 
         for (const pos of sellablePositions) {
-           await this.sellPosition(pos, price, timeframe);
+          await this.sellPosition(pos, price, timeframe);
         }
       }
     } catch (e) {
