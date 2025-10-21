@@ -334,7 +334,7 @@ export class BinanceService {
     const btcPrice = await this.getPrice('BTCUSDT');
     const solPrice = await this.getPrice('SOLUSDT');
 
-    const log = logTotalProfit(
+    const log = await logTotalProfit(
       this,
       {
         BNBUSDT: bnbPrice,

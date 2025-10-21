@@ -1,39 +1,6 @@
 import * as fs from 'fs';
-import * as path from 'path';
-import { formatDate } from './formatDate';
 import { Position } from 'generated/prisma';
 import { BinanceService } from 'src/modules/binance/binance.service';
-
-// Lưu file positions relative với root project
-
-const getFilePath = (strategy: string) => {
-  const folderPath = path.resolve(process.cwd(), 'src');
-  if (!fs.existsSync(folderPath)) {
-    fs.mkdirSync(folderPath, { recursive: true });
-  }
-  return path.join(folderPath, `${strategy}.json`);
-};
-
-export const savePositions = (symbol: string, positions: Position[]) => {
-  try {
-    fs.writeFileSync(
-      getFilePath(symbol),
-      JSON.stringify(positions, null, 2),
-      'utf-8',
-    );
-  } catch (err) {
-    console.error('Failed to save positions', err);
-  }
-};
-
-const SELL_SUCCESS_FILE = path.resolve(process.cwd(), 'src/sell_success.json');
-
-const ensureFileExists = (filePath: string) => {
-  if (!fs.existsSync(filePath)) {
-    fs.mkdirSync(path.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, JSON.stringify([], null, 2), 'utf-8');
-  }
-};
 
 export interface SellPositionInfo {
   id: string;
@@ -53,23 +20,6 @@ export interface SellSuccessLog {
   totalRevenueUsdt: number; // tổng USDT nhận được sau bán
 }
 
-export const logSellSuccess = (sellData: SellSuccessLog) => {
-  try {
-    ensureFileExists(SELL_SUCCESS_FILE);
-    const raw = fs.readFileSync(SELL_SUCCESS_FILE, 'utf-8');
-    const list: SellSuccessLog[] = JSON.parse(raw);
-
-    list.push({
-      ...sellData,
-      time: formatDate(new Date()),
-    });
-
-    fs.writeFileSync(SELL_SUCCESS_FILE, JSON.stringify(list, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('Failed to log sell success', err);
-  }
-};
-
 export const logTotalProfit = async (
   binanceService: BinanceService,
   prices: {
@@ -82,11 +32,7 @@ export const logTotalProfit = async (
   try {
     const symbols = [symbol];
 
-    let list: SellSuccessLog[] = [];
-    if (fs.existsSync(SELL_SUCCESS_FILE)) {
-      const raw = fs.readFileSync(SELL_SUCCESS_FILE, 'utf-8');
-      list = JSON.parse(raw);
-    }
+    const list = await binanceService.getListSellSuccess();
 
     let grandProfit = 0;
     let grandRevenue = 0;
@@ -101,13 +47,7 @@ export const logTotalProfit = async (
       },
     };
 
-    console.log(
-      '==================== TOTAL SUMMARY PER SYMBOL ====================',
-    );
-
     for (const symbol of symbols) {
-      console.log(`\n--- Symbol: ${symbol} ---`);
-
       const symbolData: any = {
         symbol,
         sellSummary: null,
@@ -126,12 +66,6 @@ export const logTotalProfit = async (
           (sum, log) => sum + log.totalAmountBuyUsdtSpent,
           0,
         );
-
-        console.log('Total Sell Count    :', logs.length);
-        console.log('Total Profit (USDT) :', totalProfit.toFixed(4));
-        console.log('Total Revenue (USDT):', totalRevenue.toFixed(4));
-        console.log('Total Spent (USDT)  :', totalSpent.toFixed(4));
-
         symbolData.sellSummary = {
           totalSellCount: logs.length,
           totalProfit,
@@ -143,7 +77,6 @@ export const logTotalProfit = async (
         grandRevenue += totalRevenue;
         grandSpent += totalSpent;
       } else {
-        console.log('No sell records found.');
       }
 
       // ===================== OPEN POSITIONS SUMMARY =====================
@@ -166,17 +99,6 @@ export const logTotalProfit = async (
         const currentValue = prices[symbol.replace('_MINI', '')] * totalQty;
         const unrealizedPnL = currentValue - totalUsdSpent;
 
-        console.log('>>> OPEN POSITIONS SUMMARY');
-        console.log('Total Quantity       :', totalQty.toFixed(8));
-        console.log('Avg Buy Price        :', avgBuyPrice.toFixed(4));
-        console.log(
-          'Current Price        :',
-          prices[symbol.replace('_MINI', '')].toFixed(4),
-        );
-        console.log('Total Spent (Open)   :', totalUsdSpent.toFixed(4), 'USDT');
-        console.log('Current Value        :', currentValue.toFixed(4), 'USDT');
-        console.log('Unrealized PnL       :', unrealizedPnL.toFixed(4), 'USDT');
-
         symbolData.openPositions = {
           totalQty,
           avgBuyPrice,
@@ -186,7 +108,6 @@ export const logTotalProfit = async (
           unrealizedPnL,
         };
       } else {
-        console.log('>>> No open positions.');
       }
 
       result.symbols.push(symbolData);
@@ -197,13 +118,6 @@ export const logTotalProfit = async (
       totalRevenue: grandRevenue,
       totalSpent: grandSpent,
     };
-
-    console.log('\n==================== GRAND TOTAL ====================');
-    console.log('Total Profit (USDT) :', grandProfit.toFixed(4));
-    console.log('Total Revenue (USDT):', grandRevenue.toFixed(4));
-    console.log('Total Spent (USDT)  :', grandSpent.toFixed(4));
-    console.log('=====================================================');
-
     // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return result;
   } catch (err) {

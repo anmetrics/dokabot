@@ -3,8 +3,6 @@ import { Logger } from '@nestjs/common';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
-import { logSellSuccess, SellSuccessLog } from '../helpers/savePosition';
-import { formatDate } from '../helpers/formatDate';
 import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
@@ -115,17 +113,6 @@ export class RsiReversalDcaStrategy implements IStrategy {
       const cooldownOk =
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
-      console.log('--', formatDate(new Date()), '--');
-      console.log('SYMBOL:', this.symbol);
-      console.log(
-        'RSI:',
-        lastRsi.toFixed(2),
-        'ATR:',
-        lastAtr.toFixed(2),
-        'CURRENT_PRICE:',
-        price,
-      );
-
       const openPositions = await this.binanceService.getOpenPositions(
         this.symbol,
       );
@@ -149,19 +136,6 @@ export class RsiReversalDcaStrategy implements IStrategy {
           price < minBuyPrice - lastAtr &&
           price < minBuyPrice * DCA_PERCENT;
 
-        // Chỉ DCA nếu giá giảm ít nhất 1×ATR so với minBuyPrice
-        console.log(
-          'minBuyPrice:',
-          minBuyPrice,
-          'dcaTimes < this.maxDcaTimes:',
-          dcaTimes < this.maxDcaTimes,
-          ' price < minBuyPrice - lastAtr :',
-          price < minBuyPrice - lastAtr,
-          'DCA_PERCENT:',
-          DCA_PERCENT,
-          'minBuyPrice * DCA_PERCENT: ',
-          minBuyPrice * DCA_PERCENT,
-        );
         if (openPositions.length === 0 || isDcaValid) {
           await this.buyPosition(price, dcaIndex || 0);
           this.lastTradeTime = now;
@@ -234,9 +208,6 @@ export class RsiReversalDcaStrategy implements IStrategy {
       strategy: this.symbol,
       symbol: this.symbol,
     });
-    console.log(
-      `[DCA ${dcaIndex}] BUY ${qty} ${this.symbol} @ ${price} USD=${usdToSpend}`,
-    );
   }
 
   private getDynamicMinProfitPct(dcaIndex: number) {
@@ -273,7 +244,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
     await this.binanceService.deletePosition(pos.id);
 
-    const sellLog: SellSuccessLog = {
+    await this.binanceService.saveSellSuccess({
       symbol: this.symbol,
       buyPrices: [pos.buyPrice],
       sellPrice: price,
@@ -281,9 +252,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
       totalAmountBuyUsdtSpent: pos.usdSpent,
       totalProfit: profit,
       totalRevenueUsdt: revenueUsdt,
-    };
-
-    logSellSuccess(sellLog);
+    });
     console.log(
       `[${timeframe}] SELL (DCA ${pos.dcaIndex}) ${pos.qty} ${this.symbol} @ ${price} — Profit: ${profit.toFixed(2)}`,
     );

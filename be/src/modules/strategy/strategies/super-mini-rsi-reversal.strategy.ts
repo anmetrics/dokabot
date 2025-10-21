@@ -15,21 +15,21 @@ type TimeframeData = {
   lastCandles: Candle[];
 };
 
-export class MiniReversalDcaStrategy implements IStrategy {
-  private logger = new Logger('MiniRsiReversalStrategy');
+const SUFFIX = '_SUPERMINI';
+
+export class SuperMiniReversalDcaStrategy implements IStrategy {
+  private logger = new Logger('SuperMiniRsiReversalStrategy');
   private cumulativeProfit = 0;
 
   // === CONFIG ===
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
-  private dcaMultiplier = 1; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.029;
+  private DCA_PRICE_DROP_PCT = 0.01;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
   private rsiBuyThreshold = 19;
-  private rsiSellThreshold = 81;
 
   private cooldownMs = 1 * 60 * 1000; // 1 phút
   private lastTradeTime = 0;
@@ -51,12 +51,12 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting MINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
+      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
     );
     const positions = await this.binanceService.getOpenPositions(
-      this.symbol + '_MINI',
+      this.symbol + SUFFIX,
     );
-    console.log(this.symbol + '_MINI:', positions);
+    console.log(this.symbol + SUFFIX, positions);
 
     console.log('-------------------');
 
@@ -117,7 +117,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
       const openPositions = await this.binanceService.getOpenPositions(
-        this.symbol + '_MINI',
+        this.symbol + SUFFIX,
       );
 
       // === BUY or DCA với ATR filter ===
@@ -138,16 +138,13 @@ export class MiniReversalDcaStrategy implements IStrategy {
           price < minBuyPrice - lastAtr &&
           price < minBuyPrice * DCA_PERCENT;
 
+        // Chỉ DCA nếu giá giảm ít nhất 1×ATR so với minBuyPrice
         if (openPositions.length === 0 || isDcaValid) {
           if (price < this.maxBuyPrice) {
             await this.buyPosition(price, dcaIndex || 0);
             this.lastTradeTime = now;
           }
         }
-      }
-
-      if (lastRsi < this.rsiSellThreshold) {
-        return;
       }
 
       // === SELL với trailing ATR để tránh bán quá sớm ===
@@ -168,11 +165,6 @@ export class MiniReversalDcaStrategy implements IStrategy {
       }
     } catch (e) {
       console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
-    } finally {
-      const openPositions = await this.binanceService.getOpenPositions(
-        this.symbol + '_MINI',
-      );
-      console.log('CURRENT_POSITIONS:', openPositions);
     }
   }
 
@@ -224,7 +216,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
       usdSpent: totalSpent,
       totalQtyActual,
       dcaIndex,
-      strategy: this.symbol + '_MINI',
+      strategy: this.symbol + SUFFIX,
       symbol: this.symbol,
     });
     console.log(
@@ -234,7 +226,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.0007;
+    const increment = 0.0003;
     return base + dcaIndex * increment;
   }
 

@@ -4,6 +4,7 @@ import { IStrategy } from './strategy.interface';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RsiReversalDcaStrategy } from './strategies/rsi-reversal.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini-rsi-reversal.strategy';
+import { SuperMiniReversalDcaStrategy } from './strategies/super-mini-rsi-reversal.strategy';
 
 @Injectable()
 export class StrategyService {
@@ -14,6 +15,10 @@ export class StrategyService {
   private strategy4: IStrategy;
   private strategy5: IStrategy;
   private strategy6: IStrategy;
+
+  private supermini1: IStrategy;
+  private supermini2: IStrategy;
+  private supermini3: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -71,12 +76,45 @@ export class StrategyService {
       189,
     );
 
+    this.supermini1 = new SuperMiniReversalDcaStrategy(
+      this.binanceService,
+      'SOLUSDT',
+      10,
+      '1m',
+      0.004,
+      190,
+    );
+    this.supermini2 = new SuperMiniReversalDcaStrategy(
+      this.binanceService,
+      'BTCUSDT',
+      10,
+      '1m',
+      0.004,
+      110500,
+    );
+    this.supermini3 = new SuperMiniReversalDcaStrategy(
+      this.binanceService,
+      'BNBUSDT',
+      10,
+      '1m',
+      0.004,
+      1100,
+    );
+
+    // Normal
     this.strategy1.startAll();
     this.strategy2.startAll();
     this.strategy3.startAll();
+
+    // Mini
     this.strategy4.startAll();
     this.strategy5.startAll();
     this.strategy6.startAll();
+
+    // Supermini
+    this.supermini1.startAll();
+    this.supermini2.startAll();
+    this.supermini3.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }
