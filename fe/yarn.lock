@@ -1292,6 +1292,13 @@
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.8.tgz#958b91c991b1867ced318bedea0e215ee050726e"
   integrity sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==
 
+"@types/node@^24.9.1":
+  version "24.9.1"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-24.9.1.tgz#b7360b3c789089e57e192695a855aa4f6981a53c"
+  integrity sha512-QoiaXANRkSXK6p0Duvt56W208du4P9Uye9hWLWgGMDTEoKPhuenzNcC4vGUmrNkiOKTlIrBoyNQYNpSwfEZXSg==
+  dependencies:
+    undici-types "~7.16.0"
+
 "@types/parse-path@^7.0.0":
   version "7.1.0"
   resolved "https://registry.yarnpkg.com/@types/parse-path/-/parse-path-7.1.0.tgz#1bdddfe4fb2038e76c7e622234a97d6a050a1be3"
@@ -2091,6 +2098,11 @@ csstype@^3.1.3:
   resolved "https://registry.yarnpkg.com/csstype/-/csstype-3.1.3.tgz#d80ff294d114fb0e6ac500fbf85b60137d7eff81"
   integrity sha512-M1uQkMl8rQK/szD0LNhtqxIPLpimGm8sOBwU7lLnCpSbTyY3yeU1Vc7l4KT5zT4s/yOxHH5O7tIuuLOCnLADRw==
 
+data-uri-to-buffer@^4.0.0:
+  version "4.0.1"
+  resolved "https://registry.yarnpkg.com/data-uri-to-buffer/-/data-uri-to-buffer-4.0.1.tgz#d8feb2b2881e6a4f58c2e08acfd0e2834e26222e"
+  integrity sha512-0R9ikRb668HB7QDxT1vkpuUBtqc53YyAwMwGeUFKRojY/NWKvdZ+9UYtRfGmhqNbRkTSVpMbmyhXipFFv2cb/A==
+
 db0@^0.3.4:
   version "0.3.4"
   resolved "https://registry.yarnpkg.com/db0/-/db0-0.3.4.tgz#fb109b0d9823ba1f787a4a3209fa1f3cf9ae9cf9"
@@ -2443,6 +2455,14 @@ fdir@^6.2.0, fdir@^6.5.0:
   resolved "https://registry.yarnpkg.com/fdir/-/fdir-6.5.0.tgz#ed2ab967a331ade62f18d077dae192684d50d350"
   integrity sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==
 
+fetch-blob@^3.1.2, fetch-blob@^3.1.4:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/fetch-blob/-/fetch-blob-3.2.0.tgz#f09b8d4bbd45adc6f0c20b7e787e793e309dcce9"
+  integrity sha512-7yAQpD2UMJzLi1Dqv7qFYnPbaPx7ZfFK6PiIxQ4PfkGPyNyl2Ugx+a/umUonmKqjhM4DnfbMvdX6otXq83soQQ==
+  dependencies:
+    node-domexception "^1.0.0"
+    web-streams-polyfill "^3.0.3"
+
 figures@^6.1.0:
   version "6.1.0"
   resolved "https://registry.yarnpkg.com/figures/-/figures-6.1.0.tgz#935479f51865fa7479f6fa94fc6fc7ac14e62c4a"
@@ -2469,6 +2489,13 @@ foreground-child@^3.1.0:
   dependencies:
     cross-spawn "^7.0.6"
     signal-exit "^4.0.1"
+
+formdata-polyfill@^4.0.10:
+  version "4.0.10"
+  resolved "https://registry.yarnpkg.com/formdata-polyfill/-/formdata-polyfill-4.0.10.tgz#24807c31c9d402e002ab3d8c720144ceb8848423"
+  integrity sha512-buewHzMvYL29jdeQTVILecSaZKnt/RJWjoZCF5OW60Z67/GmSLBkOFM7qh1PI3zFNtJbaZL5eQu1vLfazOwj4g==
+  dependencies:
+    fetch-blob "^3.1.2"
 
 fraction.js@^4.3.7:
   version "4.3.7"
@@ -2930,6 +2957,18 @@ knitwork@^1.2.0:
   resolved "https://registry.yarnpkg.com/knitwork/-/knitwork-1.2.0.tgz#3cc92e76249aeb35449cfbed3f31c6df8444db3f"
   integrity sha512-xYSH7AvuQ6nXkq42x0v5S8/Iry+cfulBz/DJQzhIyESdLD7425jXsPy4vn5cCXU+HhRN2kVw51Vd1K6/By4BQg==
 
+ky-universal@^0.12.0:
+  version "0.12.0"
+  resolved "https://registry.yarnpkg.com/ky-universal/-/ky-universal-0.12.0.tgz#e01f5255628d2742a4535ccd1a85ee196af6b70c"
+  integrity sha512-dGXoWBaHXIkiph3871I9H3KAgTE+fGOTAfTdO3wxb+Mg7seBa9rmWZmK29R38s8bZMDKulyELnwusOI8odCBvQ==
+  dependencies:
+    node-fetch "^3.3.2"
+
+ky@^1.13.0:
+  version "1.13.0"
+  resolved "https://registry.yarnpkg.com/ky/-/ky-1.13.0.tgz#d340f64bc51c10a1adbf6b93c3dc4d7b9eb03717"
+  integrity sha512-JeNNGs44hVUp2XxO3FY9WV28ymG7LgO4wju4HL/dCq1A8eKDcFgVrdCn1ssn+3Q/5OQilv5aYsL0DMt5mmAV9w==
+
 launch-editor@^2.11.1:
   version "2.11.1"
   resolved "https://registry.yarnpkg.com/launch-editor/-/launch-editor-2.11.1.tgz#61a0b7314a42fd84a6cbb564573d9e9ffcf3d72b"
@@ -3273,6 +3312,11 @@ node-addon-api@^7.0.0:
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-7.1.1.tgz#1aba6693b0f255258a049d621329329322aad558"
   integrity sha512-5m3bsyrjFWE1xf7nz7YXdN4udnVtXK6/Yfgn5qnahL6bCkf2yKt4k3nuTKAtT4r3IG8JNR2ncsIMdZuAzJjHQQ==
 
+node-domexception@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/node-domexception/-/node-domexception-1.0.0.tgz#6888db46a1f71c0b76b3f7555016b63fe64766e5"
+  integrity sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==
+
 node-fetch-native@^1.6.4, node-fetch-native@^1.6.6, node-fetch-native@^1.6.7:
   version "1.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch-native/-/node-fetch-native-1.6.7.tgz#9d09ca63066cc48423211ed4caf5d70075d76a71"
@@ -3284,6 +3328,15 @@ node-fetch@^2.6.7:
   integrity sha512-c4FRfUm/dbcWZ7U+1Wq0AwCyFL+3nt2bEw05wfxSz+DWpWsitgmSgYmy2dQdWyKC1694ELPqMs/YzUSNozLt8A==
   dependencies:
     whatwg-url "^5.0.0"
+
+node-fetch@^3.3.2:
+  version "3.3.2"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-3.3.2.tgz#d1e889bacdf733b4ff3b2b243eb7a12866a0b78b"
+  integrity sha512-dRB78srN/l6gqWulah9SrxeYnxeddIG30+GOqK/9OlLVyLg3HPnr6SqOWTWOXKRwC2eGYCkZ59NNuSgvSrpgOA==
+  dependencies:
+    data-uri-to-buffer "^4.0.0"
+    fetch-blob "^3.1.4"
+    formdata-polyfill "^4.0.10"
 
 node-forge@^1.3.1:
   version "1.3.1"
@@ -4555,6 +4608,11 @@ unctx@^2.4.1:
     magic-string "^0.30.17"
     unplugin "^2.1.0"
 
+undici-types@~7.16.0:
+  version "7.16.0"
+  resolved "https://registry.yarnpkg.com/undici-types/-/undici-types-7.16.0.tgz#ffccdff36aea4884cbfce9a750a0580224f58a46"
+  integrity sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==
+
 undici@^7.16.0:
   version "7.16.0"
   resolved "https://registry.yarnpkg.com/undici/-/undici-7.16.0.tgz#cb2a1e957726d458b536e3f076bf51f066901c1a"
@@ -4846,6 +4904,11 @@ vuetify@^3.10.6:
   version "3.10.6"
   resolved "https://registry.yarnpkg.com/vuetify/-/vuetify-3.10.6.tgz#ff087e4888ecfec58eccefc210c547d4b31c6497"
   integrity sha512-dYlFcRc11+LLpiPFBk3ZlboC2olDJBktK6cjgHOcMRPrboBEnjRATCEEn1DK5jre6rzNmoAwaIDziHBz6ssbtQ==
+
+web-streams-polyfill@^3.0.3:
+  version "3.3.3"
+  resolved "https://registry.yarnpkg.com/web-streams-polyfill/-/web-streams-polyfill-3.3.3.tgz#2073b91a2fdb1fbfbd401e7de0ac9f8214cecb4b"
+  integrity sha512-d2JWLCivmZYTSIoge9MsgFCZrt571BikcWGYkjC1khllbTeDlGqZ2D8vD8E/lJa8WGWbb7Plm8/XJYV7IJHZZw==
 
 webidl-conversions@^3.0.0:
   version "3.0.1"

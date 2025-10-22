@@ -12,4 +12,12 @@ export default defineNuxtConfig({
       }),
     ],
   },
+  devServer: {
+    port: Number(process.env.PORT),
+  },
+  runtimeConfig: {
+    public: {
+      apiBase: process.env.API_BASE_URL,
+    },
+  },
 });
