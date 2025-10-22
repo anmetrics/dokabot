@@ -51,7 +51,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
+      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}, maxBuyPrice: ${this.maxBuyPrice}`,
     );
     const positions = await this.binanceService.getOpenPositions(
       this.symbol + SUFFIX,
