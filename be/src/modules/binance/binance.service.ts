@@ -341,7 +341,6 @@ export class BinanceService implements OnModuleInit {
     return { name: 'No pattern detected', trend: 'neutral' };
   }
 
-  @Cron(CronExpression.EVERY_2_HOURS)
   async sendLog() {
     try {
       const { log: BNBUSDTLog } = await this.getLog('BNBUSDT');

@@ -3,12 +3,22 @@
     <v-card elevation="2" class="pa-4 dark-card">
       <div class="d-flex align-center justify-space-between mb-4">
         <h2 class="text-h5 font-weight-medium text-white">Lịch sử giao dịch</h2>
+        <v-btn
+          color="primary"
+          @click="refresh"
+          variant="flat"
+          :disabled="loading"
+        >
+          <v-icon start>mdi-refresh</v-icon>
+          Làm mới
+        </v-btn>
       </div>
 
       <v-data-table
+        :loading="loading"
         :headers="headers"
         :items="trades"
-        :items-per-page="5"
+        :items-per-page="10"
         class="dark-table"
       >
         <template #item.buyPrices="{ item }">
@@ -44,23 +54,25 @@
   </v-container>
 </template>
 
-<script setup>
-import { ref } from "vue";
+<script setup lang="ts">
+import { ref, onMounted } from "vue";
+import { useApi } from "~/apis";
 
-// Dữ liệu mẫu
-const trades = ref([
-  {
-    id: "1",
-    symbol: "BNBUSDT",
-    buyPrices: 1000,
-    sellPrice: 1200,
-    totalAmountBuyActual: 100,
-    totalAmountBuyUsdtSpent: 100,
-    totalProfit: 10,
-    totalRevenueUsdt: 10,
-    createdAt: "2025-10-22T14:11:04.328Z",
-  },
-]);
+interface Trade {
+  id: string;
+  symbol: string;
+  buyPrices: number;
+  sellPrice: number;
+  totalAmountBuyActual: number;
+  totalAmountBuyUsdtSpent: number;
+  totalProfit: number;
+  totalRevenueUsdt: number;
+  createdAt: string;
+}
+
+const api = useApi();
+const trades = ref<Trade[]>([]);
+const loading = ref(false);
 
 const headers = [
   { title: "Symbol", key: "symbol" },
@@ -73,7 +85,7 @@ const headers = [
   { title: "Ngày tạo", key: "createdAt", align: "center" },
 ];
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "short",
@@ -82,6 +94,24 @@ function formatDate(dateStr) {
     minute: "2-digit",
   });
 }
+
+async function fetchTrades() {
+  try {
+    loading.value = true;
+    const res: any = await api.get("binance/histories");
+    trades.value = res || [];
+  } catch (err) {
+    console.error("Lỗi khi fetch transactions:", err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+function refresh() {
+  fetchTrades();
+}
+
+onMounted(fetchTrades);
 </script>
 
 <style scoped>

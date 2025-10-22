@@ -4,27 +4,37 @@
       <h3 class="text-h6 font-weight-medium text-white">Tổng lợi nhuận</h3>
       <v-btn small text @click="refresh">Làm mới</v-btn>
     </div>
+
+    <div
+      v-if="loading"
+      class="d-flex justify-center align-center"
+      style="height: 300px"
+    >
+      <v-progress-circular indeterminate color="primary" size="50" />
+    </div>
+
     <canvas ref="chartCanvas"></canvas>
   </v-card>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted } from "vue";
 import { Chart, registerables } from "chart.js";
+import { useApi } from "~/apis";
 
 Chart.register(...registerables);
 
 const chartCanvas = ref<HTMLCanvasElement | null>(null);
 let chartInstance: Chart | null = null;
 
-// Dữ liệu mẫu
-const profits = ref([
-  { date: "2025-10-16", totalProfit: 12 },
-  { date: "2025-10-17", totalProfit: -5 },
-  { date: "2025-10-18", totalProfit: 8 },
-  { date: "2025-10-19", totalProfit: 20 },
-  { date: "2025-10-20", totalProfit: -2 },
-]);
+interface ProfitItem {
+  date: string;
+  totalProfit: number;
+}
+
+const profits = ref<ProfitItem[]>([]);
+const loading = ref(false); // thêm loading
+const api = useApi();
 
 const createChart = () => {
   if (!chartCanvas.value) return;
@@ -72,14 +82,23 @@ const createChart = () => {
   });
 };
 
-onMounted(() => {
-  createChart();
-});
+async function fetchProfits() {
+  loading.value = true; // bật loading
+  try {
+    const res: ProfitItem[] = await api.get("binance/profits");
+    profits.value = res || [];
+    createChart();
+  } catch (err) {
+    console.error("Lỗi fetch profits:", err);
+  } finally {
+    loading.value = false; // tắt loading
+  }
+}
+
+onMounted(fetchProfits);
 
 const refresh = () => {
-  // có thể fetch API mới ở đây
-  console.log("Làm mới chart...");
-  createChart();
+  fetchProfits();
 };
 </script>
 

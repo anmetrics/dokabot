@@ -1,39 +1,59 @@
 <template>
   <v-app dark>
     <!-- App Bar -->
-    <v-app-bar flat class="threads-app-bar">
-      <v-app-bar-nav-icon @click="drawer = !drawer" />
-      <v-toolbar-title>Dokabot</v-toolbar-title>
+    <v-app-bar flat class="crypto-app-bar">
+      <v-app-bar-nav-icon @click="drawer = !drawer" class="ml-2" />
+      <v-toolbar-title class="font-weight-bold text-uppercase">
+        CryptoBot
+      </v-toolbar-title>
       <v-spacer />
+      <v-btn icon @click="toggleTheme" aria-label="Toggle theme">
+        <v-icon>{{
+          isDark ? "mdi-white-balance-sunny" : "mdi-moon-waning-crescent"
+        }}</v-icon>
+      </v-btn>
+      <v-btn icon @click="openWallet" aria-label="Wallet">
+        <v-icon>mdi-wallet-outline</v-icon>
+      </v-btn>
     </v-app-bar>
 
     <!-- Navigation Drawer -->
-    <v-navigation-drawer
-      v-model="drawer"
-      app
-      width="280"
-      class="threads-drawer"
-    >
+    <v-navigation-drawer v-model="drawer" app width="280" class="crypto-drawer">
       <v-list dense nav>
         <v-list-item
           v-for="item in menuItems"
           :key="item.title"
           :to="item.to"
           :class="[
-            'threads-list-item',
-            { 'threads-list-item--active': isActive(item.to) },
+            'crypto-list-item',
+            { 'crypto-list-item--active': isActive(item.to) },
           ]"
           @click="navigate(item.to)"
         >
-          <v-icon>{{ item.icon }}</v-icon>
-          <v-list-item-title>{{ item.title }}</v-list-item-title>
+          <v-icon class="crypto-list-icon">{{ item.icon }}</v-icon>
+          <v-list-item-title class="crypto-list-title">
+            {{ item.title }}
+          </v-list-item-title>
         </v-list-item>
       </v-list>
+      <!-- Crypto Price Ticker -->
+      <v-divider class="my-2" />
+      <v-list-item class="px-4">
+        <v-list-item-title class="text-caption font-weight-bold">
+          Market Snapshot
+        </v-list-item-title>
+        <v-list-item-subtitle class="text-caption mt-1">
+          BTC: $67,450.32 <span class="text-green">+2.3%</span>
+        </v-list-item-subtitle>
+        <v-list-item-subtitle class="text-caption">
+          ETH: $3,250.89 <span class="text-red">-0.8%</span>
+        </v-list-item-subtitle>
+      </v-list-item>
     </v-navigation-drawer>
 
     <!-- Main Content -->
-    <v-main class="threads-main">
-      <v-container fluid>
+    <v-main class="crypto-main">
+      <v-container fluid class="pa-6">
         <NuxtPage />
       </v-container>
     </v-main>
@@ -42,19 +62,22 @@
 
 <script setup lang="ts">
 import { useRouter, useRoute } from "#app";
+import { useTheme } from "vuetify";
 
 const router = useRouter();
 const route = useRoute();
+const theme = useTheme();
+
 const drawer = ref(true);
 
 const menuItems = [
   { title: "Trang chủ", icon: "mdi-home-outline", to: "/" },
-  { title: "Tài sản", icon: "mdi-home-outline", to: "/assets" },
-  { title: "Vị thế", icon: "mdi-account-circle-outline", to: "/positions" },
-  { title: "Lịch sử", icon: "mdi-message-text-outline", to: "/histories" },
+  { title: "Tài sản", icon: "mdi-wallet-outline", to: "/assets" },
+  { title: "Vị thế", icon: "mdi-chart-line", to: "/positions" },
+  { title: "Lịch sử", icon: "mdi-history", to: "/histories" },
   {
     title: "Lịch sử giao dịch",
-    icon: "mdi-message-text-outline",
+    icon: "mdi-swap-horizontal",
     to: "/transactions",
   },
   { title: "Cài đặt", icon: "mdi-cog-outline", to: "/settings" },
@@ -62,51 +85,96 @@ const menuItems = [
 
 const isActive = (path: string) => route.path === path;
 const navigate = (path: string) => router.push(path);
+const openWallet = () => router.push("/assets");
+
+const isDark = computed(() => theme.global.name.value === "dark");
+const toggleTheme = () =>
+  (theme.global.name.value = isDark.value ? "light" : "dark");
 </script>
 
 <style scoped>
-/* App bar kiểu Threads */
-.threads-app-bar {
-  background-color: #1a1a1a !important;
-  color: #ffffff;
+/* App bar styling */
+.crypto-app-bar {
+  background-color: #0d1a26 !important;
+  color: #e0e0e0;
   box-shadow: none;
-  border-bottom: 1px solid #2a2a2a;
+  border-bottom: 1px solid #2a3b4c;
+  backdrop-filter: blur(10px);
 }
 
-/* Drawer tối, phẳng, subtle shadow */
-.threads-drawer {
-  background-color: #121212 !important;
-  color: #ffffff;
-  border-right: 1px solid #2a2a2a;
+/* Navigation drawer styling */
+.crypto-drawer {
+  background: linear-gradient(180deg, #0d1a26, #1c2a3b);
+  color: #e0e0e0;
+  border-right: 1px solid #2a3b4c;
 }
 
-/* List item kiểu phẳng như Threads */
-.threads-list-item {
+/* List item styling with aligned icon and text */
+.crypto-list-item {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 10px 16px;
+  gap: 12px;
+  height: 48px;
+  padding: 0 16px;
   border-radius: 12px;
-  transition: background 0.2s ease;
-  color: #ffffff;
-}
-.threads-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-}
-.threads-list-item--active {
-  background-color: rgba(24, 144, 255, 0.2); /* subtle accent */
-  color: #ffffff;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  font-weight: 500;
 }
 
-/* Icon */
-.threads-list-item v-icon {
-  color: #ffffff;
+.crypto-list-icon {
+  color: inherit;
+  font-size: 24px;
+  min-width: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Main container */
-.threads-main {
-  background-color: #181818 !important;
-  color: #ffffff;
+.crypto-list-title {
+  font-size: 16px;
+  line-height: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.crypto-list-item:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  transform: translateX(2px);
+}
+
+.crypto-list-item--active {
+  background-color: rgba(30, 136, 229, 0.3);
+  color: #4fc3f7;
+}
+
+.crypto-list-item--active .crypto-list-icon {
+  color: #4fc3f7;
+}
+
+/* Main content styling */
+.crypto-main {
+  background-color: #121f2e !important;
+  color: #e0e0e0;
   min-height: 100vh;
+}
+
+/* Market ticker colors */
+.text-green {
+  color: #00e676;
+}
+
+.text-red {
+  color: #ff5252;
+}
+
+/* Scrollbar styling */
+.crypto-drawer::-webkit-scrollbar {
+  width: 6px;
+}
+
+.crypto-drawer::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
 }
 </style>

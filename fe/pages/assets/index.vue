@@ -10,7 +10,12 @@
             Hiển thị toàn bộ số dư tài sản hiện có trong tài khoản
           </p>
         </div>
-        <v-btn color="primary" @click="refresh" variant="flat">
+        <v-btn
+          color="primary"
+          @click="refresh"
+          variant="flat"
+          :loading="loading"
+        >
           <v-icon start>mdi-refresh</v-icon>
           Làm mới
         </v-btn>
@@ -18,7 +23,7 @@
 
       <!-- Tổng quan -->
       <v-row class="mb-4">
-        <v-col cols="12" sm="4">
+        <v-col cols="12" sm="6">
           <v-sheet class="pa-4 rounded-lg" color="#2a2a2a">
             <div class="text-subtitle-1 text-grey-lighten-1">Tổng tài sản</div>
             <div class="text-h6 font-weight-bold text-white">
@@ -26,15 +31,7 @@
             </div>
           </v-sheet>
         </v-col>
-        <v-col cols="12" sm="4">
-          <v-sheet class="pa-4 rounded-lg" color="#2a2a2a">
-            <div class="text-subtitle-1 text-grey-lighten-1">Tổng Free</div>
-            <div class="text-h6 font-weight-bold text-white">
-              {{ totalFree.toFixed(4) }}
-            </div>
-          </v-sheet>
-        </v-col>
-        <v-col cols="12" sm="4">
+        <v-col cols="12" sm="6">
           <v-sheet class="pa-4 rounded-lg" color="#2a2a2a">
             <div class="text-subtitle-1 text-grey-lighten-1">Tổng Locked</div>
             <div class="text-h6 font-weight-bold text-white">
@@ -51,6 +48,7 @@
         :items-per-page="10"
         class="text-white"
         style="background-color: transparent"
+        :loading="loading"
       >
         <template #item.asset="{ item }">
           <v-chip color="#2c2c2c" variant="flat" size="small">
@@ -69,7 +67,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
+import { useApi } from "~/apis";
 
 interface AssetBalance {
   asset: string;
@@ -77,22 +76,16 @@ interface AssetBalance {
   locked: string;
 }
 
-// ⚡ Giả lập dữ liệu (sau này thay bằng API)
-const balances = ref<AssetBalance[]>([
-  { asset: "USDT", free: "150.45", locked: "0.00" },
-  { asset: "BTC", free: "0.0035", locked: "0.0001" },
-  { asset: "BNB", free: "2.25", locked: "0.00" },
-  { asset: "ETH", free: "0.12", locked: "0.00" },
-]);
+const api = useApi();
+const balances = ref<AssetBalance[]>([]);
+const loading = ref(false); // thêm trạng thái loading
 
-// 🧮 Header bảng
 const headers = [
   { title: "Tài sản", key: "asset", align: "start" },
   { title: "Số dư khả dụng", key: "free", align: "end" },
   { title: "Đang khóa", key: "locked", align: "end" },
 ];
 
-// 🧮 Tổng cộng
 const totalFree = computed(() =>
   balances.value.reduce((acc, b) => acc + Number(b.free), 0)
 );
@@ -100,9 +93,25 @@ const totalLocked = computed(() =>
   balances.value.reduce((acc, b) => acc + Number(b.locked), 0)
 );
 
-// 🔄 Làm mới
+async function fetchBalances() {
+  loading.value = true; // bắt đầu loading
+  try {
+    const res: any = await api.get("binance/account");
+    balances.value =
+      res.balances.filter((b) =>
+        ["BNB", "BTC", "SOL", "USDT"].includes(b.asset)
+      ) || [];
+  } catch (err) {
+    console.error("Lỗi khi fetch balances:", err);
+  } finally {
+    loading.value = false; // kết thúc loading
+  }
+}
+
+onMounted(fetchBalances);
+
 function refresh() {
-  console.log("Làm mới danh sách tài sản...");
+  fetchBalances();
 }
 </script>
 

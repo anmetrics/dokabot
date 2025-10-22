@@ -10,14 +10,19 @@
             Hiển thị toàn bộ position hiện có trong hệ thống
           </p>
         </div>
-        <v-btn color="primary" @click="refresh" variant="elevated">
+        <v-btn
+          color="primary"
+          @click="refresh"
+          variant="elevated"
+          :loading="loading"
+        >
           <v-icon start>mdi-refresh</v-icon> Làm mới
         </v-btn>
       </div>
 
       <!-- Tổng quan -->
       <v-row class="mb-4">
-        <v-col cols="12" sm="4">
+        <v-col cols="12" sm="6">
           <v-sheet class="pa-3 rounded dark-sheet">
             <div class="text-subtitle-1 text-grey">Tổng số vị thế</div>
             <div class="text-h6 font-weight-bold text-white">
@@ -25,19 +30,11 @@
             </div>
           </v-sheet>
         </v-col>
-        <v-col cols="12" sm="4">
+        <v-col cols="12" sm="6">
           <v-sheet class="pa-3 rounded dark-sheet">
             <div class="text-subtitle-1 text-grey">Tổng vốn USD</div>
             <div class="text-h6 font-weight-bold text-white">
               {{ totalUsdSpent.toFixed(2) }} USDT
-            </div>
-          </v-sheet>
-        </v-col>
-        <v-col cols="12" sm="4">
-          <v-sheet class="pa-3 rounded dark-sheet">
-            <div class="text-subtitle-1 text-grey">Chiến lược</div>
-            <div class="text-h6 font-weight-bold text-white">
-              {{ uniqueStrategies.join(", ") }}
             </div>
           </v-sheet>
         </v-col>
@@ -47,8 +44,9 @@
       <v-data-table
         :headers="headers"
         :items="positions"
-        :items-per-page="5"
+        :items-per-page="10"
         class="elevation-1 dark-table"
+        :loading="loading"
       >
         <template #item.buyPrice="{ item }">
           {{ item.buyPrice.toLocaleString() }}
@@ -64,67 +62,25 @@
   </v-container>
 </template>
 
-<script setup>
-import { ref, computed } from "vue";
+<script setup lang="ts">
+import { ref, computed, onMounted } from "vue";
+import { useApi } from "~/apis";
 
-// Dữ liệu mẫu
-const positions = ref([
-  {
-    id: "1",
-    buyPrice: 1140,
-    strategy: "BNBUSDT_MINI",
-    symbol: "BNBUSDT",
-    qty: 0.044,
-    usdSpent: 49.63728,
-    totalQtyActual: 0.044,
-    dcaIndex: 0,
-    createdAt: "2025-10-20T00:00:00.000Z",
-  },
-  {
-    id: "2",
-    buyPrice: 1257.9,
-    strategy: "BNBUSDT",
-    symbol: "BNBUSDT",
-    qty: 0.159,
-    usdSpent: 200.01,
-    totalQtyActual: 0.159,
-    dcaIndex: 2,
-    createdAt: "2025-10-20T00:00:00.000Z",
-  },
-  {
-    id: "3",
-    buyPrice: 1300,
-    strategy: "BNBUSDT",
-    symbol: "BNBUSDT",
-    qty: 0.076,
-    usdSpent: 98,
-    totalQtyActual: 0.076,
-    dcaIndex: 4,
-    createdAt: "2025-10-20T00:00:00.000Z",
-  },
-  {
-    id: "4",
-    buyPrice: 112870,
-    strategy: "BTCUSDT_MINI",
-    symbol: "BTCUSDT",
-    qty: 0.00044,
-    usdSpent: 49.66,
-    totalQtyActual: 0.00044,
-    dcaIndex: 0,
-    createdAt: "2025-10-20T00:00:00.000Z",
-  },
-  {
-    id: "5",
-    buyPrice: 1100,
-    strategy: "BNBUSDT",
-    symbol: "BNBUSDT",
-    qty: 0.045,
-    usdSpent: 49.5,
-    totalQtyActual: 0.045,
-    dcaIndex: 3,
-    createdAt: "2025-10-20T00:00:00.000Z",
-  },
-]);
+interface Position {
+  id: string;
+  buyPrice: number;
+  strategy: string;
+  symbol: string;
+  qty: number;
+  usdSpent: number;
+  totalQtyActual: number;
+  dcaIndex: number;
+  createdAt: string;
+}
+
+const api = useApi();
+const positions = ref<Position[]>([]);
+const loading = ref(false); // thêm trạng thái loading
 
 const headers = [
   { title: "Symbol", key: "symbol", sortable: true },
@@ -144,7 +100,7 @@ const uniqueStrategies = computed(() => [
   ...new Set(positions.value.map((p) => p.strategy)),
 ]);
 
-function formatDate(dateStr) {
+function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "short",
@@ -152,9 +108,23 @@ function formatDate(dateStr) {
   });
 }
 
-function refresh() {
-  console.log("Làm mới danh sách position...");
+async function fetchPositions() {
+  loading.value = true; // bắt đầu loading
+  try {
+    const res: any = await api.get("binance/positions");
+    positions.value = res || [];
+  } catch (err) {
+    console.error("Lỗi khi fetch positions:", err);
+  } finally {
+    loading.value = false; // kết thúc loading
+  }
 }
+
+function refresh() {
+  fetchPositions();
+}
+
+onMounted(fetchPositions);
 </script>
 
 <style scoped>

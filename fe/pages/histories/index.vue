@@ -27,44 +27,44 @@
 
           <div v-if="log.symbols?.[0]?.openPositions">
             <v-row>
-              <v-col cols="6" class="text-subtitle-2 text-grey">
-                Số lượng:
-              </v-col>
+              <v-col cols="6" class="text-subtitle-2 text-grey"
+                >Số lượng:</v-col
+              >
               <v-col cols="6" class="text-right text-white">
                 {{ formatNumber(log.symbols[0].openPositions.totalQty) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey">
-                Giá mua TB:
-              </v-col>
+              <v-col cols="6" class="text-subtitle-2 text-grey"
+                >Giá mua TB:</v-col
+              >
               <v-col cols="6" class="text-right text-white">
                 {{ formatPrice(log.symbols[0].openPositions.avgBuyPrice) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey">
-                Giá hiện tại:
-              </v-col>
+              <v-col cols="6" class="text-subtitle-2 text-grey"
+                >Giá hiện tại:</v-col
+              >
               <v-col cols="6" class="text-right text-white">
                 {{ formatPrice(log.symbols[0].openPositions.currentPrice) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey">
-                Tổng vốn:
-              </v-col>
+              <v-col cols="6" class="text-subtitle-2 text-grey"
+                >Tổng vốn:</v-col
+              >
               <v-col cols="6" class="text-right text-white">
                 {{ formatPrice(log.symbols[0].openPositions.totalSpentOpen) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey">
-                Giá trị hiện tại:
-              </v-col>
+              <v-col cols="6" class="text-subtitle-2 text-grey"
+                >Giá trị hiện tại:</v-col
+              >
               <v-col cols="6" class="text-right text-white">
                 {{ formatPrice(log.symbols[0].openPositions.currentValue) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey">
-                Lãi / Lỗ:
-              </v-col>
+              <v-col cols="6" class="text-subtitle-2 text-grey"
+                >Lãi / Lỗ:</v-col
+              >
               <v-col
                 cols="6"
                 class="text-right font-weight-bold"
@@ -85,56 +85,50 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <v-row v-if="loading" justify="center" class="mt-6">
+      <v-col cols="12" class="text-center">
+        <v-progress-circular
+          indeterminate
+          color="primary"
+        ></v-progress-circular>
+      </v-col>
+    </v-row>
+
+    <v-row
+      v-if="!loading && Object.keys(logs).length === 0"
+      justify="center"
+      class="mt-6"
+    >
+      <v-col cols="12" class="text-center text-grey">
+        Không có dữ liệu logs
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
-const logs = {
-  BNBUSDTLog: {
-    symbols: [
-      {
-        symbol: "BNBUSDT",
-        sellSummary: null,
-        openPositions: {
-          totalQty: 0.324,
-          avgBuyPrice: 1225.763209876543,
-          currentPrice: 1074.51,
-          totalSpentOpen: 397.14727999999997,
-          currentValue: 348.14124,
-          unrealizedPnL: -49.006039999999985,
-        },
-      },
-    ],
-    grandTotal: { totalProfit: 0, totalRevenue: 0, totalSpent: 0 },
-  },
-  BTCUSDTLog: {
-    symbols: [
-      {
-        symbol: "BTCUSDT",
-        sellSummary: null,
-        openPositions: {
-          totalQty: 0.00044,
-          avgBuyPrice: 112863.63636363635,
-          currentPrice: 107738.01,
-          totalSpentOpen: 49.66,
-          currentValue: 47.4047244,
-          unrealizedPnL: -2.2552755999999974,
-        },
-      },
-    ],
-    grandTotal: { totalProfit: 0, totalRevenue: 0, totalSpent: 0 },
-  },
-  SOLUSDTLog: {
-    symbols: [
-      {
-        symbol: "SOLUSDT",
-        sellSummary: null,
-        openPositions: null,
-      },
-    ],
-    grandTotal: { totalProfit: 0, totalRevenue: 0, totalSpent: 0 },
-  },
-};
+import { ref, onMounted } from "vue";
+import { useApi } from "~/apis";
+
+const api = useApi();
+const logs = ref<Record<string, any>>({});
+const loading = ref(true);
+
+async function fetchLogs() {
+  loading.value = true;
+  try {
+    const res = await api.get<Record<string, any>>("binance/logs");
+    logs.value = res || {};
+  } catch (err) {
+    console.error("Fetch logs failed:", err);
+    logs.value = {};
+  } finally {
+    loading.value = false;
+  }
+}
+
+onMounted(fetchLogs);
 
 const formatNumber = (num: number) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(num);
