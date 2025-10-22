@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import Binance, {
   Candle,
@@ -16,6 +16,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
+import { SETTING_KEY } from '../settings/settings.enum';
 
 type ReversalPattern = {
   name: string;
@@ -23,7 +24,7 @@ type ReversalPattern = {
 };
 
 @Injectable()
-export class BinanceService {
+export class BinanceService implements OnModuleInit {
   private client: ReturnType<typeof Binance> | null = null;
   private logger = new Logger('BinanceService');
 
@@ -33,6 +34,32 @@ export class BinanceService {
     private readonly prismaService: PrismaService,
   ) {
     this.init();
+  }
+  async onModuleInit() {
+    const existingSettings = await this.prismaService.setting.findMany({});
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
+    const existingKeys = new Set(existingSettings.map((s) => s.key));
+
+    const defaults: Record<string, string> = {
+      [SETTING_KEY.ENABLED]: 'true',
+      [SETTING_KEY.MAX_BNB_PRICE]: '1100',
+      [SETTING_KEY.MAX_SOL_PRICE]: '190',
+      [SETTING_KEY.MAX_BTC_PRICE]: '110000',
+    };
+
+    const missingKeys = Object.keys(SETTING_KEY).filter(
+      (key) => !existingKeys.has(key),
+    );
+
+    if (missingKeys.length > 0) {
+      await this.prismaService.setting.createMany({
+        data: missingKeys.map((key) => ({
+          key,
+          value: defaults[key] ?? '',
+        })),
+        skipDuplicates: true,
+      });
+    }
   }
 
   init() {
@@ -362,16 +389,50 @@ export class BinanceService {
   }
 
   async savePosition(data: Prisma.PositionCreateInput) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.prismaService.position.create({
       data,
     });
   }
 
   async deletePosition(id: string) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return await this.prismaService.position.delete({
       where: { id },
     });
+  }
+
+  async saveSellSuccess(data: Prisma.SellSuccessCreateInput) {
+    return await this.prismaService.sellSuccess.create({ data });
+  }
+
+  async getListSellSuccess() {
+    return await this.prismaService.sellSuccess.findMany({});
+  }
+
+  async getAllOpenPositions() {
+    const positions = await this.prismaService.position.findMany({});
+    return positions;
+  }
+
+  async getHistories() {
+    return this.prismaService.sellSuccess.findMany({});
+  }
+
+  async getProfits() {
+    const data = await this.prismaService.sellSuccess.findMany({});
+    const grouped = data.reduce(
+      (acc, item) => {
+        const date = new Date(item.createdAt).toISOString().split('T')[0];
+        if (!acc[date]) acc[date] = 0;
+        acc[date] += Number(item.totalProfit);
+
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    return Object.entries(grouped).map(([date, totalProfit]) => ({
+      date,
+      totalProfit,
+    }));
   }
 }

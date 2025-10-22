@@ -14,6 +14,17 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model Setting {
+  id         String   @id @default(uuid())
+  key        String   @unique @map("key")      
+  value      String   @map("value")             
+
+  createdAt   DateTime  @default(now()) @map("created_at") 
+  updatedAt      DateTime? @updatedAt  @map("updated_at") 
+
+  @@map("settings")
+}
+
 model Position {
   id             String   @id @default(uuid())
   buyPrice       Float @map("buy_price")

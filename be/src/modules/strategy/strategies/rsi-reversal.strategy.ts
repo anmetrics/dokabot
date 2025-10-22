@@ -164,11 +164,6 @@ export class RsiReversalDcaStrategy implements IStrategy {
       }
     } catch (e) {
       console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
-    } finally {
-      const openPositions = await this.binanceService.getOpenPositions(
-        this.symbol,
-      );
-      console.log('CURRENT_POSITIONS:', openPositions);
     }
   }
 

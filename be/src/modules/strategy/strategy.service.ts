@@ -5,6 +5,8 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { RsiReversalDcaStrategy } from './strategies/rsi-reversal.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini-rsi-reversal.strategy';
 import { SuperMiniReversalDcaStrategy } from './strategies/super-mini-rsi-reversal.strategy';
+import { PrismaService } from 'src/prisma.service';
+import { SETTING_KEY } from '../settings/settings.enum';
 
 @Injectable()
 export class StrategyService {
@@ -12,9 +14,10 @@ export class StrategyService {
   private strategy1: IStrategy;
   private strategy2: IStrategy;
   private strategy3: IStrategy;
-  private strategy4: IStrategy;
-  private strategy5: IStrategy;
-  private strategy6: IStrategy;
+
+  private mini1: IStrategy;
+  private mini2: IStrategy;
+  private mini3: IStrategy;
 
   private supermini1: IStrategy;
   private supermini2: IStrategy;
@@ -23,9 +26,23 @@ export class StrategyService {
   constructor(
     private readonly binanceService: BinanceService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly prismaService: PrismaService,
   ) {}
 
-  startStrategy(name: string) {
+  async getSettingByKey(key: SETTING_KEY) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return await this.prismaService.setting.findFirst({
+      where: {
+        key,
+      },
+    });
+  }
+
+  async startStrategy(name: string) {
+    const bnbSetting = await this.getSettingByKey(SETTING_KEY.MAX_BNB_PRICE);
+    const btcSetting = await this.getSettingByKey(SETTING_KEY.MAX_BTC_PRICE);
+    const solSetting = await this.getSettingByKey(SETTING_KEY.MAX_SOL_PRICE);
+
     this.strategy1 = new RsiReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
@@ -40,49 +57,49 @@ export class StrategyService {
       '3m',
       0.03,
     );
-    this.strategy6 = new RsiReversalDcaStrategy(
+    this.strategy3 = new RsiReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      20,
+      10,
       '3m',
-      0.03,
+      0.026,
     );
 
     // Mini sclaping
-
-    this.strategy3 = new MiniReversalDcaStrategy(
+    this.mini1 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      50,
+      40,
       '1m',
       0.006,
-      1252,
+      Number(bnbSetting?.value),
     );
-    this.strategy4 = new MiniReversalDcaStrategy(
+    this.mini2 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      50,
+      40,
       '1m',
       0.006,
-      114000,
+      Number(btcSetting?.value),
     );
 
-    this.strategy5 = new MiniReversalDcaStrategy(
+    this.mini3 = new MiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      50,
+      40,
       '1m',
       0.008,
-      189,
+      Number(solSetting?.value),
     );
 
+    // Supermini sclaping
     this.supermini1 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
       10,
       '1m',
       0.004,
-      190,
+      Number(solSetting?.value),
     );
     this.supermini2 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
@@ -90,7 +107,7 @@ export class StrategyService {
       10,
       '1m',
       0.004,
-      110500,
+      Number(btcSetting?.value),
     );
     this.supermini3 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
@@ -98,7 +115,7 @@ export class StrategyService {
       10,
       '1m',
       0.004,
-      1100,
+      Number(bnbSetting?.value),
     );
 
     // Normal
@@ -107,9 +124,9 @@ export class StrategyService {
     this.strategy3.startAll();
 
     // Mini
-    this.strategy4.startAll();
-    this.strategy5.startAll();
-    this.strategy6.startAll();
+    this.mini1.startAll();
+    this.mini2.startAll();
+    this.mini3.startAll();
 
     // Supermini
     this.supermini1.startAll();

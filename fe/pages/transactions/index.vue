@@ -1,0 +1,110 @@
+<template>
+  <v-container class="py-8" dark>
+    <v-card elevation="2" class="pa-4 dark-card">
+      <div class="d-flex align-center justify-space-between mb-4">
+        <h2 class="text-h5 font-weight-medium text-white">Lịch sử giao dịch</h2>
+      </div>
+
+      <v-data-table
+        :headers="headers"
+        :items="trades"
+        :items-per-page="5"
+        class="dark-table"
+      >
+        <template #item.buyPrices="{ item }">
+          {{ item.buyPrices.toLocaleString() }}
+        </template>
+        <template #item.sellPrice="{ item }">
+          {{ item.sellPrice.toLocaleString() }}
+        </template>
+        <template #item.totalAmountBuyActual="{ item }">
+          {{ item.totalAmountBuyActual }}
+        </template>
+        <template #item.totalAmountBuyUsdtSpent="{ item }">
+          {{ item.totalAmountBuyUsdtSpent.toFixed(2) }}
+        </template>
+        <template #item.totalProfit="{ item }">
+          <span
+            :class="{
+              'text-success': item.totalProfit > 0,
+              'text-error': item.totalProfit < 0,
+            }"
+          >
+            {{ item.totalProfit.toFixed(2) }}
+          </span>
+        </template>
+        <template #item.totalRevenueUsdt="{ item }">
+          {{ item.totalRevenueUsdt.toFixed(2) }}
+        </template>
+        <template #item.createdAt="{ item }">
+          {{ formatDate(item.createdAt) }}
+        </template>
+      </v-data-table>
+    </v-card>
+  </v-container>
+</template>
+
+<script setup>
+import { ref } from "vue";
+
+// Dữ liệu mẫu
+const trades = ref([
+  {
+    id: "1",
+    symbol: "BNBUSDT",
+    buyPrices: 1000,
+    sellPrice: 1200,
+    totalAmountBuyActual: 100,
+    totalAmountBuyUsdtSpent: 100,
+    totalProfit: 10,
+    totalRevenueUsdt: 10,
+    createdAt: "2025-10-22T14:11:04.328Z",
+  },
+]);
+
+const headers = [
+  { title: "Symbol", key: "symbol" },
+  { title: "Giá mua", key: "buyPrices", align: "end" },
+  { title: "Giá bán", key: "sellPrice", align: "end" },
+  { title: "Tổng lượng", key: "totalAmountBuyActual", align: "end" },
+  { title: "Tổng vốn USDT", key: "totalAmountBuyUsdtSpent", align: "end" },
+  { title: "Lãi/Lỗ", key: "totalProfit", align: "end" },
+  { title: "Doanh thu USDT", key: "totalRevenueUsdt", align: "end" },
+  { title: "Ngày tạo", key: "createdAt", align: "center" },
+];
+
+function formatDate(dateStr) {
+  return new Date(dateStr).toLocaleDateString("vi-VN", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+</script>
+
+<style scoped>
+.dark-card {
+  background-color: #1e1e2f;
+  color: #ffffff;
+  border-radius: 12px;
+}
+.dark-table {
+  background-color: #1e1e2f;
+  color: #ffffff;
+}
+.dark-table .v-data-table-header th {
+  background-color: #2a2a3a;
+  color: #ffffff;
+}
+.dark-table .v-data-table__row:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.text-success {
+  color: #4caf50;
+}
+.text-error {
+  color: #f44336;
+}
+</style>

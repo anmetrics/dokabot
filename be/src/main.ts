@@ -8,7 +8,7 @@ async function bootstrap() {
   const strategyService = app.get(StrategyService);
   const strategy = process.env.STRATEGY || 'ema-macd';
 
-  await app.listen(process.env.PORT ?? 3000);
+  await app.listen(process.env.PORT ?? 3333);
   strategyService.startStrategy(strategy);
 }
 bootstrap();
