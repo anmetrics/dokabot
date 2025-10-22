@@ -5,7 +5,7 @@ export function useApi() {
   const config = useRuntimeConfig();
 
   const api = ky.create({
-    prefixUrl: config.public.apiBase,
+    prefixUrl: "http://157.245.150.180:3000",
     timeout: 10000,
     headers: {
       "Content-Type": "application/json",
