@@ -146,9 +146,9 @@ export class MiniReversalDcaStrategy implements IStrategy {
         }
       }
 
-      if (lastRsi < this.rsiSellThreshold) {
-        return;
-      }
+      // if (lastRsi < this.rsiSellThreshold) {
+      //   return;
+      // }
 
       // === SELL với trailing ATR để tránh bán quá sớm ===
       if (openPositions.length > 0) {
