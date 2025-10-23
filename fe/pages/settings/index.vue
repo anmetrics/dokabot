@@ -1,19 +1,31 @@
 <template>
   <v-container fluid class="pa-6">
     <v-card class="pa-6 rounded-xl" color="#1e1e1e">
+      <!-- Tiêu đề -->
       <v-card-title class="text-h5 font-weight-bold text-white">
         Cài đặt hệ thống
       </v-card-title>
 
       <v-divider class="my-4" />
 
+      <!-- ENABLED switch riêng biệt -->
+      <div v-if="!loading && enabledSetting" class="d-flex align-center mb-6">
+        <v-icon color="primary" size="28" class="mr-2">mdi-power</v-icon>
+        <v-switch
+          v-model="enabledSetting.value"
+          color="primary"
+          inset
+          :label="`Hệ thống: ${enabledSetting.value ? 'Bật' : 'Tắt'}`"
+          hide-details
+          class="text-white"
+        />
+      </div>
+
+      <v-divider class="mb-4" />
+
+      <!-- Các settings còn lại -->
       <v-row dense v-if="!loading">
-        <v-col
-          cols="12"
-          md="6"
-          v-for="(item, index) in settings"
-          :key="item.key"
-        >
+        <v-col cols="12" md="6" v-for="item in filteredSettings" :key="item.id">
           <v-text-field
             v-model="item.value"
             :label="item.key"
@@ -34,7 +46,7 @@
 
       <!-- Empty -->
       <v-row
-        v-if="!loading && settings.length === 0"
+        v-if="!loading && filteredSettings.length === 0"
         justify="center"
         class="py-8"
       >
@@ -60,12 +72,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { useApi } from "~/apis"; // Giống như trong màn logs
+import { ref, computed, onMounted } from "vue";
+import { useApi } from "~/apis";
 
 interface SettingItem {
+  id: string;
   key: string;
-  value: string;
+  value: string | boolean;
 }
 
 const api = useApi();
@@ -73,14 +86,22 @@ const settings = ref<SettingItem[]>([]);
 const loading = ref(true);
 const saving = ref(false);
 
+// Lọc riêng ENABLED
+const enabledSetting = computed(() =>
+  settings.value.find((s) => s.key === "ENABLED")
+);
+const filteredSettings = computed(() =>
+  settings.value.filter((s) => s.key !== "ENABLED")
+);
+
 async function fetchSettings() {
   loading.value = true;
   try {
-    const res = await api.get<Record<string, string>>("binance/settings"); // gọi /settings
-    // Chuyển object thành array để dễ render
-    settings.value = Object.entries(res || {}).map(([key, value]) => ({
-      key,
-      value,
+    const res = await api.get<SettingItem[]>("binance/settings");
+
+    settings.value = res.map((s) => ({
+      ...s,
+      value: s.key === "ENABLED" ? s.value === "true" : s.value, // convert boolean cho ENABLED
     }));
   } catch (err) {
     console.error("Fetch settings failed:", err);
@@ -94,10 +115,13 @@ async function saveAllSettings() {
   saving.value = true;
   try {
     const payload = settings.value.reduce(
-      (acc, s) => ({ ...acc, [s.key]: s.value }),
+      (acc, s) => ({
+        ...acc,
+        [s.key]: s.key === "ENABLED" ? String(s.value) : s.value,
+      }),
       {}
     );
-    await api.post("settings", payload); // gọi POST /settings để cập nhật
+    await api.post("settings", payload);
   } catch (err) {
     console.error("Save settings failed:", err);
   } finally {
@@ -121,5 +145,9 @@ onMounted(fetchSettings);
 
 .v-text-field label {
   color: #aaa !important;
+}
+
+.v-switch .v-label {
+  color: #fff !important;
 }
 </style>

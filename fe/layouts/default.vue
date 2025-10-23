@@ -36,19 +36,8 @@
           </v-list-item-title>
         </v-list-item>
       </v-list>
-      <!-- Crypto Price Ticker -->
+
       <v-divider class="my-2" />
-      <v-list-item class="px-4">
-        <v-list-item-title class="text-caption font-weight-bold">
-          Market Snapshot
-        </v-list-item-title>
-        <v-list-item-subtitle class="text-caption mt-1">
-          BTC: $67,450.32 <span class="text-green">+2.3%</span>
-        </v-list-item-subtitle>
-        <v-list-item-subtitle class="text-caption">
-          ETH: $3,250.89 <span class="text-red">-0.8%</span>
-        </v-list-item-subtitle>
-      </v-list-item>
     </v-navigation-drawer>
 
     <!-- Main Content -->

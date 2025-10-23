@@ -23,7 +23,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 1.8; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.035;
+  private DCA_PRICE_DROP_PCT = 0.04;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
@@ -128,7 +128,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
         const dcaIndex = dcaTimes + 1;
 
-        const extraDropPct = dcaIndex > 1 ? dcaIndex * 0.01 * 1.6 : 0;
+        const extraDropPct = dcaIndex * 0.01 * 1.6;
         const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT - extraDropPct;
 
         const isDcaValid =

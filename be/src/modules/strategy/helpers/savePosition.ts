@@ -1,4 +1,3 @@
-import * as fs from 'fs';
 import { Position } from 'generated/prisma';
 import { BinanceService } from 'src/modules/binance/binance.service';
 
@@ -76,7 +75,6 @@ export const logTotalProfit = async (
         grandProfit += totalProfit;
         grandRevenue += totalRevenue;
         grandSpent += totalSpent;
-      } else {
       }
 
       // ===================== OPEN POSITIONS SUMMARY =====================
@@ -85,8 +83,12 @@ export const logTotalProfit = async (
       const positionsMini: Position[] = await binanceService.getOpenPositions(
         symbol + '_MINI',
       );
+      const positionsSuperMini: Position[] =
+        await binanceService.getOpenPositions(symbol + '_SUPERMINI');
+
       if (positionsMini?.length) {
         positions.push(...positionsMini);
+        positions.push(...positionsSuperMini);
       }
 
       if (positions.length > 0) {
@@ -107,7 +109,6 @@ export const logTotalProfit = async (
           currentValue,
           unrealizedPnL,
         };
-      } else {
       }
 
       result.symbols.push(symbolData);
