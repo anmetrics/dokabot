@@ -12,7 +12,6 @@ import { MarketTrend } from './binance.enum';
 import { ATR, EMA } from 'technicalindicators';
 import { logTotalProfit } from '../strategy/helpers/savePosition';
 import { formatProfitLog } from '../strategy/helpers/logger';
-import { Cron, CronExpression } from '@nestjs/schedule';
 import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
@@ -412,12 +411,66 @@ export class BinanceService implements OnModuleInit {
     return positions;
   }
 
-  async getHistories() {
-    return this.prismaService.sellSuccess.findMany({});
+  async getHistories(
+    page: number = 1,
+    limit: number = 10,
+    startDate?: string,
+    endDate?: string,
+    symbol?: string,
+  ) {
+    const skip = (page - 1) * limit;
+
+    const where: any = {};
+
+    // Filter by date range
+    if (startDate || endDate) {
+      where.createdAt = {};
+      if (startDate) {
+        where.createdAt.gte = new Date(startDate);
+      }
+      if (endDate) {
+        where.createdAt.lte = new Date(endDate);
+      }
+    }
+
+    // Filter by symbol (case-insensitive)
+    if (symbol) {
+      where.symbol = {
+        contains: symbol,
+        mode: 'insensitive',
+      };
+    }
+
+    // Fetch paginated data
+    const [data, total] = await Promise.all([
+      this.prismaService.sellSuccess.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prismaService.sellSuccess.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
-  async getProfits() {
-    const data = await this.prismaService.sellSuccess.findMany({});
+  async getDateProfits() {
+    const data = await this.prismaService.sellSuccess.findMany({
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
     const grouped = data.reduce(
       (acc, item) => {
         const date = new Date(item.createdAt).toISOString().split('T')[0];
@@ -433,5 +486,46 @@ export class BinanceService implements OnModuleInit {
       date,
       totalProfit,
     }));
+  }
+
+  async getCumulativeProfits() {
+    const data = await this.prismaService.sellSuccess.findMany({
+      orderBy: {
+        createdAt: 'asc',
+      },
+      select: {
+        createdAt: true,
+        totalProfit: true,
+      },
+    });
+
+    const grouped = data.reduce(
+      (acc, item) => {
+        const date = new Date(item.createdAt).toISOString().split('T')[0];
+        if (!acc[date]) acc[date] = 0;
+        acc[date] += Number(item.totalProfit);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+
+    const dailyProfits = Object.entries(grouped)
+      .map(([date, totalProfit]) => ({ date, totalProfit }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    let cumulative = 0;
+    const cumulativeProfits = dailyProfits.map((d) => {
+      cumulative += d.totalProfit;
+      return {
+        date: d.date,
+        dailyProfit: d.totalProfit,
+        cumulativeProfit: cumulative,
+      };
+    });
+    return cumulativeProfits;
+  }
+
+  async getListSettings() {
+    return this.prismaService.setting.findMany({});
   }
 }
