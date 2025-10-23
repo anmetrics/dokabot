@@ -70,7 +70,7 @@ export class StrategyService {
       this.binanceService,
       'BNBUSDT',
       40,
-      '1m',
+      '3m',
       0.006,
       Number(bnbSetting?.value),
     );
@@ -78,7 +78,7 @@ export class StrategyService {
       this.binanceService,
       'BTCUSDT',
       40,
-      '1m',
+      '3m',
       0.006,
       Number(btcSetting?.value),
     );
@@ -87,7 +87,7 @@ export class StrategyService {
       this.binanceService,
       'SOLUSDT',
       40,
-      '1m',
+      '3m',
       0.008,
       Number(solSetting?.value),
     );

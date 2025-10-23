@@ -4,7 +4,7 @@
     <v-app-bar flat class="crypto-app-bar">
       <v-app-bar-nav-icon @click="drawer = !drawer" class="ml-2" />
       <v-toolbar-title class="font-weight-bold text-uppercase">
-        CryptoBot
+        Doka
       </v-toolbar-title>
       <v-spacer />
       <v-btn icon @click="toggleTheme" aria-label="Toggle theme">

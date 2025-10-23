@@ -1,7 +1,7 @@
 <template>
   <v-card class="pa-4 dark-card" elevation="2">
     <div class="d-flex justify-space-between align-center mb-4">
-      <h3 class="text-h6 font-weight-medium text-white">Tổng lợi nhuận</h3>
+      <h3 class="text-h6 font-weight-medium text-white">Daily PNL</h3>
       <v-btn small text @click="refresh">Làm mới</v-btn>
     </div>
 
