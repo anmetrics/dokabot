@@ -191,13 +191,17 @@ export class RsiReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
-    const { totalQty: totalQtyActual } = getActualBought(order);
+    const {
+      totalQty: totalQtyActual,
+      totalSpent,
+      avgPrice,
+    } = getActualBought(order);
 
     await this.binanceService.savePosition({
       id: randomUUID(),
-      buyPrice: price,
+      buyPrice: avgPrice,
       qty,
-      usdSpent: usdToSpend,
+      usdSpent: totalSpent,
       totalQtyActual,
       dcaIndex,
       strategy: this.symbol,

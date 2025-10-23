@@ -6,9 +6,7 @@
           <h2 class="text-h5 font-weight-medium text-white">
             Danh sách vị thế đang mở
           </h2>
-          <p class="text-body-2 text-grey">
-            Hiển thị toàn bộ position hiện có trong hệ thống
-          </p>
+          <p class="text-body-2 text-grey"></p>
         </div>
         <v-btn
           color="primary"

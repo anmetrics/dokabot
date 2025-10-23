@@ -71,7 +71,7 @@ export class StrategyService {
       'BNBUSDT',
       40,
       '3m',
-      0.006,
+      0.0064,
       Number(bnbSetting?.value),
     );
     this.mini2 = new MiniReversalDcaStrategy(
@@ -79,7 +79,7 @@ export class StrategyService {
       'BTCUSDT',
       40,
       '3m',
-      0.006,
+      0.0064,
       Number(btcSetting?.value),
     );
 
@@ -98,7 +98,7 @@ export class StrategyService {
       'SOLUSDT',
       10,
       '1m',
-      0.004,
+      0.005,
       Number(solSetting?.value),
     );
     this.supermini2 = new SuperMiniReversalDcaStrategy(
@@ -106,7 +106,7 @@ export class StrategyService {
       'BTCUSDT',
       10,
       '1m',
-      0.004,
+      0.005,
       Number(btcSetting?.value),
     );
     this.supermini3 = new SuperMiniReversalDcaStrategy(
@@ -114,7 +114,7 @@ export class StrategyService {
       'BNBUSDT',
       10,
       '1m',
-      0.004,
+      0.005,
       Number(bnbSetting?.value),
     );
 
