@@ -9,6 +9,7 @@ import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
 import {
   getSettingKeyBySymbol,
+  LIST_SYMBOL,
   SETTING_KEY,
 } from 'src/modules/settings/settings.enum';
 
@@ -35,7 +36,6 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
   private atrPeriod = 8;
 
   private rsiBuyThreshold = 20;
-  private rsiSellThreshold = 80;
 
   private cooldownMs = 1 * 60 * 1000; // x phut
   private lastTradeTime = 0;
@@ -159,10 +159,6 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
         }
       }
 
-      if (lastRsi < this.rsiSellThreshold) {
-        return;
-      }
-
       // === SELL với trailing ATR để tránh bán quá sớm ===
       if (openPositions.length > 0) {
         const sellablePositions = openPositions.filter((pos) => {
@@ -213,11 +209,13 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
+
+    const bnbPrice = await this.binanceService.getPrice(LIST_SYMBOL.BNBUSDT);
     const {
       totalQty: totalQtyActual,
       totalSpent,
       avgPrice,
-    } = getActualBought(order);
+    } = getActualBought(order, bnbPrice);
 
     await this.binanceService.savePosition({
       id: randomUUID(),

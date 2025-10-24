@@ -15,8 +15,8 @@
     </v-app-bar>
 
     <!-- Navigation Drawer -->
-    <v-navigation-drawer v-model="drawer" app width="300" class="crypto-drawer">
-      <v-list dense nav class="pa-4">
+    <v-navigation-drawer v-model="drawer" app width="250" class="crypto-drawer">
+      <v-list dense nav class="pa-3">
         <v-list-item
           v-for="item in menuItems"
           :key="item.title"
@@ -108,7 +108,7 @@ const toggleTheme = () =>
 /* Responsive drawer width */
 @media (max-width: 600px) {
   .crypto-drawer {
-    width: 260px !important;
+    width: 240px !important;
   }
 }
 
@@ -117,13 +117,13 @@ const toggleTheme = () =>
   display: flex;
   align-items: center;
   gap: 20px;
-  height: 60px;
-  padding: 0 24px;
+  height: 54px;
+  padding: 4px 20px;
   border-radius: 12px;
   transition: all 0.3s ease;
   cursor: pointer;
   font-weight: 500;
-  margin: 10px 12px;
+  margin: 10px 6px;
   background-color: transparent;
 }
 
@@ -146,8 +146,8 @@ const toggleTheme = () =>
 
 .crypto-list-icon {
   color: inherit;
-  font-size: 28px;
-  min-width: 28px;
+  font-size: 20px;
+  min-width: 20px;
   display: flex;
   align-items: center;
   justify-content: center;

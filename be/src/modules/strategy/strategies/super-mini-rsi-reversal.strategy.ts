@@ -9,6 +9,7 @@ import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
 import {
   getSettingKeyBySymbol,
+  LIST_SYMBOL,
   SETTING_KEY,
 } from 'src/modules/settings/settings.enum';
 
@@ -218,11 +219,13 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
+
+    const bnbPrice = await this.binanceService.getPrice(LIST_SYMBOL.BNBUSDT);
     const {
       totalQty: totalQtyActual,
       totalSpent,
       avgPrice,
-    } = getActualBought(order);
+    } = getActualBought(order, bnbPrice);
 
     await this.binanceService.savePosition({
       id: randomUUID(),

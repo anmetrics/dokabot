@@ -4,7 +4,7 @@
     <div class="d-flex justify-space-between align-center mb-4">
       <h3 class="text-h6 font-weight-medium text-white">Daily PNL</h3>
       <v-btn small text @click="refresh" :disabled="loading">
-        <v-icon start>mdi-refresh</v-icon>
+        <v-icon :class="{ spin: spinning }" start>mdi-refresh</v-icon>
         Làm mới
       </v-btn>
     </div>
@@ -26,17 +26,8 @@
       </div>
     </div>
 
-    <!-- Loading -->
-    <div
-      v-if="loading"
-      class="d-flex justify-center align-center"
-      style="height: 300px"
-    >
-      <v-progress-circular indeterminate color="primary" size="50" />
-    </div>
-
     <!-- Chart -->
-    <canvas v-show="!loading" ref="chartCanvas"></canvas>
+    <canvas ref="chartCanvas"></canvas>
   </v-card>
 </template>
 
@@ -56,6 +47,7 @@ interface ProfitItem {
 }
 
 const profits = ref<ProfitItem[]>([]);
+const spinning = ref(false);
 const loading = ref(false);
 const api = useApi();
 
@@ -117,11 +109,15 @@ const createChart = () => {
 };
 
 async function fetchProfits() {
+  spinning.value = true;
   loading.value = true;
   try {
     const res: ProfitItem[] = await api.get("binance/profits");
     profits.value = res || [];
     createChart();
+    setTimeout(() => {
+      spinning.value = false;
+    }, 400);
   } catch (err) {
     console.error("Lỗi fetch profits:", err);
   } finally {
@@ -135,6 +131,19 @@ const refresh = () => fetchProfits();
 </script>
 
 <style scoped>
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
 /* Card styling */
 .dark-card {
   background: linear-gradient(135deg, #070d14 0%, #0e141c 100%);

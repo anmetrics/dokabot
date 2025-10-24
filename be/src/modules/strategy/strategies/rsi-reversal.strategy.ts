@@ -7,6 +7,7 @@ import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
+import { LIST_SYMBOL } from 'src/modules/settings/settings.enum';
 
 type TimeframeData = {
   closes: number[];
@@ -191,11 +192,12 @@ export class RsiReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
+    const bnbPrice = await this.binanceService.getPrice(LIST_SYMBOL.BNBUSDT);
     const {
       totalQty: totalQtyActual,
       totalSpent,
       avgPrice,
-    } = getActualBought(order);
+    } = getActualBought(order, bnbPrice);
 
     await this.binanceService.savePosition({
       id: randomUUID(),

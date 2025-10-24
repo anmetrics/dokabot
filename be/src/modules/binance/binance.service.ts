@@ -408,7 +408,11 @@ export class BinanceService implements OnModuleInit {
   }
 
   async getAllOpenPositions() {
-    const positions = await this.prismaService.position.findMany({});
+    const positions = await this.prismaService.position.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
     return positions;
   }
 
