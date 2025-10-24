@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@mdi/font": "^7.4.47",
+    "arima": "^0.2.5",
     "chart.js": "^4.5.1",
     "ky": "^1.13.0",
     "ky-universal": "^0.12.0",
