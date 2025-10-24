@@ -144,6 +144,11 @@ export class StrategyService {
     this.strategy2.startAll();
     this.strategy3.startAll();
 
+    // Child strategy
+    this.childStrategy1.startAll();
+    this.childStrategy2.startAll();
+    this.childStrategy3.startAll();
+
     // Mini
     this.mini1.startAll();
     this.mini2.startAll();
