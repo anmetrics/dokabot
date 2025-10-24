@@ -1,7 +1,20 @@
-import { Controller, Get, HttpCode, HttpStatus, Query } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Patch,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { BinanceService } from './binance.service';
+import { AuthenticationGuard } from '../authentication/guards/authentication.guard';
+import { SETTING_KEY } from '../settings/settings.enum';
 
 @Controller('binance')
+@UseGuards(AuthenticationGuard)
 export class BinanceController {
   constructor(private readonly binanceService: BinanceService) {}
 
@@ -75,5 +88,32 @@ export class BinanceController {
   @HttpCode(HttpStatus.OK)
   async GetListSettings() {
     return this.binanceService.getListSettings();
+  }
+
+  @Patch('settings')
+  @HttpCode(HttpStatus.OK)
+  async updateSettings(@Body() payload: Record<SETTING_KEY, string>) {
+    const results: any[] = [];
+    for (const [key, value] of Object.entries(payload)) {
+      if (!Object.values(SETTING_KEY).includes(key as SETTING_KEY)) {
+        throw new BadRequestException(`Invalid setting key: ${key}`);
+      }
+      if (
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+        [SETTING_KEY.ENABLE_BUY, SETTING_KEY.ENABLE_SELL].includes(key as any)
+      ) {
+        if (!['true', 'false'].includes(value)) {
+          throw new BadRequestException(`Invalid value for ${key}`);
+        }
+      }
+      // gọi service update
+      const res = await this.binanceService.updateSetting(
+        key as SETTING_KEY,
+        value,
+      );
+      results.push(res);
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return results;
   }
 }

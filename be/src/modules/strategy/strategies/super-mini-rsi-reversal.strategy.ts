@@ -7,6 +7,10 @@ import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
+import {
+  getSettingKeyBySymbol,
+  SETTING_KEY,
+} from 'src/modules/settings/settings.enum';
 
 type TimeframeData = {
   closes: number[];
@@ -15,7 +19,7 @@ type TimeframeData = {
   lastCandles: Candle[];
 };
 
-const SUFFIX = '_SUPERMINI';
+const SUPER_MINI_RSI_SUFFIX = '_SUPERMINI';
 
 export class SuperMiniReversalDcaStrategy implements IStrategy {
   private logger = new Logger('SuperMiniRsiReversalStrategy');
@@ -24,12 +28,12 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   // === CONFIG ===
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
 
-  private DCA_PRICE_DROP_PCT = 0.012;
+  private DCA_PRICE_DROP_PCT = 0.015;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
-  private rsiBuyThreshold = 19;
+  private rsiBuyThreshold = 18;
 
   private cooldownMs = 1 * 60 * 1000; // 1 phút
   private lastTradeTime = 0;
@@ -42,7 +46,6 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
     private readonly baseBuyUsd: number,
     private readonly timeframe: '1m' | '3m' | '5m' | '15m' | '30m',
     private readonly minProfitPct: number,
-    private readonly maxBuyPrice: number,
   ) {}
 
   async startAll() {
@@ -51,12 +54,12 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}, maxBuyPrice: ${this.maxBuyPrice}`,
+      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
     );
     const positions = await this.binanceService.getOpenPositions(
-      this.symbol + SUFFIX,
+      this.symbol + SUPER_MINI_RSI_SUFFIX,
     );
-    console.log(this.symbol + SUFFIX, positions);
+    console.log(this.symbol + SUPER_MINI_RSI_SUFFIX, positions);
 
     console.log('-------------------');
 
@@ -117,7 +120,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
       const openPositions = await this.binanceService.getOpenPositions(
-        this.symbol + SUFFIX,
+        this.symbol + SUPER_MINI_RSI_SUFFIX,
       );
 
       // === BUY or DCA với ATR filter ===
@@ -140,7 +143,14 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
         // Chỉ DCA nếu giá giảm ít nhất 1×ATR so với minBuyPrice
         if (openPositions.length === 0 || isDcaValid) {
-          if (price < this.maxBuyPrice) {
+          const [settingMaxBuyPrice, enableBuy] = await Promise.all([
+            this.binanceService.getSettingByKey(
+              getSettingKeyBySymbol(this.symbol),
+            ),
+            this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
+          ]);
+
+          if (enableBuy === 'true' && price < Number(settingMaxBuyPrice || 0)) {
             await this.buyPosition(price, dcaIndex || 0);
             this.lastTradeTime = now;
           }
@@ -155,7 +165,12 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
           );
           return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
         });
-        if (!sellablePositions.length) {
+
+        const enableSell = await this.binanceService.getSettingByKey(
+          SETTING_KEY.ENABLE_SELL,
+        );
+
+        if (!sellablePositions.length || enableSell !== 'true') {
           return;
         }
 
@@ -216,7 +231,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
       usdSpent: totalSpent,
       totalQtyActual,
       dcaIndex,
-      strategy: this.symbol + SUFFIX,
+      strategy: this.symbol + SUPER_MINI_RSI_SUFFIX,
       symbol: this.symbol,
     });
     console.log(

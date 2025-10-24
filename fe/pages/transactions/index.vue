@@ -1,5 +1,5 @@
 <template>
-  <v-container class="py-8" dark>
+  <v-container class="py-8">
     <v-card elevation="2" class="pa-4 dark-card">
       <div class="d-flex align-center justify-space-between mb-4">
         <h2 class="text-h5 font-weight-medium text-white">Lịch sử giao dịch</h2>
@@ -154,26 +154,117 @@ onMounted(fetchTrades);
 </script>
 
 <style scoped>
+/* Card styling */
 .dark-card {
-  background-color: #1e1e2f;
+  background: linear-gradient(135deg, #0a1420 0%, #1c2a3b 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
+}
+
+/* Table styling */
+.dark-table {
+  background: transparent;
   color: #ffffff;
   border-radius: 12px;
 }
-.dark-table {
-  background-color: #1e1e2f;
+
+.dark-table :deep(.v-data-table-header th) {
+  background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark-table :deep(.v-data-table__td) {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.dark-table :deep(.v-data-table__tr:hover) {
+  background: rgba(30, 136, 229, 0.1);
+  transition: background 0.3s ease;
+}
+
+/* Refresh button */
+.refresh-btn {
+  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
+  color: #ffffff;
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.refresh-btn:hover {
+  background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%) !important;
+  transform: translateY(-2px);
+}
+
+/* Pagination styling */
+.pagination :deep(.v-pagination__item) {
+  background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
+  color: #ffffff;
+  font-weight: 500;
+}
+
+.pagination :deep(.v-pagination__item--active) {
+  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
   color: #ffffff;
 }
-.dark-table .v-data-table-header th {
-  background-color: #2a2a3a;
-  color: #ffffff;
+
+.pagination :deep(.v-btn) {
+  border-radius: 8px;
 }
-.dark-table .v-data-table__row:hover {
-  background-color: rgba(255, 255, 255, 0.05);
+
+/* Loading animation */
+:deep(.v-progress-circular) {
+  color: #4fc3f7;
 }
+
+/* Text styling */
 .text-success {
-  color: #4caf50;
+  color: #00e676;
 }
+
 .text-error {
-  color: #f44336;
+  color: #ff5252;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .dark-card {
+    padding: 16px;
+  }
+  .text-h5 {
+    font-size: 1.25rem !important;
+  }
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 0.9rem !important;
+    padding: 12px;
+  }
+}
+
+/* Scrollbar styling */
+:deep(.v-data-table__wrapper::-webkit-scrollbar) {
+  width: 8px;
+}
+
+:deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+:deep(.v-data-table__wrapper::-webkit-scrollbar-track) {
+  background: rgba(0, 0, 0, 0.1);
 }
 </style>

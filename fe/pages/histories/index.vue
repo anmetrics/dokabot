@@ -1,9 +1,9 @@
 <template>
-  <v-container class="py-6" dark>
+  <v-container class="py-8">
     <v-row dense>
       <v-col v-for="(log, key) in logs" :key="key" cols="12" md="6" lg="4">
-        <v-card elevation="3" class="pa-4 rounded-xl dark-card">
-          <div class="d-flex align-center justify-space-between mb-2">
+        <v-card elevation="4" class="pa-6 rounded-xl dark-card">
+          <div class="d-flex align-center justify-space-between mb-4">
             <h2 class="text-h6 font-weight-bold text-white">
               {{ key.replace("Log", "") }}
             </h2>
@@ -12,6 +12,7 @@
               text-color="white"
               size="small"
               label
+              class="chip-status"
             >
               {{
                 log.symbols?.[0]?.openPositions
@@ -23,46 +24,46 @@
             </v-chip>
           </div>
 
-          <v-divider class="mb-3" />
+          <v-divider class="mb-4 divider" />
 
           <div v-if="log.symbols?.[0]?.openPositions">
-            <v-row>
-              <v-col cols="6" class="text-subtitle-2 text-grey"
+            <v-row dense>
+              <v-col cols="6" class="text-subtitle-1 text-grey"
                 >Số lượng:</v-col
               >
-              <v-col cols="6" class="text-right text-white">
+              <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatNumber(log.symbols[0].openPositions.totalQty) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey"
+              <v-col cols="6" class="text-subtitle-1 text-grey"
                 >Giá mua TB:</v-col
               >
-              <v-col cols="6" class="text-right text-white">
+              <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.avgBuyPrice) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey"
+              <v-col cols="6" class="text-subtitle-1 text-grey"
                 >Giá hiện tại:</v-col
               >
-              <v-col cols="6" class="text-right text-white">
+              <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.currentPrice) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey"
+              <v-col cols="6" class="text-subtitle-1 text-grey"
                 >Tổng vốn:</v-col
               >
-              <v-col cols="6" class="text-right text-white">
+              <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.totalSpentOpen) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey"
+              <v-col cols="6" class="text-subtitle-1 text-grey"
                 >Giá trị hiện tại:</v-col
               >
-              <v-col cols="6" class="text-right text-white">
+              <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.currentValue) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-2 text-grey"
+              <v-col cols="6" class="text-subtitle-1 text-grey"
                 >Lãi / Lỗ:</v-col
               >
               <v-col
@@ -86,11 +87,13 @@
       </v-col>
     </v-row>
 
-    <v-row v-if="loading" justify="center" class="mt-6">
+    <v-row v-if="loading" justify="center" class="mt-8">
       <v-col cols="12" class="text-center">
         <v-progress-circular
           indeterminate
           color="primary"
+          size="40"
+          width="4"
         ></v-progress-circular>
       </v-col>
     </v-row>
@@ -98,9 +101,9 @@
     <v-row
       v-if="!loading && Object.keys(logs).length === 0"
       justify="center"
-      class="mt-6"
+      class="mt-8"
     >
-      <v-col cols="12" class="text-center text-grey">
+      <v-col cols="12" class="text-center text-grey text-h6">
         Không có dữ liệu logs
       </v-col>
     </v-row>
@@ -148,18 +151,92 @@ const getChipColor = (log: any) => {
 </script>
 
 <style scoped>
-.v-card {
-  transition: all 0.2s ease;
-  background-color: #1e1e2f; /* dark card background */
+/* Card styling */
+.dark-card {
+  background: linear-gradient(135deg, #0a1420 0%, #1c2a3b 100%);
+  color: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-.v-card:hover {
+
+.dark-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
 }
+
+/* Chip styling */
+.chip-status {
+  font-weight: 600;
+  text-transform: uppercase;
+  border-radius: 6px;
+  padding: 0 8px;
+}
+
+.chip-status.success {
+  background: linear-gradient(90deg, #00e676 0%, #4caf50 100%) !important;
+}
+
+.chip-status.error {
+  background: linear-gradient(90deg, #ff5252 0%, #d32f2f 100%) !important;
+}
+
+.chip-status.grey {
+  background: linear-gradient(90deg, #616161 0%, #757575 100%) !important;
+}
+
+/* Text styling */
 .text-grey {
   color: rgba(200, 200, 200, 0.7);
 }
-.dark-card .v-chip {
-  font-weight: bold;
+
+.text-success {
+  color: #00e676;
+}
+
+.text-error {
+  color: #ff5252;
+}
+
+/* Divider styling */
+.divider {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Progress circular */
+:deep(.v-progress-circular) {
+  color: #4fc3f7;
+}
+
+/* Row styling */
+.v-row.dense > .v-col {
+  padding: 8px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .dark-card {
+    padding: 16px;
+  }
+  .text-h6 {
+    font-size: 1.1rem !important;
+  }
+  .text-subtitle-1 {
+    font-size: 0.9rem !important;
+  }
+}
+
+/* Scrollbar styling for container */
+:deep(.v-container::-webkit-scrollbar) {
+  width: 8px;
+}
+
+:deep(.v-container::-webkit-scrollbar-thumb) {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+:deep(.v-container::-webkit-scrollbar-track) {
+  background: rgba(0, 0, 0, 0.1);
 }
 </style>

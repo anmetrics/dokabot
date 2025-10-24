@@ -1,79 +1,85 @@
 <template>
-  <v-app>
-    <v-container
-      fluid
-      class="d-flex flex-column align-center justify-center fill-height bg-gradient"
+  <v-container
+    fluid
+    class="d-flex flex-column align-center justify-center fill-height bg-gradient"
+  >
+    <v-card
+      class="pa-10 rounded-xl text-center login-card"
+      max-width="480"
+      elevation="10"
     >
-      <v-card
-        class="pa-10 rounded-xl text-center login-card"
-        max-width="480"
-        elevation="10"
-      >
-        <v-card-title class="text-h5 font-weight-bold mb-6">
-          🔒 Đăng nhập hệ thống
-        </v-card-title>
+      <v-card-title class="text-h5 font-weight-bold mb-6">
+        🔒 Login
+      </v-card-title>
 
-        <v-form @submit.prevent="onLogin">
-          <v-text-field
-            v-model="password"
-            label="Nhập mật khẩu"
-            type="password"
-            variant="outlined"
-            prepend-inner-icon="mdi-lock-outline"
-            density="comfortable"
-            color="primary"
-            :error="!!error"
-            :error-messages="error"
-            class="mb-6"
-          />
+      <v-form @submit.prevent="onLogin">
+        <v-text-field
+          v-model="password"
+          label="Mật khẩu"
+          type="password"
+          variant="outlined"
+          prepend-inner-icon="mdi-lock-outline"
+          density="comfortable"
+          color="primary"
+          :error="!!error"
+          :error-messages="error"
+          class="mb-6"
+        />
 
-          <v-btn
-            block
-            color="primary"
-            size="large"
-            class="text-white font-weight-medium"
-            type="submit"
-            :loading="loading"
-          >
-            Login
-          </v-btn>
-        </v-form>
-      </v-card>
-    </v-container>
-  </v-app>
+        <v-btn
+          block
+          color="primary"
+          size="large"
+          class="text-white font-weight-medium"
+          type="submit"
+          :loading="loading"
+        >
+          Login
+        </v-btn>
+      </v-form>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { useRouter } from "vue-router";
-import { useCookie } from "#app";
+import { ref } from "vue";
+import { useCookie, navigateTo } from "#app";
+import { useApi } from "~/apis";
 
 definePageMeta({
-  layout: false, // 🔹 bỏ layout mặc định
+  layout: "auth",
 });
 
-const router = useRouter();
 const password = ref("");
 const error = ref("");
 const loading = ref(false);
 
-// ✅ Mật khẩu cố định
-const CORRECT_PASSWORD = "123456";
+const api = useApi();
+const authToken = useCookie("auth_token");
 
 const onLogin = async () => {
   error.value = "";
   loading.value = true;
 
-  await new Promise((r) => setTimeout(r, 500)); // giả delay
+  try {
+    // Gọi API login (backend trả JWT)
+    const res: {
+      accessToken: string;
+    } = await api.post("auth/login", {
+      password: password.value,
+    });
 
-  if (password.value === CORRECT_PASSWORD) {
-    const token = useCookie("auth_token");
-    token.value = "ok";
-    router.push("/");
-  } else {
-    error.value = "Sai mật khẩu";
+    if (!res.accessToken) throw new Error("Không nhận được token");
+
+    authToken.value = res.accessToken;
+
+    navigateTo("/");
+  } catch (err: any) {
+    console.error("Login failed:", err);
+    error.value = err?.message || "Sai email hoặc mật khẩu";
+  } finally {
+    loading.value = false;
   }
-
-  loading.value = false;
 };
 </script>
 

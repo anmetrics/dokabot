@@ -40,7 +40,8 @@ export class BinanceService implements OnModuleInit {
     const existingKeys = new Set(existingSettings.map((s) => s.key));
 
     const defaults: Record<string, string> = {
-      [SETTING_KEY.ENABLED]: 'true',
+      [SETTING_KEY.ENABLE_BUY]: 'true',
+      [SETTING_KEY.ENABLE_SELL]: 'true',
       [SETTING_KEY.MAX_BNB_PRICE]: '1100',
       [SETTING_KEY.MAX_SOL_PRICE]: '190',
       [SETTING_KEY.MAX_BTC_PRICE]: '110000',
@@ -527,5 +528,26 @@ export class BinanceService implements OnModuleInit {
 
   async getListSettings() {
     return this.prismaService.setting.findMany({});
+  }
+
+  async updateSetting(key: SETTING_KEY, value: any) {
+    return this.prismaService.setting.update({
+      where: {
+        key,
+      },
+      data: {
+        value,
+      },
+    });
+  }
+
+  async getSettingByKey(key: SETTING_KEY | null) {
+    if (!key) return;
+    const setting = await this.prismaService.setting.findFirst({
+      where: {
+        key,
+      },
+    });
+    return setting?.value;
   }
 }

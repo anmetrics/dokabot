@@ -19,24 +19,25 @@ type TimeframeData = {
   lastCandles: Candle[];
 };
 
-export const MINI_RSI_SUFFIX = '_MINI';
+export const CHILD_RSI_SUFFIX = '_CHILD';
 
-export class MiniReversalDcaStrategy implements IStrategy {
-  private logger = new Logger('MiniRsiReversalStrategy');
+export class ChildRsiReversalDcaStrategy implements IStrategy {
+  private logger = new Logger('RsiReversalStrategy');
   private cumulativeProfit = 0;
 
   // === CONFIG ===
-  private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
-  private dcaMultiplier = 1; // mỗi lần DCA sau gấp x.x lần trước
+  private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
+  private dcaMultiplier = 1.8; // mỗi lần DCA sau gấp x.x lần trước
 
   private DCA_PRICE_DROP_PCT = 0.03;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
-  private rsiBuyThreshold = 18;
+  private rsiBuyThreshold = 20;
+  private rsiSellThreshold = 80;
 
-  private cooldownMs = 1 * 60 * 1000; // 1 phút
+  private cooldownMs = 1 * 60 * 1000; // x phut
   private lastTradeTime = 0;
 
   private timeframeData: Record<string, TimeframeData> = {};
@@ -55,12 +56,12 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting MINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
+      `Starting Child RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
     );
     const positions = await this.binanceService.getOpenPositions(
-      this.symbol + MINI_RSI_SUFFIX,
+      this.symbol + CHILD_RSI_SUFFIX,
     );
-    console.log(this.symbol + '_MINI:', positions);
+    console.log(this.symbol + CHILD_RSI_SUFFIX + ':', positions);
 
     console.log('-------------------');
 
@@ -121,7 +122,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
       const openPositions = await this.binanceService.getOpenPositions(
-        this.symbol + MINI_RSI_SUFFIX,
+        this.symbol + CHILD_RSI_SUFFIX,
       );
 
       // === BUY or DCA với ATR filter ===
@@ -135,7 +136,8 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
         const dcaIndex = dcaTimes + 1;
 
-        const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT;
+        const extraDropPct = dcaIndex * 0.01 * 0.1;
+        const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT - extraDropPct;
 
         const isDcaValid =
           dcaTimes < this.maxDcaTimes &&
@@ -157,9 +159,9 @@ export class MiniReversalDcaStrategy implements IStrategy {
         }
       }
 
-      // if (lastRsi < this.rsiSellThreshold) {
-      //   return;
-      // }
+      if (lastRsi < this.rsiSellThreshold) {
+        return;
+      }
 
       // === SELL với trailing ATR để tránh bán quá sớm ===
       if (openPositions.length > 0) {
@@ -183,23 +185,12 @@ export class MiniReversalDcaStrategy implements IStrategy {
         }
       }
     } catch (e) {
-      console.error(`[${timeframe}] Error in DCA RSI strategy:`, e);
+      console.error(`[${timeframe}] Error in DCA Child RSI strategy:`, e);
     }
   }
 
   private async buyPosition(price: number, dcaIndex: number) {
-    const usdToSpend = this.baseBuyUsd;
-
-    // Check root positions
-
-    const rootPositions = await this.binanceService.getOpenPositions(
-      this.symbol,
-    );
-
-    // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
-    const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
-
-    if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
+    const usdToSpend = this.baseBuyUsd * Math.pow(this.dcaMultiplier, dcaIndex);
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(
@@ -235,17 +226,14 @@ export class MiniReversalDcaStrategy implements IStrategy {
       usdSpent: totalSpent,
       totalQtyActual,
       dcaIndex,
-      strategy: this.symbol + MINI_RSI_SUFFIX,
+      strategy: this.symbol + CHILD_RSI_SUFFIX,
       symbol: this.symbol,
     });
-    console.log(
-      `[DCA ${dcaIndex}] BUY ${qty} ${this.symbol} @ ${price} USD=${usdToSpend}`,
-    );
   }
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.0007;
+    const increment = 0.00008;
     return base + dcaIndex * increment;
   }
 
@@ -289,12 +277,9 @@ export class MiniReversalDcaStrategy implements IStrategy {
     console.log(
       `[${timeframe}] SELL (DCA ${pos.dcaIndex}) ${pos.qty} ${this.symbol} @ ${price} — Profit: ${profit.toFixed(2)}`,
     );
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return pos;
   }
 
   stop() {
-    this.logger.log(`Stopped RSI DCA strategy for ${this.symbol}`);
+    this.logger.log(`Stopped Child RSI DCA strategy for ${this.symbol}`);
   }
 }

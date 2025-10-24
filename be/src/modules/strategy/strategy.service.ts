@@ -7,6 +7,7 @@ import { MiniReversalDcaStrategy } from './strategies/mini-rsi-reversal.strategy
 import { SuperMiniReversalDcaStrategy } from './strategies/super-mini-rsi-reversal.strategy';
 import { PrismaService } from 'src/prisma.service';
 import { SETTING_KEY } from '../settings/settings.enum';
+import { ChildRsiReversalDcaStrategy } from './strategies/child-rsi-reversal.strategy';
 
 @Injectable()
 export class StrategyService {
@@ -14,6 +15,10 @@ export class StrategyService {
   private strategy1: IStrategy;
   private strategy2: IStrategy;
   private strategy3: IStrategy;
+
+  private childStrategy1: IStrategy;
+  private childStrategy2: IStrategy;
+  private childStrategy3: IStrategy;
 
   private mini1: IStrategy;
   private mini2: IStrategy;
@@ -38,32 +43,54 @@ export class StrategyService {
     });
   }
 
-  async startStrategy(name: string) {
-    const bnbSetting = await this.getSettingByKey(SETTING_KEY.MAX_BNB_PRICE);
-    const btcSetting = await this.getSettingByKey(SETTING_KEY.MAX_BTC_PRICE);
-    const solSetting = await this.getSettingByKey(SETTING_KEY.MAX_SOL_PRICE);
-
+  startStrategy(name: string) {
+    //  Strategy
     this.strategy1 = new RsiReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      90,
+      80,
       '5m',
       0.02,
     );
     this.strategy2 = new RsiReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      120,
-      '3m',
+      100,
+      '5m',
       0.03,
     );
     this.strategy3 = new RsiReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
       10,
-      '3m',
+      '5m',
       0.026,
     );
+
+    // Child strategy
+    this.childStrategy1 = new ChildRsiReversalDcaStrategy(
+      this.binanceService,
+      'BNBUSDT',
+      40,
+      '5m',
+      0.004,
+    );
+    this.childStrategy2 = new ChildRsiReversalDcaStrategy(
+      this.binanceService,
+      'BTCUSDT',
+      40,
+      '5m',
+      0.004,
+    );
+    this.childStrategy3 = new ChildRsiReversalDcaStrategy(
+      this.binanceService,
+      'SOLUSDT',
+      40,
+      '5m',
+      0.004,
+    );
+
+    // Super
 
     // Mini sclaping
     this.mini1 = new MiniReversalDcaStrategy(
@@ -72,7 +99,6 @@ export class StrategyService {
       40,
       '3m',
       0.0064,
-      Number(bnbSetting?.value),
     );
     this.mini2 = new MiniReversalDcaStrategy(
       this.binanceService,
@@ -80,7 +106,6 @@ export class StrategyService {
       40,
       '3m',
       0.0064,
-      Number(btcSetting?.value),
     );
 
     this.mini3 = new MiniReversalDcaStrategy(
@@ -89,33 +114,29 @@ export class StrategyService {
       40,
       '3m',
       0.008,
-      Number(solSetting?.value),
     );
 
     // Supermini sclaping
     this.supermini1 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      10,
+      20,
       '1m',
       0.005,
-      Number(solSetting?.value),
     );
     this.supermini2 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      10,
+      20,
       '1m',
       0.005,
-      Number(btcSetting?.value),
     );
     this.supermini3 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      10,
+      20,
       '1m',
       0.005,
-      Number(bnbSetting?.value),
     );
 
     // Normal

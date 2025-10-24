@@ -135,17 +135,77 @@ const refresh = () => fetchProfits();
 </script>
 
 <style scoped>
+/* Card styling */
 .dark-card {
-  background-color: #1e1e2f;
+  background: linear-gradient(135deg, #070d14 0%, #0e141c 100%);
   color: #ffffff;
-  border-radius: 12px;
+  border-radius: 16px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.dark-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
+}
+
+/* Refresh button */
+.refresh-btn {
+  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
+  color: #ffffff;
+  border-radius: 8px;
+  text-transform: none;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+.refresh-btn:hover {
+  background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%) !important;
+  transform: translateY(-2px);
+}
+
+/* Text styling */
+.text-grey {
+  color: rgba(200, 200, 200, 0.7);
 }
 
 .text-success {
-  color: #4caf50 !important;
+  color: #00e676 !important;
 }
 
 .text-error {
-  color: #f44336 !important;
+  color: #ff5252 !important;
+}
+
+/* Loading animation */
+:deep(.v-progress-circular) {
+  color: #4fc3f7;
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) {
+  .dark-card {
+    padding: 16px;
+  }
+  .text-h4 {
+    font-size: 1.5rem !important;
+  }
+  .text-h5 {
+    font-size: 1.25rem !important;
+  }
+}
+
+/* Scrollbar styling */
+:deep(.v-card::-webkit-scrollbar) {
+  width: 8px;
+}
+
+:deep(.v-card::-webkit-scrollbar-thumb) {
+  background-color: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+:deep(.v-card::-webkit-scrollbar-track) {
+  background: rgba(0, 0, 0, 0.1);
 }
 </style>

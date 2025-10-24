@@ -1,7 +1,12 @@
 import vuetify from "vite-plugin-vuetify";
 
 export default defineNuxtConfig({
-  css: ["vuetify/styles", "@mdi/font/css/materialdesignicons.min.css"],
+  ssr: false,
+  css: [
+    "vuetify/styles",
+    "@mdi/font/css/materialdesignicons.min.css",
+    "vuetify/lib/styles/main.sass",
+  ],
   build: {
     transpile: ["vuetify"],
   },
@@ -15,9 +20,5 @@ export default defineNuxtConfig({
   devServer: {
     port: 3001,
   },
-  runtimeConfig: {
-    public: {
-      apiBase: process.env.API_BASE_URL,
-    },
-  },
+  runtimeConfig: {},
 });

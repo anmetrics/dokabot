@@ -8,14 +8,18 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { SharedModule } from './modules/shared/shared.module';
+import { AuthenticationModule } from './modules/authentication/authentication.module';
 
 @Global()
 @Module({
   imports: [
     SharedModule,
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
+    AuthenticationModule,
     TelegramModule,
     BinanceModule,
     StrategyModule,
