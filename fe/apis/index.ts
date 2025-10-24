@@ -5,7 +5,7 @@ export function useApi() {
   const authToken = useCookie("auth_token");
 
   const api = ky.create({
-    prefixUrl: "http://localhost:3000",
+    prefixUrl: "http://157.245.150.180:3000",
     timeout: 10000,
     headers: {
       "Content-Type": "application/json",

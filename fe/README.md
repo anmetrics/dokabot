@@ -56,6 +56,8 @@ yarn build
 bun run build
 ```
 
+PORT=3001 pm2 start server/index.mjs --name my-nuxt-server
+
 Locally preview production build:
 
 ```bash
