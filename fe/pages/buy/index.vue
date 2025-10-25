@@ -1,76 +1,81 @@
 <template>
-  <v-card class="pa-6 dark-card mx-auto" elevation="4">
-    <h2 class="text-h5 font-weight-medium text-white mb-6 text-center">
-      Mua Coin
-    </h2>
+  <v-container
+    fluid
+    class="d-flex justify-center align-center fill-height pa-4"
+  >
+    <v-card class="pa-6 dark-card" elevation="4">
+      <h2 class="text-h5 font-weight-medium text-white mb-6 text-center">
+        Buy crypto
+      </h2>
 
-    <!-- Chọn Coin -->
-    <v-select
-      v-model="selectedCoin"
-      :items="coins"
-      label="Chọn coin"
-      dense
-      outlined
-      class="mb-4"
-    ></v-select>
+      <!-- Chọn Coin -->
+      <v-select
+        v-model="selectedCoin"
+        :items="coins"
+        label="Chọn coin"
+        dense
+        outlined
+        class="mb-4"
+      ></v-select>
 
-    <!-- Giá -->
-    <v-text-field
-      v-if="!marketPrice"
-      v-model.number="price"
-      label="Giá (USDT)"
-      type="number"
-      dense
-      outlined
-      class="mb-3"
-    ></v-text-field>
+      <!-- Giá -->
+      <v-text-field
+        v-if="!marketPrice"
+        v-model.number="price"
+        label="Giá (USDT)"
+        type="number"
+        dense
+        outlined
+        class="mb-3"
+      ></v-text-field>
 
-    <v-checkbox
-      v-model="marketPrice"
-      label="Mua giá thị trường"
-      dense
-      class="mb-4"
-    ></v-checkbox>
+      <v-checkbox
+        v-model="marketPrice"
+        label="Mua giá thị trường"
+        dense
+        class="mb-4"
+      ></v-checkbox>
 
-    <!-- Số lượng -->
-    <v-text-field
-      v-model.number="quantity"
-      label="Số lượng"
-      type="number"
-      dense
-      outlined
-      class="mb-4"
-    ></v-text-field>
+      <!-- Số lượng -->
+      <v-text-field
+        v-model.number="quantity"
+        label="Số lượng"
+        type="number"
+        dense
+        outlined
+        class="mb-4"
+      ></v-text-field>
 
-    <!-- Button Buy -->
-    <v-btn
-      color="primary"
-      :loading="loading"
-      :disabled="!selectedCoin || (!marketPrice && !price) || !quantity"
-      @click="buyCoin"
-      block
-      large
-      class="mb-4"
-    >
-      Buy
-    </v-btn>
+      <!-- Button Buy -->
+      <v-btn
+        color="primary"
+        :loading="loading"
+        :disabled="!selectedCoin || (!marketPrice && !price) || !quantity"
+        @click="buyCoin"
+        block
+        large
+        class="mb-4"
+      >
+        Buy
+      </v-btn>
 
-    <!-- Snackbar -->
-    <v-snackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      timeout="3000"
-      rounded="pill"
-      top
-    >
-      {{ snackbar.message }}
-      <template v-slot:actions>
-        <v-btn color="white" variant="text" @click="snackbar.show = false">
-          Đóng
-        </v-btn>
-      </template>
-    </v-snackbar>
-  </v-card>
+      <!-- Snackbar -->
+      <v-snackbar
+        v-model="snackbar.show"
+        :color="snackbar.color"
+        timeout="3000"
+        rounded="pill"
+        top
+      >
+        {{ snackbar.message }}
+        <template v-slot:actions>
+          <v-btn color="white" variant="text" @click="snackbar.show = false">
+            Đóng
+          </v-btn>
+        </template>
+      </v-snackbar>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup lang="ts">

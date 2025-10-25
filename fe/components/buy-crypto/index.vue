@@ -1,6 +1,6 @@
 <template>
   <v-card class="pa-4 dark-card" elevation="3" max-width="400">
-    <h2 class="text-h6 font-weight-medium text-white mb-4">Mua Coin</h2>
+    <h2 class="text-h6 font-weight-medium text-white mb-4">Buy crypto</h2>
 
     <!-- Chọn Coin -->
     <v-select

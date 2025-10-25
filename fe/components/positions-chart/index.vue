@@ -2,11 +2,11 @@
   <v-container class="py-8 container-compact">
     <v-row dense>
       <v-col v-for="(log, key) in logs" :key="key" cols="12" sm="6" md="4">
-        <v-card elevation="2" class="pa-4 rounded-lg dark-card">
+        <v-card elevation="2" class="pa-4 rounded-lg dark-card log-card">
           <div class="d-flex align-center justify-space-between mb-2">
-            <h2 class="text-h7 font-weight-bold text-white">
+            <h4 class="text-h7 font-weight-bold text-white">
               {{ key.replace("Log", "") }}
-            </h2>
+            </h4>
             <v-chip
               :color="getChipColor(log)"
               text-color="white"
@@ -26,50 +26,68 @@
 
           <v-divider class="mb-3 divider" />
 
-          <div v-if="log.symbols?.[0]?.openPositions">
-            <v-row dense class="info-row">
-              <v-col cols="6" class="text-grey">Số lượng:</v-col>
-              <v-col cols="6" class="text-right text-white font-weight-medium">
-                {{ formatNumber(log.symbols[0].openPositions.totalQty) }}
-              </v-col>
+          <div class="log-content">
+            <div v-if="log.symbols?.[0]?.openPositions">
+              <v-row dense class="info-row">
+                <v-col cols="6" class="text-grey">Số lượng:</v-col>
+                <v-col
+                  cols="6"
+                  class="text-right text-white font-weight-medium"
+                >
+                  {{ formatNumber(log.symbols[0].openPositions.totalQty) }}
+                </v-col>
 
-              <v-col cols="6" class="text-grey">Giá mua TB:</v-col>
-              <v-col cols="6" class="text-right text-white font-weight-medium">
-                {{ formatPrice(log.symbols[0].openPositions.avgBuyPrice) }}
-              </v-col>
+                <v-col cols="6" class="text-grey">Giá mua TB:</v-col>
+                <v-col
+                  cols="6"
+                  class="text-right text-white font-weight-medium"
+                >
+                  {{ formatPrice(log.symbols[0].openPositions.avgBuyPrice) }}
+                </v-col>
 
-              <v-col cols="6" class="text-grey">Giá hiện tại:</v-col>
-              <v-col cols="6" class="text-right text-white font-weight-medium">
-                {{ formatPrice(log.symbols[0].openPositions.currentPrice) }}
-              </v-col>
+                <v-col cols="6" class="text-grey">Giá hiện tại:</v-col>
+                <v-col
+                  cols="6"
+                  class="text-right text-white font-weight-medium"
+                >
+                  {{ formatPrice(log.symbols[0].openPositions.currentPrice) }}
+                </v-col>
 
-              <v-col cols="6" class="text-grey">Tổng vốn:</v-col>
-              <v-col cols="6" class="text-right text-white font-weight-medium">
-                {{ formatPrice(log.symbols[0].openPositions.totalSpentOpen) }}
-              </v-col>
+                <v-col cols="6" class="text-grey">Tổng vốn:</v-col>
+                <v-col
+                  cols="6"
+                  class="text-right text-white font-weight-medium"
+                >
+                  {{ formatPrice(log.symbols[0].openPositions.totalSpentOpen) }}
+                </v-col>
 
-              <v-col cols="6" class="text-grey">Giá trị hiện tại:</v-col>
-              <v-col cols="6" class="text-right text-white font-weight-medium">
-                {{ formatPrice(log.symbols[0].openPositions.currentValue) }}
-              </v-col>
+                <v-col cols="6" class="text-grey">Giá trị hiện tại:</v-col>
+                <v-col
+                  cols="6"
+                  class="text-right text-white font-weight-medium"
+                >
+                  {{ formatPrice(log.symbols[0].openPositions.currentValue) }}
+                </v-col>
 
-              <v-col cols="6" class="text-grey">Lãi / Lỗ:</v-col>
-              <v-col
-                cols="6"
-                class="text-right font-weight-bold"
-                :class="{
-                  'text-success':
-                    log.symbols[0].openPositions.unrealizedPnL > 0,
-                  'text-error': log.symbols[0].openPositions.unrealizedPnL < 0,
-                }"
-              >
-                {{ formatPrice(log.symbols[0].openPositions.unrealizedPnL) }}
-              </v-col>
-            </v-row>
-          </div>
+                <v-col cols="6" class="text-grey">Lãi / Lỗ:</v-col>
+                <v-col
+                  cols="6"
+                  class="text-right font-weight-bold"
+                  :class="{
+                    'text-success':
+                      log.symbols[0].openPositions.unrealizedPnL > 0,
+                    'text-error':
+                      log.symbols[0].openPositions.unrealizedPnL < 0,
+                  }"
+                >
+                  {{ formatPrice(log.symbols[0].openPositions.unrealizedPnL) }}
+                </v-col>
+              </v-row>
+            </div>
 
-          <div v-else class="text-center text-grey py-6">
-            Không có vị thế mở
+            <div v-else class="no-position text-center text-grey">
+              Không có vị thế mở
+            </div>
           </div>
         </v-card>
       </v-col>
@@ -142,6 +160,24 @@ const getChipColor = (log: any) => {
 .container-compact {
   max-width: 1100px;
   margin: 0 auto;
+}
+
+.log-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 280px;
+}
+
+.log-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.no-position {
+  padding: 20px 0;
 }
 
 /* Card */

@@ -6,7 +6,11 @@
         @click="drawer = !drawer"
         class="ml-2 d-none d-sm-flex"
       />
-      <v-toolbar-title class="font-weight-bold text-uppercase crypto-title">
+      <v-toolbar-title
+        class="font-weight-bold text-uppercase crypto-title"
+        style="cursor: pointer"
+        @click="navigate('/')"
+      >
         Doka
       </v-toolbar-title>
       <v-spacer />
@@ -58,7 +62,7 @@
       class="crypto-bottom-nav d-sm-none"
     >
       <v-btn
-        v-for="item in menuItems"
+        v-for="item in mobileMenuItems"
         :key="item.title"
         @click="navigate(item.to)"
         :value="item.to"
@@ -98,38 +102,38 @@ const drawer = ref(true);
 const currentTab = ref(route.path);
 
 const menuItems = [
-  { title: "Trang chủ", short: "Home", icon: "mdi-home-outline", to: "/" },
+  { title: "Home", short: "Home", icon: "mdi-home-outline", to: "/" },
+  { title: "Buy crypto", short: "Buy", icon: "mdi-cash-plus", to: "/buy" },
   {
-    title: "Buy",
-    short: "Buy",
-    icon: "mdi-cash-plus",
-    to: "/buy",
-  },
-  {
-    title: "Tài sản",
-    short: "Tài sản",
+    title: "Assets",
+    short: "Assets",
     icon: "mdi-wallet-outline",
     to: "/assets",
   },
   {
-    title: "Vị thế",
-    short: "Vị thế",
+    title: "Positions",
+    short: "Positions",
     icon: "mdi-chart-line",
     to: "/positions",
   },
   {
-    title: "Lịch sử",
-    short: "Lịch sử",
+    title: "History",
+    short: "History",
     icon: "mdi-history",
     to: "/transactions",
   },
   {
-    title: "Cài đặt",
-    short: "Cài đặt",
+    title: "Settings",
+    short: "Settings",
     icon: "mdi-cog-outline",
     to: "/settings",
   },
 ];
+
+// Filter out "Home" for mobile bottom navigation
+const mobileMenuItems = computed(() =>
+  menuItems.filter((item) => item.to !== "/")
+);
 
 const isActive = (path: string) => route.path === path;
 const navigate = (path: string) => {
@@ -215,30 +219,37 @@ const toggleTheme = () =>
   box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.25);
   position: fixed;
   bottom: 0;
+  padding: 0 6px; /* khoảng cách 2 bên */
 }
+
 .crypto-bottom-btn {
   flex: 1;
+  min-width: 36px; /* giảm min-width */
+  padding: 0 2px;
   flex-direction: column;
-  min-width: 0;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   text-transform: none;
 }
+
 .crypto-bottom-icon {
-  font-size: 20px;
+  font-size: 18px;
   transition: transform 0.25s ease;
 }
+
 .crypto-bottom-label {
-  font-size: 11px;
-  margin-top: 2px;
+  font-size: 10px;
+  margin-top: 1px;
   color: #a0a0a0;
   transition: color 0.25s ease;
 }
+
 .crypto-bottom-label.active {
   color: #4fc3f7;
   font-weight: 500;
 }
+
 .crypto-bottom-btn:hover .crypto-bottom-icon {
-  transform: scale(1.15);
+  transform: scale(1.1);
   color: #4fc3f7;
 }
 

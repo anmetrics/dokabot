@@ -308,7 +308,7 @@ onMounted(fetchPositions);
   transform: translateY(-2px);
 }
 .dark-sheet {
-  background: linear-gradient(135deg, #252532 0%, #2a2a3a 100%);
+  background: linear-gradient(135deg, #232355 0%, #2a2a3a 100%);
   color: #fff;
   border-radius: 10px;
 }

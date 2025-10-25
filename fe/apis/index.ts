@@ -5,7 +5,7 @@ export function useApi() {
   const authToken = useCookie("auth_token");
 
   const api = ky.create({
-    prefixUrl: "http://157.245.150.180:3000",
+    prefixUrl: "https://api.dokasan.com",
     timeout: 10000,
     headers: {
       "Content-Type": "application/json",

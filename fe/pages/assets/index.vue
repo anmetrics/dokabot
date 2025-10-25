@@ -6,7 +6,7 @@
         class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
       >
         <div class="mb-4 mb-sm-0">
-          <h2 class="text-sm-h5 text-sm-h4 font-weight-bold text-white">
+          <h2 class="text-sm-h6 text-sm-h4 font-weight-bold text-white">
             Danh sách tài sản
           </h2>
           <p class="text-body-2 text-sm-body-1 text-grey mt-1 mt-sm-2">
@@ -128,13 +128,13 @@ function refresh() {
 
 /* Sheet styling */
 .dark-sheet {
-  background: linear-gradient(135deg, #252532 0%, #2a2a3a 100%);
+  background: linear-gradient(135deg, #232355 0%, #2a2a3a 100%);
   color: #ffffff;
   border-radius: 12px;
   transition: all 0.3s ease;
 }
 .dark-sheet:hover {
-  background: linear-gradient(135deg, #2a2a3a 0%, #30303f 100%);
+  background: linear-gradient(135deg, #232355 0%, #30303f 100%);
   transform: scale(1.02);
 }
 

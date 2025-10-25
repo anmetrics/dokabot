@@ -450,7 +450,9 @@ export class BinanceService implements OnModuleInit {
         ((currentPrice - pos.buyPrice) / pos.buyPrice) * 100;
       return {
         ...pos,
-        strategy: pos.strategy.split('_').pop() ?? '',
+        strategy: pos.strategy.includes('_')
+          ? pos.strategy.split('_').pop()!
+          : '',
         currentPrice,
         profit,
         profitPercent,
