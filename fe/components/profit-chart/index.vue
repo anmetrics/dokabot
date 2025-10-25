@@ -1,12 +1,27 @@
+```vue
 <template>
   <v-card class="pa-4 dark-card" elevation="2">
     <!-- Header -->
     <div class="d-flex justify-space-between align-center mb-4">
       <h3 class="text-h6 font-weight-medium text-white">Daily PNL</h3>
-      <v-btn small text @click="refresh" :disabled="loading">
-        <v-icon :class="{ spin: spinning }" start>mdi-refresh</v-icon>
-        Làm mới
-      </v-btn>
+      <div class="d-flex align-center">
+        <v-select
+          v-model="selectedPeriod"
+          :items="periodOptions"
+          item-title="label"
+          item-value="value"
+          label=""
+          dense
+          outlined
+          dark
+          class="period-selector mr-4"
+          @update:modelValue="fetchProfits"
+        ></v-select>
+        <v-btn small text @click="refresh" :disabled="loading">
+          <v-icon :class="{ spin: spinning }" start>mdi-refresh</v-icon>
+          Làm mới
+        </v-btn>
+      </div>
     </div>
 
     <!-- Tổng PNL -->
@@ -51,6 +66,15 @@ const spinning = ref(false);
 const loading = ref(false);
 const api = useApi();
 
+// 👉 Period options
+const periodOptions = [
+  { label: "1 months", value: "1M" },
+  { label: "3 months", value: "3M" },
+  { label: "6 months", value: "6M" },
+  { label: "1 year", value: "1Y" },
+];
+const selectedPeriod = ref("3M"); // Default: 3 months
+
 // 👉 Tính tổng lợi nhuận
 const totalPNL = computed(() =>
   profits.value.reduce((sum, p) => sum + p.totalProfit, 0)
@@ -61,20 +85,24 @@ const createChart = () => {
   if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(chartCanvas.value, {
-    type: "line",
+    type: "bar",
     data: {
       labels: profits.value.map((p) => p.date),
       datasets: [
         {
           label: "Lợi nhuận (USDT)",
           data: profits.value.map((p) => p.totalProfit),
-          borderColor: "#0EB3E8",
-          backgroundColor: "rgba(14, 179, 232, 0.2)",
-          fill: true,
-          tension: 0.3,
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          pointBackgroundColor: "#0EB3E8",
+          backgroundColor: profits.value.map((p) =>
+            p.totalProfit >= 0
+              ? "rgba(0, 230, 118, 0.6)"
+              : "rgba(255, 82, 82, 0.6)"
+          ),
+          borderColor: profits.value.map((p) =>
+            p.totalProfit >= 0 ? "#00E676" : "#FF5252"
+          ),
+          borderWidth: 1,
+          borderRadius: 4,
+          barThickness: 20,
         },
       ],
     },
@@ -100,7 +128,10 @@ const createChart = () => {
           grid: { color: "rgba(255,255,255,0.05)" },
         },
         y: {
-          ticks: { color: "#FFFFFF" },
+          ticks: {
+            color: "#FFFFFF",
+            callback: (value) => `${value} USDT`,
+          },
           grid: { color: "rgba(255,255,255,0.05)" },
         },
       },
@@ -112,7 +143,10 @@ async function fetchProfits() {
   spinning.value = true;
   loading.value = true;
   try {
-    const res: ProfitItem[] = await api.get("binance/profits");
+    // Pass the selected period as a query parameter
+    const res: ProfitItem[] = await api.get("binance/profits", {
+      params: { period: selectedPeriod.value },
+    });
     profits.value = res || [];
     createChart();
     setTimeout(() => {
@@ -186,6 +220,21 @@ const refresh = () => fetchProfits();
   color: #ff5252 !important;
 }
 
+/* Period selector styling */
+.period-selector {
+  max-width: 120px;
+  background-color: rgba(255, 255, 255, 0.1);
+}
+.period-selector :deep(.v-field) {
+  color: #ffffff;
+}
+.period-selector :deep(.v-label) {
+  color: rgba(200, 200, 200, 0.7);
+}
+.period-selector :deep(.v-select__selection) {
+  color: #ffffff;
+}
+
 /* Loading animation */
 :deep(.v-progress-circular) {
   color: #4fc3f7;
@@ -201,6 +250,9 @@ const refresh = () => fetchProfits();
   }
   .text-h5 {
     font-size: 1.25rem !important;
+  }
+  .period-selector {
+    max-width: 100px;
   }
 }
 
@@ -218,3 +270,4 @@ const refresh = () => fetchProfits();
   background: rgba(0, 0, 0, 0.1);
 }
 </style>
+```

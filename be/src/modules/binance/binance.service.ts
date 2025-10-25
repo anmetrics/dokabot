@@ -16,6 +16,7 @@ import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
 import { SETTING_KEY } from '../settings/settings.enum';
+import { Cron, CronExpression } from '@nestjs/schedule';
 
 type ReversalPattern = {
   name: string;
@@ -470,26 +471,54 @@ export class BinanceService implements OnModuleInit {
     };
   }
 
-  async getDateProfits() {
-    const data = await this.prismaService.sellSuccess.findMany({
-      orderBy: {
-        createdAt: 'asc',
-      },
-    });
-    const grouped = data.reduce(
-      (acc, item) => {
-        const date = new Date(item.createdAt).toISOString().split('T')[0];
-        if (!acc[date]) acc[date] = 0;
-        acc[date] += Number(item.totalProfit);
+  async getDateProfits(
+    period?: '1m' | '3m' | '6m' | '1y',
+    groupBy: 'day' | 'week' = 'week',
+  ) {
+    const now = new Date();
+    let startDate: Date | undefined;
 
-        return acc;
-      },
-      {} as Record<string, number>,
-    );
+    switch (period) {
+      case '1m':
+        startDate = new Date(now.setMonth(now.getMonth() - 1));
+        break;
+      case '3m':
+        startDate = new Date(now.setMonth(now.getMonth() - 3));
+        break;
+      case '6m':
+        startDate = new Date(now.setMonth(now.getMonth() - 6));
+        break;
+      case '1y':
+        startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+        break;
+      default:
+        startDate = undefined;
+    }
 
-    return Object.entries(grouped).map(([date, totalProfit]) => ({
-      date,
-      totalProfit,
+    const startCondition = startDate
+      ? `WHERE created_at >= '${startDate.toISOString().slice(0, 19).replace('T', ' ')}'`
+      : '';
+
+    const groupExpr =
+      groupBy === 'week'
+        ? `DATE_FORMAT(created_at, '%x-W%v')` // ISO week format (e.g. 2025-W43)
+        : `DATE(created_at)`;
+
+    const result = await this.prismaService.$queryRawUnsafe<
+      { date: string; totalProfit: number }[]
+    >(`
+    SELECT 
+      ${groupExpr} AS date,
+      SUM(total_profit) AS totalProfit
+    FROM sell_successes
+    ${startCondition}
+    GROUP BY ${groupExpr}
+    ORDER BY ${groupExpr} ASC
+  `);
+
+    return result.map((r) => ({
+      date: r.date,
+      totalProfit: Number(r.totalProfit),
     }));
   }
 
