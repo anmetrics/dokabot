@@ -16,7 +16,6 @@ import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
 import { SETTING_KEY } from '../settings/settings.enum';
-import { Cron, CronExpression } from '@nestjs/schedule';
 
 type ReversalPattern = {
   name: string;
@@ -473,7 +472,7 @@ export class BinanceService implements OnModuleInit {
 
   async getDateProfits(
     period?: '1m' | '3m' | '6m' | '1y',
-    groupBy: 'day' | 'week' = 'week',
+    groupBy: 'day' | 'week' = 'day',
   ) {
     const now = new Date();
     let startDate: Date | undefined;
