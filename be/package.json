@@ -33,6 +33,7 @@
     "@nestjs/schedule": "^6.0.1",
     "@prisma/client": "^5.16.1",
     "binance-api-node": "^0.12.9",
+    "class-validator": "^0.14.2",
     "decimal.js": "^10.6.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",

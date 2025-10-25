@@ -4,27 +4,27 @@
     <v-app-bar flat class="crypto-app-bar">
       <v-app-bar-nav-icon
         @click="drawer = !drawer"
-        class="ml-3 d-none d-sm-flex"
+        class="ml-2 d-none d-sm-flex"
       />
-      <v-toolbar-title class="font-weight-bold text-uppercase">
+      <v-toolbar-title class="font-weight-bold text-uppercase crypto-title">
         Doka
       </v-toolbar-title>
       <v-spacer />
 
       <!-- Logout -->
-      <v-btn icon @click="logout" aria-label="Logout" class="mr-2">
-        <v-icon>mdi-logout</v-icon>
+      <v-btn icon @click="logout" aria-label="Logout" class="mr-1">
+        <v-icon size="20">mdi-logout</v-icon>
       </v-btn>
     </v-app-bar>
 
-    <!-- Navigation Drawer (desktop only) -->
+    <!-- Navigation Drawer (desktop) -->
     <v-navigation-drawer
       v-model="drawer"
       app
-      width="250"
+      width="220"
       class="crypto-drawer d-none d-sm-flex"
     >
-      <v-list dense nav class="pa-3">
+      <v-list dense nav class="pa-2">
         <v-list-item
           v-for="item in menuItems"
           :key="item.title"
@@ -35,14 +35,13 @@
           ]"
           @click="navigate(item.to)"
         >
-          <v-icon class="crypto-list-icon">{{ item.icon }}</v-icon>
+          <v-icon class="crypto-list-icon" size="20">{{ item.icon }}</v-icon>
           <v-list-item-title class="crypto-list-title">
             {{ item.title }}
           </v-list-item-title>
         </v-list-item>
       </v-list>
-
-      <v-divider class="my-3" />
+      <v-divider class="my-2" />
     </v-navigation-drawer>
 
     <!-- Main content -->
@@ -50,12 +49,12 @@
       <NuxtPage />
     </v-main>
 
-    <!-- ✅ Bottom Navigation (mobile only) -->
+    <!-- Bottom Navigation (mobile) -->
     <v-bottom-navigation
       v-model="currentTab"
       app
       color="#162537"
-      height="64"
+      height="56"
       class="crypto-bottom-nav d-sm-none"
     >
       <v-btn
@@ -80,9 +79,10 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter, useRoute } from "#app";
+import { ref, computed } from "vue";
+import { useRouter, useRoute, navigateTo } from "#app";
 import { useTheme } from "vuetify";
-import { useCookie, navigateTo } from "#app";
+import { useCookie } from "#app";
 
 const router = useRouter();
 const route = useRoute();
@@ -99,6 +99,12 @@ const currentTab = ref(route.path);
 
 const menuItems = [
   { title: "Trang chủ", short: "Home", icon: "mdi-home-outline", to: "/" },
+  {
+    title: "Buy",
+    short: "Buy",
+    icon: "mdi-cash-plus",
+    to: "/buy",
+  },
   {
     title: "Tài sản",
     short: "Tài sản",
@@ -139,51 +145,55 @@ const toggleTheme = () =>
 <style scoped>
 /* App bar */
 .crypto-app-bar {
-  background: linear-gradient(135deg, #162537 0%, #20354b 60%, #0f1721 100%);
-  color: #e0e0e0;
+  background: linear-gradient(135deg, #162537 0%, #1e2a40 60%, #0f1721 100%);
+  color: #d0d0d0;
   border-bottom: 1px solid #2a3b4c;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(8px);
+  padding: 0 8px;
+}
+.crypto-title {
+  font-size: 0.95rem;
 }
 
 /* Drawer */
 .crypto-drawer {
   background: linear-gradient(180deg, #0d1a26 0%, #1a2635 100%);
-  color: #e0e0e0;
+  color: #d0d0d0;
   border-right: 1px solid #2a3b4c;
-  transition: width 0.3s ease;
+  transition: width 0.25s ease;
 }
-
 .crypto-list-item {
   display: flex;
   align-items: center;
-  gap: 20px;
-  height: 54px;
-  padding: 4px 20px;
-  border-radius: 12px;
-  margin: 10px 6px;
-  transition: all 0.3s ease;
+  gap: 12px;
+  height: 46px;
+  padding: 2px 14px;
+  border-radius: 10px;
+  margin: 6px 4px;
+  transition: all 0.25s ease;
   cursor: pointer;
+  font-size: 0.85rem;
 }
 .crypto-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-  transform: translateX(6px);
+  background-color: rgba(255, 255, 255, 0.08);
+  transform: translateX(4px);
 }
 .crypto-list-item--active {
   background: linear-gradient(
     90deg,
-    rgba(30, 136, 229, 0.4),
-    rgba(30, 136, 229, 0.15)
+    rgba(79, 195, 247, 0.3),
+    rgba(79, 195, 247, 0.1)
   );
   color: #4fc3f7;
-  box-shadow: inset 0 0 10px rgba(30, 136, 229, 0.4);
+  box-shadow: inset 0 0 6px rgba(79, 195, 247, 0.3);
 }
 .crypto-list-icon {
-  color: inherit;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+  font-size: 18px;
 }
 .crypto-list-item:hover .crypto-list-icon {
-  transform: scale(1.15);
+  transform: scale(1.1);
   color: #4fc3f7;
 }
 .crypto-list-item--active .crypto-list-icon {
@@ -192,48 +202,47 @@ const toggleTheme = () =>
 
 /* Main content */
 .crypto-main {
-  background: linear-gradient(180deg, #121f2e 0%, #1c2a3b 100%) !important;
-  color: #e0e0e0;
-  min-height: calc(100vh - 64px);
-  padding-bottom: 64px; /* Prevent bottom nav overlap */
+  background: linear-gradient(180deg, #121f2e 0%, #1c2a3b 100%);
+  color: #d0d0d0;
+  min-height: calc(100vh - 56px);
+  padding-bottom: 56px;
 }
 
-/* ✅ Bottom navigation (mobile) */
+/* Bottom navigation (mobile) */
 .crypto-bottom-nav {
   background: linear-gradient(180deg, #0d1a26 0%, #1a2635 100%) !important;
   border-top: 1px solid #2a3b4c;
-  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.25);
   position: fixed;
   bottom: 0;
 }
-
 .crypto-bottom-btn {
   flex: 1;
   flex-direction: column;
   min-width: 0;
+  font-size: 0.75rem;
   text-transform: none;
 }
-
 .crypto-bottom-icon {
-  font-size: 22px;
-  transition: transform 0.3s ease;
+  font-size: 20px;
+  transition: transform 0.25s ease;
 }
 .crypto-bottom-label {
-  font-size: 12px;
+  font-size: 11px;
   margin-top: 2px;
   color: #a0a0a0;
-  transition: color 0.3s ease;
+  transition: color 0.25s ease;
 }
 .crypto-bottom-label.active {
   color: #4fc3f7;
   font-weight: 500;
 }
 .crypto-bottom-btn:hover .crypto-bottom-icon {
-  transform: scale(1.2);
+  transform: scale(1.15);
   color: #4fc3f7;
 }
 
-/* Hide elements */
+/* Hide/show responsive */
 .d-sm-none {
   display: none;
 }

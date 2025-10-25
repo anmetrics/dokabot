@@ -1,16 +1,16 @@
 <template>
-  <v-container class="py-12">
+  <v-container class="py-8 container-compact">
     <v-row dense>
-      <v-col v-for="(log, key) in logs" :key="key" cols="12" md="6" lg="4">
-        <v-card elevation="4" class="pa-6 rounded-xl dark-card">
-          <div class="d-flex align-center justify-space-between mb-4">
-            <h2 class="text-h6 font-weight-bold text-white">
+      <v-col v-for="(log, key) in logs" :key="key" cols="12" sm="6" md="4">
+        <v-card elevation="2" class="pa-4 rounded-lg dark-card">
+          <div class="d-flex align-center justify-space-between mb-2">
+            <h2 class="text-h7 font-weight-bold text-white">
               {{ key.replace("Log", "") }}
             </h2>
             <v-chip
               :color="getChipColor(log)"
               text-color="white"
-              size="small"
+              small
               label
               class="chip-status"
             >
@@ -24,48 +24,36 @@
             </v-chip>
           </div>
 
-          <v-divider class="mb-4 divider" />
+          <v-divider class="mb-3 divider" />
 
           <div v-if="log.symbols?.[0]?.openPositions">
-            <v-row dense>
-              <v-col cols="6" class="text-subtitle-1 text-grey"
-                >Số lượng:</v-col
-              >
+            <v-row dense class="info-row">
+              <v-col cols="6" class="text-grey">Số lượng:</v-col>
               <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatNumber(log.symbols[0].openPositions.totalQty) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-1 text-grey"
-                >Giá mua TB:</v-col
-              >
+              <v-col cols="6" class="text-grey">Giá mua TB:</v-col>
               <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.avgBuyPrice) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-1 text-grey"
-                >Giá hiện tại:</v-col
-              >
+              <v-col cols="6" class="text-grey">Giá hiện tại:</v-col>
               <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.currentPrice) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-1 text-grey"
-                >Tổng vốn:</v-col
-              >
+              <v-col cols="6" class="text-grey">Tổng vốn:</v-col>
               <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.totalSpentOpen) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-1 text-grey"
-                >Giá trị hiện tại:</v-col
-              >
+              <v-col cols="6" class="text-grey">Giá trị hiện tại:</v-col>
               <v-col cols="6" class="text-right text-white font-weight-medium">
                 {{ formatPrice(log.symbols[0].openPositions.currentValue) }}
               </v-col>
 
-              <v-col cols="6" class="text-subtitle-1 text-grey"
-                >Lãi / Lỗ:</v-col
-              >
+              <v-col cols="6" class="text-grey">Lãi / Lỗ:</v-col>
               <v-col
                 cols="6"
                 class="text-right font-weight-bold"
@@ -80,19 +68,19 @@
             </v-row>
           </div>
 
-          <div v-else class="text-center text-grey py-8">
+          <div v-else class="text-center text-grey py-6">
             Không có vị thế mở
           </div>
         </v-card>
       </v-col>
     </v-row>
 
-    <v-row v-if="loading" justify="center" class="mt-8">
+    <v-row v-if="loading" justify="center" class="mt-6">
       <v-col cols="12" class="text-center">
         <v-progress-circular
           indeterminate
           color="primary"
-          size="40"
+          size="36"
           width="4"
         ></v-progress-circular>
       </v-col>
@@ -101,9 +89,9 @@
     <v-row
       v-if="!loading && Object.keys(logs).length === 0"
       justify="center"
-      class="mt-8"
+      class="mt-6"
     >
-      <v-col cols="12" class="text-center text-grey text-h6">
+      <v-col cols="12" class="text-center text-grey text-h7">
         Không có dữ liệu logs
       </v-col>
     </v-row>
@@ -151,56 +139,71 @@ const getChipColor = (log: any) => {
 </script>
 
 <style scoped>
-/* Card styling */
+.container-compact {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Card */
 .dark-card {
-  background: linear-gradient(135deg, #0a1420 0%, #1c2a3b 100%);
+  background: linear-gradient(135deg, #0b1624 0%, #182236 100%);
   color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dark-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(30, 136, 229, 0.15);
 }
 
-/* Chip styling */
+/* Chip */
 .chip-status {
   font-weight: 600;
   text-transform: uppercase;
-  border-radius: 6px;
-  padding: 0 8px;
+  border-radius: 4px;
+  padding: 0 6px;
+  font-size: 0.65rem;
 }
 
 .chip-status.success {
-  background: linear-gradient(90deg, #00e676 0%, #4caf50 100%) !important;
+  background: #00c853 !important;
 }
 
 .chip-status.error {
-  background: linear-gradient(90deg, #ff5252 0%, #d32f2f 100%) !important;
+  background: #ff3d00 !important;
 }
 
 .chip-status.grey {
-  background: linear-gradient(90deg, #616161 0%, #757575 100%) !important;
+  background: #616161 !important;
 }
 
-/* Text styling */
+/* Text */
 .text-grey {
-  color: rgba(200, 200, 200, 0.7);
+  color: rgba(200, 200, 200, 0.6);
+  font-size: 0.75rem;
 }
 
 .text-success {
-  color: #00e676;
+  color: #00c853;
+  font-size: 0.75rem;
 }
 
 .text-error {
-  color: #ff5252;
+  color: #ff3d00;
+  font-size: 0.75rem;
 }
 
-/* Divider styling */
+/* Divider */
 .divider {
-  border-color: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.08);
+  margin-bottom: 0.5rem;
+}
+
+/* Row spacing */
+.info-row > .v-col {
+  padding: 2px 0;
 }
 
 /* Progress circular */
@@ -208,35 +211,18 @@ const getChipColor = (log: any) => {
   color: #4fc3f7;
 }
 
-/* Row styling */
-.v-row.dense > .v-col {
-  padding: 8px;
-}
-
 /* Responsive adjustments */
 @media (max-width: 600px) {
   .dark-card {
-    padding: 16px;
+    padding: 12px;
   }
-  .text-h6 {
-    font-size: 1.1rem !important;
-  }
-  .text-subtitle-1 {
+  .text-h7 {
     font-size: 0.9rem !important;
   }
-}
-
-/* Scrollbar styling for container */
-:deep(.v-container::-webkit-scrollbar) {
-  width: 8px;
-}
-
-:deep(.v-container::-webkit-scrollbar-thumb) {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-:deep(.v-container::-webkit-scrollbar-track) {
-  background: rgba(0, 0, 0, 0.1);
+  .text-grey,
+  .text-success,
+  .text-error {
+    font-size: 0.7rem !important;
+  }
 }
 </style>

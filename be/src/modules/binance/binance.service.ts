@@ -22,6 +22,7 @@ import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
 import { LIST_SYMBOL, SETTING_KEY } from '../settings/settings.enum';
+import { BuyCoinDto } from './dto/buy-coin.dto';
 
 type ReversalPattern = {
   name: string;
@@ -449,6 +450,7 @@ export class BinanceService implements OnModuleInit {
         ((currentPrice - pos.buyPrice) / pos.buyPrice) * 100;
       return {
         ...pos,
+        strategy: pos.strategy.split('_').pop() ?? '',
         currentPrice,
         profit,
         profitPercent,
@@ -563,6 +565,27 @@ export class BinanceService implements OnModuleInit {
     }));
   }
 
+  buy(dto: BuyCoinDto) {
+    const { market, quantity, symbol } = dto;
+    const timestamp = Date.now();
+    const data: any = {
+      symbol,
+      side: 'BUY',
+      type: market ? 'MARKET' : 'LIMIT',
+      quantity,
+      timestamp,
+    };
+
+    if (!dto.market) {
+      if (!dto.price)
+        throw new BadRequestException('Price is required for LIMIT order');
+      data.price = dto.price;
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return data;
+  }
+
   async sell(id: string, price?: number) {
     const openPosition = await this.prismaService.position.findFirst({
       where: {
@@ -581,7 +604,7 @@ export class BinanceService implements OnModuleInit {
     const minProfitPct = 0.005;
 
     if (price) {
-      const minAllowed = currentPrice * 0.99;
+      const minAllowed = currentPrice * 0.994;
       if (price < minAllowed) {
         throw new BadRequestException(
           `Price too low. Minimum allowed is ${minAllowed.toFixed(

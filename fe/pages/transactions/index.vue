@@ -1,20 +1,19 @@
 <template>
-  <v-container class="py-8">
+  <v-container class="py-6 container-compact">
     <v-card elevation="2" class="pa-4 dark-card">
-      <div class="d-flex align-center justify-space-between mb-4">
-        <h2 class="text-h5 font-weight-medium text-white">Lịch sử giao dịch</h2>
+      <div class="d-flex align-center justify-space-between mb-3">
+        <h2 class="text-h6 font-weight-medium text-white">Lịch sử giao dịch</h2>
 
-        <div class="d-flex align-center ga-2">
-          <v-btn
-            color="primary"
-            @click="refresh"
-            variant="flat"
-            :disabled="loading"
-          >
-            <v-icon start>mdi-refresh</v-icon>
-            Làm mới
-          </v-btn>
-        </div>
+        <v-btn
+          color="primary"
+          @click="refresh"
+          variant="flat"
+          :disabled="loading"
+          class="refresh-btn"
+        >
+          <v-icon start>mdi-refresh</v-icon>
+          Làm mới
+        </v-btn>
       </div>
 
       <v-data-table
@@ -24,6 +23,7 @@
         :items-per-page="meta.limit"
         class="dark-table"
         hide-default-footer
+        density="compact"
       >
         <template #item.buyPrices="{ item }">
           {{ item.buyPrices[0]?.toLocaleString() }}
@@ -62,13 +62,14 @@
       </v-data-table>
 
       <!-- Pagination -->
-      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-6">
+      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-4">
         <v-pagination
           v-model="page"
           :length="meta.totalPages"
           color="primary"
           total-visible="5"
           @update:model-value="fetchTrades"
+          class="pagination"
         ></v-pagination>
       </v-row>
     </v-card>
@@ -98,7 +99,7 @@ const page = ref(1);
 const meta = ref({
   total: 0,
   page: 1,
-  limit: 10,
+  limit: 15,
   totalPages: 1,
 });
 
@@ -134,7 +135,7 @@ async function fetchTrades() {
   try {
     loading.value = true;
     const res: any = await api.get(
-      `binance/histories?page=${page.value}&limit=10`
+      `binance/histories?page=${page.value}&limit=15`
     );
     trades.value = res.data || [];
     meta.value = res.meta || meta.value;
@@ -154,113 +155,123 @@ onMounted(fetchTrades);
 </script>
 
 <style scoped>
-/* Card styling */
+.container-compact {
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+/* Card */
 .dark-card {
-  background: linear-gradient(135deg, #0a1420 0%, #1c2a3b 100%);
-  color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background: linear-gradient(135deg, #0b1620 0%, #1b2535 100%);
+  color: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .dark-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(30, 136, 229, 0.15);
 }
 
-/* Table styling */
+/* Table */
 .dark-table {
   background: transparent;
-  color: #ffffff;
-  border-radius: 12px;
+  color: #fff;
+  border-radius: 10px;
 }
 
 .dark-table :deep(.v-data-table-header th) {
   background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
-  color: #ffffff !important;
+  color: #fff !important;
   font-weight: 600;
-  font-size: 14px;
-  padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark-table :deep(.v-data-table__td) {
-  padding: 16px;
+  font-size: 13px;
+  padding: 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.dark-table :deep(.v-data-table__td) {
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 12px;
+}
+
 .dark-table :deep(.v-data-table__tr:hover) {
-  background: rgba(30, 136, 229, 0.1);
-  transition: background 0.3s ease;
+  background: rgba(30, 136, 229, 0.08);
+  transition: background 0.2s ease;
 }
 
 /* Refresh button */
 .refresh-btn {
   background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
-  color: #ffffff;
-  border-radius: 8px;
+  color: #fff;
+  border-radius: 6px;
   text-transform: none;
   font-weight: 500;
-  letter-spacing: 0.5px;
+  font-size: 0.85rem;
+  padding: 5px 10px;
 }
 
 .refresh-btn:hover {
   background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%) !important;
-  transform: translateY(-2px);
+  transform: translateY(-1px);
 }
 
-/* Pagination styling */
+/* Pagination */
 .pagination :deep(.v-pagination__item) {
-  background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
-  color: #ffffff;
+  background: #2a2a3a;
+  color: #fff;
+  font-size: 12px;
   font-weight: 500;
 }
 
 .pagination :deep(.v-pagination__item--active) {
   background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
-  color: #ffffff;
+  color: #fff;
 }
 
 .pagination :deep(.v-btn) {
-  border-radius: 8px;
+  border-radius: 6px;
 }
 
-/* Loading animation */
+/* Loading */
 :deep(.v-progress-circular) {
   color: #4fc3f7;
 }
 
-/* Text styling */
+/* Text colors */
 .text-success {
   color: #00e676;
+  font-size: 12px;
 }
 
 .text-error {
   color: #ff5252;
+  font-size: 12px;
 }
 
-/* Responsive adjustments */
+/* Responsive */
 @media (max-width: 600px) {
   .dark-card {
-    padding: 16px;
+    padding: 12px;
   }
-  .text-h5 {
-    font-size: 1.25rem !important;
+  .text-h6 {
+    font-size: 1rem !important;
   }
   .dark-table :deep(.v-data-table-header th),
   .dark-table :deep(.v-data-table__td) {
-    font-size: 0.9rem !important;
-    padding: 12px;
+    font-size: 11px;
+    padding: 8px;
   }
 }
 
-/* Scrollbar styling */
+/* Scrollbar */
 :deep(.v-data-table__wrapper::-webkit-scrollbar) {
-  width: 8px;
+  width: 6px;
 }
 
 :deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
 

@@ -13,6 +13,7 @@ import {
 import { BinanceService } from './binance.service';
 import { AuthenticationGuard } from '../authentication/guards/authentication.guard';
 import { SETTING_KEY } from '../settings/settings.enum';
+import { BuyCoinDto } from './dto/buy-coin.dto';
 
 @Controller('binance')
 @UseGuards(AuthenticationGuard)
@@ -89,6 +90,13 @@ export class BinanceController {
   @HttpCode(HttpStatus.OK)
   async GetListSettings() {
     return this.binanceService.getListSettings();
+  }
+
+  @Post('buy')
+  @HttpCode(HttpStatus.OK)
+  buyCoin(@Body() dto: BuyCoinDto) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return this.binanceService.buy(dto);
   }
 
   @Post('sell')

@@ -6,7 +6,7 @@
         class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
       >
         <div class="mb-4 mb-sm-0">
-          <h2 class="text-h5 text-sm-h4 font-weight-bold text-white">
+          <h2 class="text-sm-h5 text-sm-h4 font-weight-bold text-white">
             Danh sách tài sản
           </h2>
           <p class="text-body-2 text-sm-body-1 text-grey mt-1 mt-sm-2">

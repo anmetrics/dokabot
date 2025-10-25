@@ -2,7 +2,7 @@
   <v-container fluid class="py-10">
     <v-card class="pa-8 rounded-xl dark-card">
       <!-- Tiêu đề -->
-      <v-card-title class="text-h4 font-weight-bold text-white">
+      <v-card-title class="text-sm-h5 font-weight-bold text-white">
         Cài đặt hệ thống
       </v-card-title>
 
