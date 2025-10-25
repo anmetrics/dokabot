@@ -1,10 +1,15 @@
 <template>
-  <v-container fluid class="pa-10">
-    <v-card class="rounded-xl pa-6 dark-card">
-      <div class="d-flex align-center justify-space-between mb-6">
-        <div>
-          <h2 class="text-h4 font-weight-bold text-white">Danh sách tài sản</h2>
-          <p class="text-body-1 text-grey mt-2">
+  <v-container fluid class="pa-6 pa-sm-8 pa-md-10">
+    <v-card class="rounded-xl pa-4 pa-sm-6 dark-card">
+      <!-- Header -->
+      <div
+        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
+      >
+        <div class="mb-4 mb-sm-0">
+          <h2 class="text-h5 text-sm-h4 font-weight-bold text-white">
+            Danh sách tài sản
+          </h2>
+          <p class="text-body-2 text-sm-body-1 text-grey mt-1 mt-sm-2">
             Hiển thị toàn bộ số dư tài sản hiện có trong tài khoản
           </p>
         </div>
@@ -21,31 +26,25 @@
       </div>
 
       <!-- Tổng quan -->
-      <v-row class="mb-6">
-        <v-col cols="12" sm="6">
-          <v-sheet class="pa-4 rounded-lg dark-sheet">
-            <div class="text-subtitle-1 text-grey">Tổng tài sản</div>
-            <div class="text-h5 font-weight-bold text-white">
+      <v-row class="mb-4 mb-sm-6" dense>
+        <v-col cols="12" sm="12">
+          <v-sheet class="pa-3 pa-sm-4 rounded-lg dark-sheet text-center">
+            <div class="text-subtitle-2 text-grey">Tổng tài sản</div>
+            <div class="text-h6 text-sm-h5 font-weight-bold text-white">
               {{ balances.length }}
-            </div>
-          </v-sheet>
-        </v-col>
-        <v-col cols="12" sm="6">
-          <v-sheet class="pa-4 rounded-lg dark-sheet">
-            <div class="text-subtitle-1 text-grey">Tổng Locked</div>
-            <div class="text-h5 font-weight-bold text-white">
-              {{ totalLocked.toFixed(4) }}
             </div>
           </v-sheet>
         </v-col>
       </v-row>
 
+      <!-- Bảng tài sản -->
       <v-data-table
         :items="balances"
         :headers="headers"
-        :items-per-page="10"
+        :items-per-page="6"
         class="dark-table"
         :loading="loading"
+        density="compact"
       >
         <template #item.asset="{ item }">
           <v-chip
@@ -88,9 +87,6 @@ const headers = [
   { title: "Đang khóa", key: "locked", align: "end" },
 ];
 
-const totalFree = computed(() =>
-  balances.value.reduce((acc, b) => acc + Number(b.free), 0)
-);
 const totalLocked = computed(() =>
   balances.value.reduce((acc, b) => acc + Number(b.locked), 0)
 );
@@ -111,7 +107,6 @@ async function fetchBalances() {
 }
 
 onMounted(fetchBalances);
-
 function refresh() {
   fetchBalances();
 }
@@ -123,13 +118,12 @@ function refresh() {
   background: linear-gradient(135deg, #0d1622 0%, #111923 100%);
   color: #ffffff;
   border-radius: 16px;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
 }
-
 .dark-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(30, 136, 229, 0.2);
 }
 
 /* Sheet styling */
@@ -139,7 +133,6 @@ function refresh() {
   border-radius: 12px;
   transition: all 0.3s ease;
 }
-
 .dark-sheet:hover {
   background: linear-gradient(135deg, #2a2a3a 0%, #30303f 100%);
   transform: scale(1.02);
@@ -151,37 +144,32 @@ function refresh() {
   color: #ffffff;
   border-radius: 12px;
 }
-
 .dark-table :deep(.v-data-table-header th) {
   background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
   color: #ffffff !important;
   font-weight: 600;
-  font-size: 14px;
-  padding: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.dark-table :deep(.v-data-table__td) {
-  padding: 16px;
+  font-size: 13px;
+  padding: 10px 12px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-
+.dark-table :deep(.v-data-table__td) {
+  padding: 10px 12px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
 .dark-table :deep(.v-data-table__tr:hover) {
-  background: rgba(30, 136, 229, 0.1);
-  transition: background 0.3s ease;
+  background: rgba(30, 136, 229, 0.08);
 }
 
 /* Chip styling */
 .chip-bg {
   background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%) !important;
   color: #ffffff;
-  font-weight: 500;
 }
-
 .chip-asset {
   transition: all 0.3s ease;
+  font-size: 0.8rem;
 }
-
 .chip-asset:hover {
   background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
   transform: scale(1.05);
@@ -195,16 +183,8 @@ function refresh() {
   text-transform: none;
   font-weight: 500;
   letter-spacing: 0.5px;
-}
-
-.refresh-btn:hover {
-  background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%) !important;
-  transform: translateY(-2px);
-}
-
-/* Loading animation */
-:deep(.v-progress-circular) {
-  color: #4fc3f7;
+  font-size: 0.9rem;
+  padding: 6px 14px;
 }
 
 /* Text styling */
@@ -212,35 +192,26 @@ function refresh() {
   color: rgba(200, 200, 200, 0.7);
 }
 
-/* Responsive adjustments */
+/* Responsive tweaks */
 @media (max-width: 600px) {
-  .dark-card {
-    padding: 16px;
-  }
-  .text-h4 {
-    font-size: 1.5rem !important;
+  .v-card {
+    padding: 12px !important;
   }
   .text-h5 {
-    font-size: 1.25rem !important;
+    font-size: 1.1rem !important;
+  }
+  .refresh-btn {
+    font-size: 0.8rem;
+    padding: 6px 10px;
   }
   .dark-table :deep(.v-data-table-header th),
   .dark-table :deep(.v-data-table__td) {
-    font-size: 0.9rem !important;
-    padding: 12px;
+    font-size: 0.8rem !important;
+    padding: 8px 10px;
   }
-}
-
-/* Scrollbar styling */
-:deep(.v-data-table__wrapper::-webkit-scrollbar) {
-  width: 8px;
-}
-
-:deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-:deep(.v-data-table__wrapper::-webkit-scrollbar-track) {
-  background: rgba(0, 0, 0, 0.1);
+  .v-chip {
+    font-size: 0.75rem !important;
+    height: 24px !important;
+  }
 }
 </style>

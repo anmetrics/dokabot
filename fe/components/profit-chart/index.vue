@@ -1,23 +1,31 @@
-```vue
 <template>
   <v-card class="pa-4 dark-card" elevation="2">
     <!-- Header -->
-    <div class="d-flex justify-space-between align-center mb-4">
-      <h3 class="text-h6 font-weight-medium text-white">Daily PNL</h3>
-      <div class="d-flex align-center">
+    <div
+      class="d-flex justify-space-between align-center mb-4 header-container"
+    >
+      <h3 class="text-h6 font-weight-medium text-white mb-2 mb-sm-0">
+        Daily PNL
+      </h3>
+      <div class="d-flex align-center header-actions">
         <v-select
           v-model="selectedPeriod"
           :items="periodOptions"
           item-title="label"
           item-value="value"
-          label=""
           dense
           outlined
           dark
           class="period-selector mr-4"
           @update:modelValue="fetchProfits"
         ></v-select>
-        <v-btn small text @click="refresh" :disabled="loading">
+        <v-btn
+          small
+          text
+          class="refresh-btn"
+          @click="refresh"
+          :disabled="loading"
+        >
           <v-icon :class="{ spin: spinning }" start>mdi-refresh</v-icon>
           Làm mới
         </v-btn>
@@ -29,7 +37,7 @@
       <div class="text-grey text-subtitle-2 mb-1">Tổng lợi nhuận</div>
       <div
         :class="[
-          'text-h5 font-weight-bold',
+          'text-h5 font-weight-bold total-pnl',
           totalPNL > 0
             ? 'text-success'
             : totalPNL < 0
@@ -42,7 +50,9 @@
     </div>
 
     <!-- Chart -->
-    <canvas ref="chartCanvas"></canvas>
+    <div class="chart-wrapper">
+      <canvas ref="chartCanvas"></canvas>
+    </div>
   </v-card>
 </template>
 
@@ -66,16 +76,14 @@ const spinning = ref(false);
 const loading = ref(false);
 const api = useApi();
 
-// 👉 Period options
 const periodOptions = [
-  { label: "1 months", value: "1M" },
-  { label: "3 months", value: "3M" },
-  { label: "6 months", value: "6M" },
-  { label: "1 year", value: "1Y" },
+  { label: "1 tháng", value: "1M" },
+  { label: "3 tháng", value: "3M" },
+  { label: "6 tháng", value: "6M" },
+  { label: "1 năm", value: "1Y" },
 ];
-const selectedPeriod = ref("3M"); // Default: 3 months
+const selectedPeriod = ref("3M");
 
-// 👉 Tính tổng lợi nhuận
 const totalPNL = computed(() =>
   profits.value.reduce((sum, p) => sum + p.totalProfit, 0)
 );
@@ -84,10 +92,16 @@ const createChart = () => {
   if (!chartCanvas.value) return;
   if (chartInstance) chartInstance.destroy();
 
+  const dateFormatter = new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "2-digit",
+  });
+
   chartInstance = new Chart(chartCanvas.value, {
     type: "bar",
     data: {
-      labels: profits.value.map((p) => p.date),
+      labels: profits.value.map((p) => dateFormatter.format(new Date(p.date))),
       datasets: [
         {
           label: "Lợi nhuận (USDT)",
@@ -108,6 +122,7 @@ const createChart = () => {
     },
     options: {
       responsive: true,
+      maintainAspectRatio: false,
       plugins: {
         legend: { labels: { color: "#FFFFFF" } },
         tooltip: {
@@ -115,6 +130,8 @@ const createChart = () => {
           titleColor: "#FFFFFF",
           bodyColor: "#FFFFFF",
           callbacks: {
+            title: (items) =>
+              dateFormatter.format(new Date(items[0].label || "")),
             label: (context) =>
               ` ${context.dataset.label}: ${context?.parsed?.y?.toFixed(
                 2
@@ -143,15 +160,12 @@ async function fetchProfits() {
   spinning.value = true;
   loading.value = true;
   try {
-    // Pass the selected period as a query parameter
     const res: ProfitItem[] = await api.get("binance/profits", {
       params: { period: selectedPeriod.value },
     });
     profits.value = res || [];
     createChart();
-    setTimeout(() => {
-      spinning.value = false;
-    }, 400);
+    setTimeout(() => (spinning.value = false), 400);
   } catch (err) {
     console.error("Lỗi fetch profits:", err);
   } finally {
@@ -160,7 +174,6 @@ async function fetchProfits() {
 }
 
 onMounted(fetchProfits);
-
 const refresh = () => fetchProfits();
 </script>
 
@@ -168,7 +181,6 @@ const refresh = () => fetchProfits();
 .spin {
   animation: spin 1s linear infinite;
 }
-
 @keyframes spin {
   0% {
     transform: rotate(0deg);
@@ -178,7 +190,6 @@ const refresh = () => fetchProfits();
   }
 }
 
-/* Card styling */
 .dark-card {
   background: linear-gradient(135deg, #070d14 0%, #0e141c 100%);
   color: #ffffff;
@@ -186,41 +197,21 @@ const refresh = () => fetchProfits();
   box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-
 .dark-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 16px rgba(30, 136, 229, 0.2);
 }
 
-/* Refresh button */
-.refresh-btn {
-  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
-  color: #ffffff;
-  border-radius: 8px;
-  text-transform: none;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.refresh-btn:hover {
-  background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%) !important;
-  transform: translateY(-2px);
-}
-
-/* Text styling */
 .text-grey {
   color: rgba(200, 200, 200, 0.7);
 }
-
 .text-success {
   color: #00e676 !important;
 }
-
 .text-error {
   color: #ff5252 !important;
 }
 
-/* Period selector styling */
 .period-selector {
   max-width: 120px;
   background-color: rgba(255, 255, 255, 0.1);
@@ -228,46 +219,56 @@ const refresh = () => fetchProfits();
 .period-selector :deep(.v-field) {
   color: #ffffff;
 }
-.period-selector :deep(.v-label) {
-  color: rgba(200, 200, 200, 0.7);
-}
 .period-selector :deep(.v-select__selection) {
   color: #ffffff;
 }
 
-/* Loading animation */
-:deep(.v-progress-circular) {
-  color: #4fc3f7;
+.refresh-btn {
+  color: #e4f7ff !important;
+  text-transform: none;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+.refresh-btn:hover {
+  color: #afd3f1 !important;
 }
 
-/* Responsive adjustments */
+/* Chart wrapper responsive height */
+.chart-wrapper {
+  width: 100%;
+  height: 280px;
+}
 @media (max-width: 600px) {
-  .dark-card {
-    padding: 16px;
+  .chart-wrapper {
+    height: 200px;
   }
-  .text-h4 {
-    font-size: 1.5rem !important;
+}
+
+/* Responsive header layout */
+@media (max-width: 600px) {
+  .header-container {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  .text-h5 {
-    font-size: 1.25rem !important;
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+    margin-top: 8px;
   }
   .period-selector {
-    max-width: 100px;
+    max-width: unset;
+    flex: 1;
+    margin-right: 8px;
+  }
+  .refresh-btn {
+    font-size: 13px;
+    padding: 4px 8px;
+  }
+  .total-pnl {
+    font-size: 1.1rem !important;
+  }
+  .dark-card {
+    padding: 16px !important;
   }
 }
-
-/* Scrollbar styling */
-:deep(.v-card::-webkit-scrollbar) {
-  width: 8px;
-}
-
-:deep(.v-card::-webkit-scrollbar-thumb) {
-  background-color: rgba(255, 255, 255, 0.2);
-  border-radius: 4px;
-}
-
-:deep(.v-card::-webkit-scrollbar-track) {
-  background: rgba(0, 0, 0, 0.1);
-}
 </style>
-```

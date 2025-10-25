@@ -1,5 +1,5 @@
 <template>
-  <v-container class="py-8">
+  <v-container class="py-12">
     <v-row dense>
       <v-col v-for="(log, key) in logs" :key="key" cols="12" md="6" lg="4">
         <v-card elevation="4" class="pa-6 rounded-xl dark-card">

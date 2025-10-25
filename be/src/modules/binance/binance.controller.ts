@@ -6,6 +6,7 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Post,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -88,6 +89,22 @@ export class BinanceController {
   @HttpCode(HttpStatus.OK)
   async GetListSettings() {
     return this.binanceService.getListSettings();
+  }
+
+  @Post('sell')
+  @HttpCode(HttpStatus.OK)
+  sell(
+    @Body()
+    body: {
+      id: string;
+      price?: number;
+    },
+  ) {
+    const { id, price } = body;
+    if (!id?.trim()) {
+      return;
+    }
+    return this.binanceService.sell(id, Number(price));
   }
 
   @Patch('settings')

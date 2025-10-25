@@ -1,9 +1,15 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  OnModuleInit,
+} from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import Binance, {
   Candle,
   CandleChartInterval_LT,
   Order,
+  OrderSide,
   OrderSide_LT,
   OrderType,
 } from 'binance-api-node';
@@ -15,7 +21,7 @@ import { formatProfitLog } from '../strategy/helpers/logger';
 import { TelegramService } from '../telegram/telegram.service';
 import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
-import { SETTING_KEY } from '../settings/settings.enum';
+import { LIST_SYMBOL, SETTING_KEY } from '../settings/settings.enum';
 
 type ReversalPattern = {
   name: string;
@@ -94,7 +100,25 @@ export class BinanceService implements OnModuleInit {
     return Number(res[symbol]);
   }
 
-  async getRevenueFromSellOrder(order: Order, symbol: string) {
+  async getPrices(symbols: string[]) {
+    if (!this.client) throw new Error('Client not initialized');
+    const res = await this.client.prices();
+
+    return Object.fromEntries(
+      symbols
+        .filter((symbol) => res[symbol])
+        .map((symbol) => [symbol, Number(res[symbol])]),
+    );
+  }
+
+  async getRevenueFromSellOrder(
+    order: Order,
+    symbol: string,
+    inputBnbPrice?: number,
+  ) {
+    const bnbPrice = inputBnbPrice
+      ? inputBnbPrice
+      : await this.getPrice(LIST_SYMBOL.BNBUSDT);
     let revenueUSDT = 0;
     if (!order.fills) return 0;
     for (const fill of order.fills) {
@@ -107,7 +131,9 @@ export class BinanceService implements OnModuleInit {
       if (asset === 'USDT') feeUSDT = commission;
       else if (asset === symbol.replace('USDT', ''))
         feeUSDT = commission * price;
-      else {
+      else if (asset === 'BNB') {
+        feeUSDT = commission * bnbPrice;
+      } else {
         const assetPrice = await this.getPrice(`${asset}USDT`);
         feeUSDT = commission * assetPrice;
       }
@@ -356,16 +382,13 @@ export class BinanceService implements OnModuleInit {
   }
 
   async getLog(symbol: 'BNBUSDT' | 'BTCUSDT' | 'SOLUSDT') {
-    const bnbPrice = await this.getPrice('BNBUSDT');
-    const btcPrice = await this.getPrice('BTCUSDT');
-    const solPrice = await this.getPrice('SOLUSDT');
-
+    const priceMap = await this.getPrices(['BTCUSDT', 'BNBUSDT', 'SOLUSDT']);
     const log = await logTotalProfit(
       this,
       {
-        BNBUSDT: bnbPrice,
-        BTCUSDT: btcPrice,
-        SOLUSDT: solPrice,
+        BNBUSDT: priceMap[LIST_SYMBOL.BNBUSDT],
+        BTCUSDT: priceMap[LIST_SYMBOL.BTCUSDT],
+        SOLUSDT: priceMap[LIST_SYMBOL.SOLUSDT],
       },
       symbol,
     );
@@ -409,11 +432,30 @@ export class BinanceService implements OnModuleInit {
 
   async getAllOpenPositions() {
     const positions = await this.prismaService.position.findMany({
+      where: {},
       orderBy: {
         createdAt: 'desc',
       },
     });
-    return positions;
+
+    const uniqueSymbols = [...new Set(positions.map((p) => p.symbol))];
+
+    const priceMap = await this.getPrices(uniqueSymbols);
+
+    const positionsWithPnL = positions.map((pos) => {
+      const currentPrice = priceMap[pos.symbol] ?? 0;
+      const profit = (currentPrice - pos.buyPrice) * pos.qty;
+      const profitPercent =
+        ((currentPrice - pos.buyPrice) / pos.buyPrice) * 100;
+      return {
+        ...pos,
+        currentPrice,
+        profit,
+        profitPercent,
+      };
+    });
+
+    return positionsWithPnL;
   }
 
   async getHistories(
@@ -519,6 +561,72 @@ export class BinanceService implements OnModuleInit {
       date: r.date,
       totalProfit: Number(r.totalProfit),
     }));
+  }
+
+  async sell(id: string, price?: number) {
+    const openPosition = await this.prismaService.position.findFirst({
+      where: {
+        id,
+      },
+    });
+    if (!openPosition) {
+      throw new BadRequestException('Invalid position');
+    }
+
+    const listPrices = await this.getPrices([
+      openPosition.symbol,
+      LIST_SYMBOL.BNBUSDT,
+    ]);
+    const currentPrice = listPrices[openPosition.symbol];
+    const minProfitPct = 0.005;
+
+    if (price) {
+      const minAllowed = currentPrice * 0.99;
+      if (price < minAllowed) {
+        throw new BadRequestException(
+          `Price too low. Minimum allowed is ${minAllowed.toFixed(
+            2,
+          )} (${((1 - price / currentPrice) * 100).toFixed(6)}% below current price)`,
+        );
+      }
+    }
+
+    const sellable = currentPrice >= openPosition.buyPrice * (1 + minProfitPct);
+    if (!sellable) {
+      throw new BadRequestException('Invalid profit');
+    }
+
+    const order = price
+      ? await this.client!.order({
+          symbol: openPosition.symbol,
+          side: OrderSide.SELL,
+          type: OrderType.MARKET,
+          quantity: String(openPosition.qty),
+        })
+      : await this.placeMarketOrder(
+          openPosition.symbol,
+          OrderSide.SELL,
+          openPosition.qty,
+        );
+    const revenueUsdt = await this.getRevenueFromSellOrder(
+      order,
+      openPosition.symbol,
+      listPrices[LIST_SYMBOL.BNBUSDT],
+    );
+
+    const profit = revenueUsdt - openPosition.usdSpent;
+
+    await this.deletePosition(openPosition.id);
+    await this.saveSellSuccess({
+      symbol: openPosition.symbol,
+      buyPrices: [openPosition.buyPrice],
+      sellPrice: currentPrice,
+      totalAmountBuyActual: openPosition.qty,
+      totalAmountBuyUsdtSpent: openPosition.usdSpent,
+      totalProfit: profit,
+      totalRevenueUsdt: revenueUsdt,
+    });
+    return order;
   }
 
   async getCumulativeProfits() {

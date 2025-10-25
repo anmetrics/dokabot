@@ -34,7 +34,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
-  private rsiBuyThreshold = 18;
+  private rsiBuyThreshold = 19;
 
   private cooldownMs = 1 * 60 * 1000; // 1 phút
   private lastTradeTime = 0;

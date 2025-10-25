@@ -1,5 +1,5 @@
 <template>
-  <v-container class="pa-10 container-custom">
+  <v-container class="container-custom">
     <profit-chart />
   </v-container>
 </template>
@@ -20,13 +20,19 @@ function logout() {
   margin: 0 auto;
   background: transparent;
   border-radius: 16px;
+  padding: 40px; /* tương đương pa-10 */
   transition: all 0.3s ease;
 }
 
-/* Responsive adjustments */
+@media (max-width: 960px) {
+  .container-custom {
+    padding: 24px;
+  }
+}
+
 @media (max-width: 600px) {
   .container-custom {
-    padding: 16px;
+    padding: 12px 16px;
   }
 }
 
