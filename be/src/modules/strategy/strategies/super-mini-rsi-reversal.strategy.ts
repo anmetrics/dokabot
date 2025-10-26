@@ -29,8 +29,6 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   // === CONFIG ===
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
 
-  private DCA_PRICE_DROP_PCT = 0.015;
-
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
@@ -135,7 +133,13 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
         const dcaIndex = dcaTimes + 1;
 
-        const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT;
+        const dcaPriceSetting = await this.binanceService.getSettingByKey(
+          SETTING_KEY.DCA_WHEN_DROP_PERCENT,
+        );
+
+        const DCA_PRICE_DROP_PCT = Number(dcaPriceSetting);
+
+        const DCA_PERCENT = 1 - DCA_PRICE_DROP_PCT;
 
         const isDcaValid =
           dcaTimes < this.maxDcaTimes &&

@@ -9,6 +9,7 @@ export const SETTING_KEY = keyMirror({
   MAX_BNB_PRICE_MINI: null,
   MAX_SOL_PRICE_MINI: null,
   MAX_BTC_PRICE_MINI: null,
+  DCA_WHEN_DROP_PERCENT: null,
 });
 
 export type SETTING_KEY = keyof typeof SETTING_KEY;

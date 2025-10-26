@@ -72,6 +72,40 @@
                 </v-row>
               </div>
 
+              <!-- DCA Settings-->
+              <div class="group-box mb-8" v-if="dcaSettings.length">
+                <div class="group-header">
+                  <v-icon color="light-blue lighten-3" size="22" class="mr-2">
+                    mdi-percent-outline
+                  </v-icon>
+                  <span>DCA Settings</span>
+                </div>
+
+                <v-row dense>
+                  <v-col
+                    cols="12"
+                    md="4"
+                    v-for="item in dcaSettings"
+                    :key="item.id"
+                  >
+                    <v-text-field
+                      v-model="item.value"
+                      :label="
+                        item.key === 'DCA_WHEN_DROP_PERCENT'
+                          ? 'DCA khi giá giảm (%)'
+                          : item.key
+                      "
+                      color="light-blue"
+                      variant="outlined"
+                      density="compact"
+                      type="number"
+                      class="text-field-custom"
+                      @update:modelValue="updateSetting(item.key, $event)"
+                    />
+                  </v-col>
+                </v-row>
+              </div>
+
               <!-- Price Settings -->
               <div class="group-box mb-8" v-if="sortedNormalSettings.length">
                 <div class="group-header">
@@ -249,10 +283,15 @@ const snackbar = ref({
 
 const assetOrder = ["BTC", "BNB", "SOL", "USDT"];
 
+const dcaSettings = computed(() =>
+  settings.value.filter((s) => ["DCA_WHEN_DROP_PERCENT"].includes(s.key))
+);
+
 const normalPriceSettings = computed(() =>
   settings.value.filter(
     (s) =>
-      !["ENABLE_BUY", "ENABLE_SELL"].includes(s.key) && !s.key.includes("_MINI")
+      !["ENABLE_BUY", "ENABLE_SELL", "DCA_WHEN_DROP_PERCENT"].includes(s.key) &&
+      !s.key.includes("_MINI")
   )
 );
 

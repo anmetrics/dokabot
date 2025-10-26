@@ -55,6 +55,7 @@ export class BinanceService implements OnModuleInit {
       [SETTING_KEY.MAX_BNB_PRICE_MINI]: '1100',
       [SETTING_KEY.MAX_SOL_PRICE_MINI]: '190',
       [SETTING_KEY.MAX_BTC_PRICE_MINI]: '110000',
+      [SETTING_KEY.DCA_WHEN_DROP_PERCENT]: '0.03',
     };
 
     const missingKeys = Object.keys(SETTING_KEY).filter(

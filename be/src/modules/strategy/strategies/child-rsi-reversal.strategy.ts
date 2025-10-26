@@ -30,8 +30,6 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 7;
   private dcaMultiplier = 1.8;
 
-  private DCA_PRICE_DROP_PCT = 0.015;
-
   private rsiPeriod = 9;
   private atrPeriod = 9;
 
@@ -136,8 +134,14 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
 
         const dcaIndex = dcaTimes + 1;
 
+        const dcaPriceSetting = await this.binanceService.getSettingByKey(
+          SETTING_KEY.DCA_WHEN_DROP_PERCENT,
+        );
+
+        const DCA_PRICE_DROP_PCT = Number(dcaPriceSetting);
+
         const extraDropPct = dcaIndex * 0.01 * 0.1;
-        const DCA_PERCENT = 1 - this.DCA_PRICE_DROP_PCT - extraDropPct;
+        const DCA_PERCENT = 1 - DCA_PRICE_DROP_PCT - extraDropPct;
 
         const isDcaValid =
           dcaTimes < this.maxDcaTimes &&
