@@ -30,7 +30,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 20;
   private dcaMultiplier = 1;
 
-  private DCA_PRICE_DROP_PCT = 0.03;
+  private DCA_PRICE_DROP_PCT = 0.015;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;

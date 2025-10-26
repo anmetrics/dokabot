@@ -1,5 +1,5 @@
 <template>
-  <v-container class="py-6 container-compact">
+  <v-container class="py-6 px-0 container-compact">
     <v-card elevation="6" class="pa-4 pa-sm-6 dark-card">
       <!-- Header -->
       <div
@@ -118,32 +118,51 @@
 
       <!-- Mobile -->
       <div v-else class="mobile-list">
-        <v-list two-line>
+        <v-list>
           <v-list-item
             v-for="item in positions"
             :key="item.id"
-            class="mobile-card"
+            class="mobile-card mb-3"
+            rounded
+            elevation="1"
           >
             <v-list-item-content>
-              <div class="d-flex justify-space-between align-center mb-1">
-                <span class="mobile-symbol">{{ item.symbol }}</span>
+              <!-- Hàng trên: Symbol + % lợi nhuận -->
+              <div class="d-flex justify-space-between align-center mb-2">
+                <span class="mobile-symbol text-h6 font-weight-medium">
+                  {{ item.symbol }}
+                </span>
                 <v-chip
                   small
-                  class="chip-profit"
                   :color="item.profit > 0 ? 'green' : 'red'"
+                  class="text-white font-weight-500"
                 >
                   {{ item.profitPercent.toFixed(2) }}%
                 </v-chip>
               </div>
-              <div class="text-caption text-grey">
-                {{ item.strategy }} • {{ formatDate(item.createdAt) }}
+
+              <!-- Hàng giữa: Chips thông tin -->
+              <div class="d-flex flex-wrap mb-2 chip-group">
+                <v-chip size="small" color="cyan-darken-2" variant="flat">
+                  Mua: {{ item.buyPrice.toLocaleString() }}
+                </v-chip>
+                <v-chip
+                  size="small"
+                  color="deep-purple-darken-2"
+                  variant="flat"
+                >
+                  USDT: {{ item.usdSpent.toFixed(1) }}
+                </v-chip>
               </div>
-              <div class="mt-2 d-flex justify-space-between align-center">
-                <div>
-                  {{ item.qty }} qty @ {{ item.buyPrice.toLocaleString() }}
-                </div>
+
+              <!-- Ngày + nút hành động -->
+              <div class="d-flex justify-space-between align-center">
+                <span class="text-caption text-grey">
+                  {{ formatDate(item.createdAt) }}
+                </span>
                 <v-btn
                   x-small
+                  rounded
                   :class="
                     item.profitPercent >= 0.5
                       ? 'btn-green'
@@ -423,5 +442,25 @@ onMounted(fetchPositions);
   .mobile-list {
     display: block;
   }
+}
+
+.mobile-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  color: #fff;
+}
+
+.mobile-symbol {
+  color: #fff;
+}
+
+.chip-group {
+  gap: 4px;
+}
+
+.v-chip {
+  font-size: 12px !important;
+  font-weight: 500 !important;
 }
 </style>

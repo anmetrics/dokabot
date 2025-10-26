@@ -71,14 +71,14 @@ export class StrategyService {
     this.childStrategy1 = new ChildRsiReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      70,
+      100,
       '5m',
       0.004,
     );
     this.childStrategy2 = new ChildRsiReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      70,
+      100,
       '5m',
       0.004,
     );
@@ -96,14 +96,14 @@ export class StrategyService {
     this.mini1 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      60,
+      100,
       '3m',
       0.005,
     );
     this.mini2 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      60,
+      100,
       '3m',
       0.005,
     );
@@ -127,14 +127,14 @@ export class StrategyService {
     this.supermini2 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      30,
+      70,
       '1m',
       0.005,
     );
     this.supermini3 = new SuperMiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      30,
+      70,
       '1m',
       0.005,
     );

@@ -1,13 +1,13 @@
 <template>
-  <v-container class="py-6 container-compact">
-    <v-card elevation="6" class="pa-6 dark-card">
+  <v-container class="py-4 container-compact">
+    <v-card elevation="4" class="pa-4 pa-sm-6 dark-card">
       <!-- Header -->
       <div
-        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-6"
+        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
       >
-        <div class="d-flex align-center gap-3 mb-4 mb-sm-0">
-          <v-avatar size="36" class="header-icon">
-            <v-icon size="22" color="primary">mdi-history</v-icon>
+        <div class="d-flex align-center gap-2 gap-sm-3 mb-3 mb-sm-0">
+          <v-avatar size="32" class="header-icon">
+            <v-icon size="20" color="primary">mdi-history</v-icon>
           </v-avatar>
         </div>
 
@@ -17,9 +17,10 @@
           variant="elevated"
           :loading="loading"
           class="refresh-btn"
+          size="small"
         >
-          <v-icon start>mdi-refresh</v-icon>
-          Refresh
+          <v-icon start size="18">mdi-refresh</v-icon>
+          Làm mới
         </v-btn>
       </div>
 
@@ -34,7 +35,7 @@
         density="compact"
       >
         <template #item.buyPrices="{ item }">
-          {{ item.buyPrices[0]?.toLocaleString() }}
+          {{ formatNumber(item.buyPrices[0]) }}
         </template>
 
         <template #item.sellPrice="{ item }">
@@ -71,7 +72,7 @@
       </v-data-table>
 
       <!-- Pagination -->
-      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-6">
+      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-4 mt-sm-6">
         <v-pagination
           v-model="page"
           :length="meta.totalPages"
@@ -79,6 +80,7 @@
           total-visible="5"
           @update:model-value="fetchTrades"
           class="pagination"
+          size="small"
         />
       </v-row>
     </v-card>
@@ -113,32 +115,35 @@ const meta = ref({
 });
 
 const headers = [
-  { title: "Symbol", key: "symbol" },
+  { title: "Symbol", key: "symbol", align: "start" },
   { title: "Giá mua", key: "buyPrices", align: "end" },
   { title: "Giá bán", key: "sellPrice", align: "end" },
-  { title: "Số lượng", key: "totalAmountBuyActual", align: "end" },
-  { title: "Tổng vốn USDT", key: "totalAmountBuyUsdtSpent", align: "end" },
+  { title: "SL", key: "totalAmountBuyActual", align: "end" },
+  { title: "Vốn USDT", key: "totalAmountBuyUsdtSpent", align: "end" },
   { title: "Lãi/Lỗ", key: "totalProfit", align: "end" },
-  { title: "Doanh thu USDT", key: "totalRevenueUsdt", align: "end" },
+  { title: "Doanh thu", key: "totalRevenueUsdt", align: "end" },
   { title: "Ngày tạo", key: "createdAt", align: "center" },
 ];
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleString("vi-VN", {
-    year: "numeric",
     month: "short",
     day: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   });
 
-const formatNumber = (num: number) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(num);
+const formatNumber = (num?: number) =>
+  num !== undefined
+    ? new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(num)
+    : "-";
 
-const formatPrice = (num: number) =>
-  `$${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(
-    num
-  )}`;
+const formatPrice = (num?: number) =>
+  num !== undefined
+    ? `$${new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 }).format(
+        num
+      )}`
+    : "-";
 
 async function fetchTrades() {
   try {
@@ -149,7 +154,7 @@ async function fetchTrades() {
     trades.value = res.data || [];
     meta.value = res.meta || meta.value;
   } catch (err) {
-    console.error("Lỗi khi fetch transactions:", err);
+    console.error("Lỗi khi fetch giao dịch:", err);
     trades.value = [];
   } finally {
     loading.value = false;
@@ -167,23 +172,32 @@ onMounted(fetchTrades);
 .container-compact {
   max-width: 1200px;
   margin: 0 auto;
+  padding-left: 8px !important;
+  padding-right: 8px !important;
 }
 
 /* Card */
 .dark-card {
   background: linear-gradient(145deg, #0d1723, #111b28);
-  border-radius: 16px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
   color: #fff;
   transition: all 0.3s ease;
 }
 .dark-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(79, 195, 247, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(79, 195, 247, 0.15);
 }
+
 .header-icon {
   background: rgba(79, 195, 247, 0.15);
   border: 1px solid rgba(79, 195, 247, 0.3);
+}
+
+.header-title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
 }
 
 /* Table */
@@ -191,16 +205,23 @@ onMounted(fetchTrades);
   background: transparent;
   color: #fff;
   border-radius: 10px;
+  overflow-x: auto;
 }
+
 .dark-table :deep(th) {
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
   font-weight: 600;
   font-size: 13px;
+  padding: 8px 6px;
+  white-space: nowrap;
 }
+
 .dark-table :deep(td) {
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 13px;
+  font-size: 12px;
+  padding: 6px 4px;
+  white-space: nowrap;
 }
 .dark-table :deep(tr:hover) {
   background: rgba(79, 195, 247, 0.05);
@@ -219,8 +240,8 @@ onMounted(fetchTrades);
 .pagination :deep(.v-pagination__item) {
   background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  font-size: 13px;
-  border-radius: 8px;
+  font-size: 12px;
+  border-radius: 6px;
 }
 .pagination :deep(.v-pagination__item--active) {
   background: linear-gradient(90deg, #4fc3f7, #2196f3) !important;
@@ -241,7 +262,7 @@ onMounted(fetchTrades);
 
 /* Scrollbar */
 :deep(.v-data-table__wrapper::-webkit-scrollbar) {
-  width: 6px;
+  height: 6px;
 }
 :deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
   background-color: rgba(255, 255, 255, 0.15);
@@ -249,5 +270,37 @@ onMounted(fetchTrades);
 }
 :deep(.v-data-table__wrapper::-webkit-scrollbar-track) {
   background: rgba(0, 0, 0, 0.1);
+}
+
+/* ===== Responsive tweaks ===== */
+@media (max-width: 600px) {
+  .dark-card {
+    padding: 12px !important;
+    border-radius: 10px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .refresh-btn {
+    font-size: 12px;
+    padding: 4px 8px !important;
+  }
+
+  .dark-table :deep(th),
+  .dark-table :deep(td) {
+    font-size: 11px !important;
+    padding: 4px 2px !important;
+  }
+
+  .container-compact {
+    padding-left: 4px !important;
+    padding-right: 4px !important;
+  }
+
+  .v-container {
+    padding: 4px !important;
+  }
 }
 </style>
