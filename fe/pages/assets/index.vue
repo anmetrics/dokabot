@@ -15,7 +15,7 @@
           variant="flat"
           @click="refresh"
           :loading="loading"
-          class="refresh-btn mt-sm-0"
+          class="refresh-btn"
         >
           <v-icon start>mdi-refresh</v-icon>
           Refresh

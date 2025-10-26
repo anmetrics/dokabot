@@ -213,7 +213,6 @@ onMounted(fetchTrades);
   border-radius: 8px;
   text-transform: none;
   font-weight: 500;
-  padding: 6px 12px;
 }
 
 /* Pagination */

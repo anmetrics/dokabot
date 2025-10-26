@@ -110,7 +110,7 @@
         <template #item.actions="{ item }">
           <v-btn
             small
-            color="red"
+            :color="item.profitPercent >= 0.5 ? 'green' : 'grey'"
             :disabled="item.profitPercent < 0.5"
             @click="confirmSell(item)"
           >
@@ -147,7 +147,7 @@
                 </div>
                 <v-btn
                   x-small
-                  color="red"
+                  :color="item.profitPercent >= 0.5 ? 'green' : 'grey'"
                   variant="flat"
                   @click.stop="confirmSell(item)"
                   :disabled="item.profitPercent < 0.5"
@@ -372,7 +372,6 @@ onMounted(fetchPositions);
   border-radius: 8px;
   text-transform: none;
   font-weight: 500;
-  padding: 6px 12px;
 }
 .dark-table {
   background: transparent;
