@@ -10,7 +10,6 @@
             <v-icon size="24" color="primary">mdi-chart-line</v-icon>
           </v-avatar>
         </div>
-
         <v-btn
           color="primary"
           @click="refresh"
@@ -90,15 +89,12 @@
         <template #item.buyPrice="{ item }">
           {{ Number(item.buyPrice).toLocaleString() }}
         </template>
-
         <template #item.usdSpent="{ item }">
           {{ item.usdSpent.toFixed(2) }}
         </template>
-
         <template #item.createdAt="{ item }">
           {{ formatDate(item.createdAt) }}
         </template>
-
         <template #item.profit="{ item }">
           <span :class="item.profit > 0 ? 'text-profit' : 'text-loss'">
             {{ item.profit.toFixed(2) }} USDT ({{
@@ -106,11 +102,12 @@
             }}%)
           </span>
         </template>
-
         <template #item.actions="{ item }">
           <v-btn
             small
-            :color="item.profitPercent >= 0.5 ? 'green' : 'grey'"
+            :class="
+              item.profitPercent >= 0.5 ? 'btn-green' : 'btn-disabled-dark'
+            "
             :disabled="item.profitPercent < 0.5"
             @click="confirmSell(item)"
           >
@@ -147,8 +144,11 @@
                 </div>
                 <v-btn
                   x-small
-                  :color="item.profitPercent >= 0.5 ? 'green' : 'grey'"
-                  variant="flat"
+                  :class="
+                    item.profitPercent >= 0.5
+                      ? 'btn-green'
+                      : 'btn-disabled-dark'
+                  "
                   @click.stop="confirmSell(item)"
                   :disabled="item.profitPercent < 0.5"
                 >
@@ -254,11 +254,9 @@ const headers = [
 const totalUsdSpent = computed(() =>
   positions.value.reduce((acc, p) => acc + p.usdSpent, 0)
 );
-
 const totalProfit = computed(() =>
   positions.value.reduce((acc, p) => acc + p.profit, 0)
 );
-
 const avgProfitPercent = computed(() =>
   positions.value.length
     ? positions.value.reduce((a, b) => a + b.profitPercent, 0) /
@@ -365,6 +363,22 @@ onMounted(fetchPositions);
 }
 .text-loss {
   color: #ef5350;
+}
+.btn-green {
+  background-color: #00a068 !important;
+  color: #fff !important;
+  text-transform: none;
+  font-weight: 500;
+  transition: background 0.2s ease;
+}
+.btn-green:hover {
+  background-color: #00d6ab !important;
+}
+.btn-disabled-dark {
+  background-color: #1a1a1a !important;
+  color: #555555 !important;
+  cursor: not-allowed;
+  pointer-events: none;
 }
 .refresh-btn {
   background: linear-gradient(90deg, #4fc3f7, #2196f3);
