@@ -35,7 +35,7 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
-  private rsiBuyThreshold = 20.5;
+  private rsiBuyThreshold = 20;
 
   private cooldownMs = 1 * 60 * 1000; // x phut
   private lastTradeTime = 0;
