@@ -1,37 +1,66 @@
 <template>
   <v-container fluid class="pa-6 pa-sm-8 pa-md-10">
-    <v-card class="rounded-xl pa-4 pa-sm-6 dark-card">
+    <v-card class="rounded-xl pa-6 dark-card">
       <!-- Header -->
       <div
-        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
+        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-6"
       >
-        <div class="mb-4 mb-sm-0">
-          <h2 class="text-sm-h6 text-sm-h4 font-weight-bold text-white">
-            Danh sách tài sản
-          </h2>
-          <p class="text-body-2 text-sm-body-1 text-grey mt-1 mt-sm-2">
-            Hiển thị toàn bộ số dư tài sản hiện có trong tài khoản
-          </p>
+        <div class="d-flex align-center gap-3">
+          <v-avatar color="blue-darken-3" size="40">
+            <v-icon color="white">mdi-wallet</v-icon>
+          </v-avatar>
         </div>
         <v-btn
           color="primary"
-          @click="refresh"
           variant="flat"
+          @click="refresh"
           :loading="loading"
-          class="refresh-btn"
+          class="refresh-btn mt-sm-0"
         >
           <v-icon start>mdi-refresh</v-icon>
-          Làm mới
+          Refresh
         </v-btn>
       </div>
 
       <!-- Tổng quan -->
-      <v-row class="mb-4 mb-sm-6" dense>
-        <v-col cols="12" sm="12">
-          <v-sheet class="pa-3 pa-sm-4 rounded-lg dark-sheet text-center">
-            <div class="text-subtitle-2 text-grey">Tổng tài sản</div>
-            <div class="text-h6 text-sm-h5 font-weight-bold text-white">
+      <v-row class="mb-6" dense>
+        <v-col cols="12" sm="4">
+          <v-sheet class="summary-card">
+            <v-icon size="26" color="cyan-lighten-3">mdi-finance</v-icon>
+            <div class="text-subtitle-2 text-grey mt-2">Tổng tài sản</div>
+            <div class="text-h6 font-weight-bold text-white mt-1">
               {{ balances.length }}
+            </div>
+          </v-sheet>
+        </v-col>
+
+        <v-col cols="12" sm="4">
+          <v-sheet class="summary-card">
+            <v-icon size="26" color="green-lighten-2">mdi-lock</v-icon>
+            <div class="text-subtitle-2 text-grey mt-2">Đang khóa</div>
+            <div class="text-h6 font-weight-bold text-white mt-1">
+              {{
+                totalLocked.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              }}
+            </div>
+          </v-sheet>
+        </v-col>
+
+        <v-col cols="12" sm="4">
+          <v-sheet class="summary-card">
+            <v-icon size="26" color="amber-lighten-2">mdi-currency-usd</v-icon>
+            <div class="text-subtitle-2 text-grey mt-2">Tổng USD</div>
+            <div class="text-h6 font-weight-bold text-white mt-1">
+              {{
+                totalUSD.toLocaleString(undefined, {
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2,
+                })
+              }}
+              $
             </div>
           </v-sheet>
         </v-col>
@@ -57,10 +86,31 @@
           </v-chip>
         </template>
         <template #item.free="{ item }">
-          {{ Number(item.free).toLocaleString() }}
+          {{
+            parseFloat(item.free).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 6,
+            })
+          }}
         </template>
         <template #item.locked="{ item }">
-          {{ Number(item.locked).toLocaleString() }}
+          {{
+            parseFloat(item.locked).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 6,
+            })
+          }}
+        </template>
+        <template #item.usd="{ item }">
+          {{
+            (
+              (parseFloat(item.free) + parseFloat(item.locked)) *
+              (rates[item.asset] || 0)
+            ).toLocaleString(undefined, {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2,
+            })
+          }}
         </template>
       </v-data-table>
     </v-card>
@@ -80,25 +130,54 @@ interface AssetBalance {
 const api = useApi();
 const balances = ref<AssetBalance[]>([]);
 const loading = ref(false);
+const rates = ref<Record<string, number>>({});
 
 const headers = [
   { title: "Tài sản", key: "asset", align: "start" },
   { title: "Số dư khả dụng", key: "free", align: "end" },
   { title: "Đang khóa", key: "locked", align: "end" },
+  { title: "USD", key: "usd", align: "end" },
 ];
 
 const totalLocked = computed(() =>
-  balances.value.reduce((acc, b) => acc + Number(b.locked), 0)
+  balances.value.reduce((acc, b) => acc + parseFloat(b.locked), 0)
 );
+
+const totalUSD = computed(() =>
+  balances.value.reduce((acc, b) => {
+    const rate = rates.value[b.asset] || 0;
+    return acc + (parseFloat(b.free) + parseFloat(b.locked)) * rate;
+  }, 0)
+);
+
+async function fetchRates() {
+  try {
+    // Lấy giá trực tiếp từ Binance API
+    const response = await fetch("https://api.binance.com/api/v3/ticker/price");
+    const data = await response.json();
+
+    const filteredRates: Record<string, number> = {};
+    ["BNB", "BTC", "SOL", "USDT"].forEach((asset) => {
+      if (asset === "USDT") filteredRates[asset] = 1;
+      else {
+        const ticker = data.find((t: any) => t.symbol === asset + "USDT");
+        filteredRates[asset] = ticker ? parseFloat(ticker.price) : 0;
+      }
+    });
+    rates.value = filteredRates;
+  } catch (err) {
+    console.error("Lỗi fetch rates từ Binance:", err);
+  }
+}
 
 async function fetchBalances() {
   loading.value = true;
   try {
     const res: any = await api.get("binance/account");
     balances.value =
-      res.balances.filter((b) =>
-        ["BNB", "BTC", "SOL", "USDT"].includes(b.asset)
-      ) || [];
+      res.balances.filter((b: AssetBalance) => ["USDT"].includes(b.asset)) ||
+      [];
+    await fetchRates();
   } catch (err) {
     console.error("Lỗi khi fetch balances:", err);
   } finally {
@@ -107,63 +186,65 @@ async function fetchBalances() {
 }
 
 onMounted(fetchBalances);
+
 function refresh() {
   fetchBalances();
 }
 </script>
 
 <style scoped>
-/* Card styling */
 .dark-card {
-  background: linear-gradient(135deg, #0d1622 0%, #111923 100%);
-  color: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(145deg, #0d1723, #111b28);
+  border-radius: 20px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
   transition: all 0.3s ease;
 }
 .dark-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(30, 136, 229, 0.2);
+  box-shadow: 0 10px 25px rgba(0, 150, 255, 0.15);
 }
 
-/* Sheet styling */
-.dark-sheet {
-  background: linear-gradient(135deg, #232355 0%, #2a2a3a 100%);
+/* Summary cards */
+.summary-card {
+  background: linear-gradient(135deg, #1c2535, #18202d);
+  border-radius: 14px;
+  text-align: center;
+  padding: 20px;
   color: #ffffff;
-  border-radius: 12px;
   transition: all 0.3s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
 }
-.dark-sheet:hover {
-  background: linear-gradient(135deg, #232355 0%, #30303f 100%);
-  transform: scale(1.02);
+.summary-card:hover {
+  background: linear-gradient(135deg, #223048, #1a2435);
+  transform: translateY(-2px) scale(1.02);
 }
 
-/* Table styling */
+/* Data table */
 .dark-table {
   background: transparent;
   color: #ffffff;
-  border-radius: 12px;
 }
 .dark-table :deep(.v-data-table-header th) {
-  background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
-  color: #ffffff !important;
+  background: linear-gradient(90deg, #232a35, #1a1f28);
+  color: #e0e0e0 !important;
   font-weight: 600;
   font-size: 13px;
   padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 .dark-table :deep(.v-data-table__td) {
   padding: 10px 12px;
   font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 .dark-table :deep(.v-data-table__tr:hover) {
   background: rgba(30, 136, 229, 0.08);
+  transition: background 0.2s ease;
 }
 
-/* Chip styling */
+/* Chip */
 .chip-bg {
-  background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%) !important;
+  background: linear-gradient(90deg, #232a35, #2f3a47) !important;
   color: #ffffff;
 }
 .chip-asset {
@@ -171,47 +252,44 @@ function refresh() {
   font-size: 0.8rem;
 }
 .chip-asset:hover {
-  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
+  background: linear-gradient(90deg, #42a5f5, #2196f3) !important;
   transform: scale(1.05);
 }
 
-/* Refresh button */
+/* Button */
 .refresh-btn {
-  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
+  background: linear-gradient(90deg, #42a5f5 0%, #1e88e5 100%) !important;
   color: #ffffff;
-  border-radius: 8px;
+  border-radius: 10px;
   text-transform: none;
   font-weight: 500;
   letter-spacing: 0.5px;
   font-size: 0.9rem;
-  padding: 6px 14px;
+  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  transition: all 0.3s ease;
+}
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
 }
 
-/* Text styling */
+/* Text */
 .text-grey {
   color: rgba(200, 200, 200, 0.7);
 }
 
-/* Responsive tweaks */
+/* Responsive */
 @media (max-width: 600px) {
+  .summary-card {
+    padding: 14px !important;
+  }
   .v-card {
-    padding: 12px !important;
-  }
-  .text-h5 {
-    font-size: 1.1rem !important;
-  }
-  .refresh-btn {
-    font-size: 0.8rem;
-    padding: 6px 10px;
+    padding: 16px !important;
   }
   .dark-table :deep(.v-data-table-header th),
   .dark-table :deep(.v-data-table__td) {
     font-size: 0.8rem !important;
     padding: 8px 10px;
-  }
-  .v-chip {
-    font-size: 0.75rem !important;
-    height: 24px !important;
   }
 }
 </style>

@@ -520,7 +520,7 @@ export class BinanceService implements OnModuleInit {
   }
 
   async getDateProfits(
-    period?: '1m' | '3m' | '6m' | '1y',
+    period?: '1m' | '3m' | '6m' | '1y' | 'all',
     groupBy: 'day' | 'week' = 'day',
   ) {
     const now = new Date();
@@ -538,6 +538,9 @@ export class BinanceService implements OnModuleInit {
         break;
       case '1y':
         startDate = new Date(now.setFullYear(now.getFullYear() - 1));
+        break;
+      case 'all':
+        startDate = undefined;
         break;
       default:
         startDate = undefined;

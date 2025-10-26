@@ -27,14 +27,14 @@
           :disabled="loading"
         >
           <v-icon :class="{ spin: spinning }" start>mdi-refresh</v-icon>
-          Làm mới
+          Refresh
         </v-btn>
       </div>
     </div>
 
     <!-- Tổng PNL -->
     <div class="text-center mb-4">
-      <div class="text-grey text-subtitle-2 mb-1">Tổng lợi nhuận</div>
+      <div class="text-grey text-subtitle-2 mb-1">Closed P&L</div>
       <div
         :class="[
           'text-h5 font-weight-bold total-pnl',
@@ -77,12 +77,13 @@ const loading = ref(false);
 const api = useApi();
 
 const periodOptions = [
-  { label: "1 tháng", value: "1M" },
-  { label: "3 tháng", value: "3M" },
-  { label: "6 tháng", value: "6M" },
-  { label: "1 năm", value: "1Y" },
+  { label: "1 tháng", value: "1m" },
+  { label: "3 tháng", value: "3m" },
+  { label: "6 tháng", value: "6m" },
+  { label: "1 năm", value: "1y" },
+  { label: "Từ trước tới nay", value: "all" },
 ];
-const selectedPeriod = ref("3M");
+const selectedPeriod = ref(periodOptions[0].label);
 
 const totalPNL = computed(() =>
   profits.value.reduce((sum, p) => sum + p.totalProfit, 0)

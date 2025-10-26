@@ -1,21 +1,29 @@
 <template>
   <v-container class="py-6 container-compact">
-    <v-card elevation="2" class="pa-4 dark-card">
-      <div class="d-flex align-center justify-space-between mb-3">
-        <h2 class="text-h6 font-weight-medium text-white">Lịch sử giao dịch</h2>
+    <v-card elevation="6" class="pa-6 dark-card">
+      <!-- Header -->
+      <div
+        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-6"
+      >
+        <div class="d-flex align-center gap-3 mb-4 mb-sm-0">
+          <v-avatar size="36" class="header-icon">
+            <v-icon size="22" color="primary">mdi-history</v-icon>
+          </v-avatar>
+        </div>
 
         <v-btn
           color="primary"
           @click="refresh"
-          variant="flat"
-          :disabled="loading"
+          variant="elevated"
+          :loading="loading"
           class="refresh-btn"
         >
           <v-icon start>mdi-refresh</v-icon>
-          Làm mới
+          Refresh
         </v-btn>
       </div>
 
+      <!-- Table -->
       <v-data-table
         :loading="loading"
         :headers="headers"
@@ -46,6 +54,7 @@
             :class="{
               'text-success': item.totalProfit > 0,
               'text-error': item.totalProfit < 0,
+              'text-grey': item.totalProfit === 0,
             }"
           >
             {{ formatPrice(item.totalProfit) }}
@@ -62,7 +71,7 @@
       </v-data-table>
 
       <!-- Pagination -->
-      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-4">
+      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-6">
         <v-pagination
           v-model="page"
           :length="meta.totalPages"
@@ -70,7 +79,7 @@
           total-visible="5"
           @update:model-value="fetchTrades"
           class="pagination"
-        ></v-pagination>
+        />
       </v-row>
     </v-card>
   </v-container>
@@ -156,22 +165,25 @@ onMounted(fetchTrades);
 
 <style scoped>
 .container-compact {
-  max-width: 1100px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
 /* Card */
 .dark-card {
-  background: linear-gradient(135deg, #0b1620 0%, #1b2535 100%);
+  background: linear-gradient(145deg, #0d1723, #111b28);
+  border-radius: 16px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
   color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: all 0.3s ease;
 }
-
 .dark-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 12px rgba(30, 136, 229, 0.15);
+  box-shadow: 0 8px 20px rgba(79, 195, 247, 0.15);
+}
+.header-icon {
+  background: rgba(79, 195, 247, 0.15);
+  border: 1px solid rgba(79, 195, 247, 0.3);
 }
 
 /* Table */
@@ -180,101 +192,62 @@ onMounted(fetchTrades);
   color: #fff;
   border-radius: 10px;
 }
-
-.dark-table :deep(.v-data-table-header th) {
-  background: linear-gradient(90deg, #2a2a3a 0%, #30303f 100%);
-  color: #fff !important;
+.dark-table :deep(th) {
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
   font-weight: 600;
   font-size: 13px;
-  padding: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-
-.dark-table :deep(.v-data-table__td) {
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  font-size: 12px;
+.dark-table :deep(td) {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  font-size: 13px;
 }
-
-.dark-table :deep(.v-data-table__tr:hover) {
-  background: rgba(30, 136, 229, 0.08);
-  transition: background 0.2s ease;
+.dark-table :deep(tr:hover) {
+  background: rgba(79, 195, 247, 0.05);
 }
 
 /* Refresh button */
 .refresh-btn {
-  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
+  background: linear-gradient(90deg, #4fc3f7, #2196f3);
   color: #fff;
-  border-radius: 6px;
+  border-radius: 8px;
   text-transform: none;
   font-weight: 500;
-  font-size: 0.85rem;
-  padding: 5px 10px;
-}
-
-.refresh-btn:hover {
-  background: linear-gradient(90deg, #64b5f6 0%, #42a5f5 100%) !important;
-  transform: translateY(-1px);
+  padding: 6px 12px;
 }
 
 /* Pagination */
 .pagination :deep(.v-pagination__item) {
-  background: #2a2a3a;
+  background: rgba(255, 255, 255, 0.05);
   color: #fff;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  border-radius: 8px;
 }
-
 .pagination :deep(.v-pagination__item--active) {
-  background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%) !important;
+  background: linear-gradient(90deg, #4fc3f7, #2196f3) !important;
   color: #fff;
-}
-
-.pagination :deep(.v-btn) {
-  border-radius: 6px;
-}
-
-/* Loading */
-:deep(.v-progress-circular) {
-  color: #4fc3f7;
+  transform: scale(1.05);
 }
 
 /* Text colors */
 .text-success {
-  color: #00e676;
-  font-size: 12px;
+  color: #00e676 !important;
 }
-
 .text-error {
-  color: #ff5252;
-  font-size: 12px;
+  color: #ff5252 !important;
 }
-
-/* Responsive */
-@media (max-width: 600px) {
-  .dark-card {
-    padding: 12px;
-  }
-  .text-h6 {
-    font-size: 1rem !important;
-  }
-  .dark-table :deep(.v-data-table-header th),
-  .dark-table :deep(.v-data-table__td) {
-    font-size: 11px;
-    padding: 8px;
-  }
+.text-grey {
+  color: rgba(200, 200, 200, 0.7) !important;
 }
 
 /* Scrollbar */
 :deep(.v-data-table__wrapper::-webkit-scrollbar) {
   width: 6px;
 }
-
 :deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
   background-color: rgba(255, 255, 255, 0.15);
   border-radius: 4px;
 }
-
 :deep(.v-data-table__wrapper::-webkit-scrollbar-track) {
   background: rgba(0, 0, 0, 0.1);
 }
