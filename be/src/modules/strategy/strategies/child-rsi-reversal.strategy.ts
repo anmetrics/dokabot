@@ -32,8 +32,8 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
 
   private DCA_PRICE_DROP_PCT = 0.03;
 
-  private rsiPeriod = 8;
-  private atrPeriod = 8;
+  private rsiPeriod = 12;
+  private atrPeriod = 12;
 
   private rsiBuyThreshold = 20;
 
