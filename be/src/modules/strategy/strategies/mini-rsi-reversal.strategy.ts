@@ -8,7 +8,7 @@ import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
 import {
-  getSettingKeyBySymbol,
+  getSettingKeyBySymbolMini,
   LIST_SYMBOL,
   SETTING_KEY,
 } from 'src/modules/settings/settings.enum';
@@ -146,7 +146,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
         if (openPositions.length === 0 || isDcaValid) {
           const [settingMaxBuyPrice, enableBuy] = await Promise.all([
             this.binanceService.getSettingByKey(
-              getSettingKeyBySymbol(this.symbol),
+              getSettingKeyBySymbolMini(this.symbol),
             ),
             this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
           ]);

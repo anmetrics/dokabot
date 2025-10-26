@@ -8,7 +8,7 @@ import Decimal from 'decimal.js';
 import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
 import {
-  getSettingKeyBySymbol,
+  getSettingKeyBySymbolMini,
   LIST_SYMBOL,
   SETTING_KEY,
 } from 'src/modules/settings/settings.enum';
@@ -29,7 +29,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   // === CONFIG ===
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
 
-  private DCA_PRICE_DROP_PCT = 0.015;
+  private DCA_PRICE_DROP_PCT = 0.03;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
@@ -146,7 +146,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
         if (openPositions.length === 0 || isDcaValid) {
           const [settingMaxBuyPrice, enableBuy] = await Promise.all([
             this.binanceService.getSettingByKey(
-              getSettingKeyBySymbol(this.symbol),
+              getSettingKeyBySymbolMini(this.symbol),
             ),
             this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
           ]);

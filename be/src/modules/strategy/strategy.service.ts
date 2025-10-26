@@ -98,14 +98,14 @@ export class StrategyService {
       'BNBUSDT',
       60,
       '3m',
-      0.0064,
+      0.005,
     );
     this.mini2 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
       60,
       '3m',
-      0.0064,
+      0.005,
     );
 
     this.mini3 = new MiniReversalDcaStrategy(
@@ -113,7 +113,7 @@ export class StrategyService {
       'SOLUSDT',
       60,
       '3m',
-      0.008,
+      0.005,
     );
 
     // Supermini sclaping
