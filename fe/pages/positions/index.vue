@@ -81,7 +81,7 @@
         v-if="!isMobile"
         :items="positions"
         :headers="headers"
-        :items-per-page="8"
+        :items-per-page="800"
         class="dark-table"
         :loading="loading"
         density="compact"
