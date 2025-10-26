@@ -27,15 +27,15 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
   private cumulativeProfit = 0;
 
   // === CONFIG ===
-  private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
-  private dcaMultiplier = 1.8; // mỗi lần DCA sau gấp x.x lần trước
+  private maxDcaTimes = 7;
+  private dcaMultiplier = 1.8;
 
   private DCA_PRICE_DROP_PCT = 0.03;
 
   private rsiPeriod = 8;
   private atrPeriod = 8;
 
-  private rsiBuyThreshold = 25;
+  private rsiBuyThreshold = 20.5;
 
   private cooldownMs = 1 * 60 * 1000; // x phut
   private lastTradeTime = 0;

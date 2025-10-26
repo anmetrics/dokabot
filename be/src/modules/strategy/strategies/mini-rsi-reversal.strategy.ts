@@ -27,8 +27,8 @@ export class MiniReversalDcaStrategy implements IStrategy {
   private cumulativeProfit = 0;
 
   // === CONFIG ===
-  private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
-  private dcaMultiplier = 1; // mỗi lần DCA sau gấp x.x lần trước
+  private maxDcaTimes = 20;
+  private dcaMultiplier = 1;
 
   private DCA_PRICE_DROP_PCT = 0.03;
 

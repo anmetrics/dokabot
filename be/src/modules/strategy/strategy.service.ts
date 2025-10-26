@@ -62,7 +62,7 @@ export class StrategyService {
     this.strategy3 = new RsiReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      10,
+      20,
       '5m',
       0.02,
     );
