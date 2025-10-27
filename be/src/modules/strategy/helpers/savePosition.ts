@@ -79,17 +79,7 @@ export const logTotalProfit = async (
 
       // ===================== OPEN POSITIONS SUMMARY =====================
       const positions: Position[] =
-        await binanceService.getOpenPositions(symbol);
-      const positionsMini: Position[] = await binanceService.getOpenPositions(
-        symbol + '_MINI',
-      );
-      const positionsSuperMini: Position[] =
-        await binanceService.getOpenPositions(symbol + '_SUPERMINI');
-
-      if (positionsMini?.length) {
-        positions.push(...positionsMini);
-        positions.push(...positionsSuperMini);
-      }
+        await binanceService.getListPositionsBySymbol(symbol);
 
       if (positions.length > 0) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-return

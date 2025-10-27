@@ -1,7 +1,7 @@
 <template>
   <v-container fluid class="py-10 px-md-16">
     <v-row>
-      <!-- Sidebar Tabs -->
+      <!-- Sidebar -->
       <v-col cols="12" md="3">
         <v-card class="pa-4 rounded-xl sidebar-card">
           <v-tabs
@@ -27,75 +27,62 @@
       <v-col cols="12" md="9">
         <v-card class="pa-8 rounded-xl main-card">
           <v-tabs-window v-model="activeTab">
-            <!-- General Settings -->
+            <!-- ========== GENERAL SETTINGS ========== -->
             <v-tabs-window-item value="general">
               <v-card-title class="section-title">
                 <v-icon color="primary" class="mr-2">mdi-tune-variant</v-icon>
                 General Settings
               </v-card-title>
-
               <v-divider class="divider my-6" />
 
-              <!-- Trading Switches -->
-              <div class="group-box mb-8">
+              <!-- 🟩 ROOT SETTINGS -->
+              <div class="group-box mb-8" v-if="rootSettings.length">
                 <div class="group-header">
-                  <v-icon color="cyan lighten-3" size="22" class="mr-2">
-                    mdi-lightning-bolt
+                  <v-icon color="amber lighten-3" size="22" class="mr-2">
+                    mdi-currency-usd
                   </v-icon>
-                  <span>Trading Switches</span>
+                  <span>Root Settings</span>
                 </div>
-                <v-row dense>
-                  <v-col cols="12" md="6">
+
+                <!-- ENABLE Switchers -->
+                <v-row>
+                  <v-col cols="12" md="6" class="py-2">
                     <v-switch
-                      v-model="localSettings.enableBuy"
+                      :model-value="getBool('ENABLE_BUY')"
+                      @update:modelValue="updateSetting('ENABLE_BUY', $event!)"
                       color="primary"
                       inset
-                      :label="`Mua: ${localSettings.enableBuy ? 'Bật' : 'Tắt'}`"
+                      :label="`Mua: ${getBool('ENABLE_BUY') ? 'Bật' : 'Tắt'}`"
                       hide-details
                       class="switch-custom"
-                      @update:modelValue="updateSetting('ENABLE_BUY', $event!)"
                     />
                   </v-col>
-                  <v-col cols="12" md="6">
+                  <v-col cols="12" md="6" class="py-2">
                     <v-switch
-                      v-model="localSettings.enableSell"
+                      :model-value="getBool('ENABLE_SELL')"
                       color="primary"
                       inset
-                      :label="`Bán: ${
-                        localSettings.enableSell ? 'Bật' : 'Tắt'
-                      }`"
+                      :label="`Bán: ${getBool('ENABLE_SELL') ? 'Bật' : 'Tắt'}`"
                       hide-details
                       class="switch-custom"
                       @update:modelValue="updateSetting('ENABLE_SELL', $event!)"
                     />
                   </v-col>
                 </v-row>
-              </div>
 
-              <!-- DCA Settings-->
-              <div class="group-box mb-8" v-if="dcaSettings.length">
-                <div class="group-header">
-                  <v-icon color="light-blue lighten-3" size="22" class="mr-2">
-                    mdi-percent-outline
-                  </v-icon>
-                  <span>DCA Settings</span>
-                </div>
-
-                <v-row dense>
+                <!-- Other Fields -->
+                <v-row>
                   <v-col
+                    v-for="item in rootFields"
+                    :key="item.key"
                     cols="12"
                     md="4"
-                    v-for="item in dcaSettings"
-                    :key="item.id"
+                    class="py-2"
                   >
                     <v-text-field
                       v-model="item.value"
-                      :label="
-                        item.key === 'DCA_WHEN_DROP_PERCENT'
-                          ? 'DCA khi giá giảm (%)'
-                          : item.key
-                      "
-                      color="light-blue"
+                      :label="item.key"
+                      color="primary"
                       variant="outlined"
                       density="compact"
                       type="number"
@@ -106,49 +93,26 @@
                 </v-row>
               </div>
 
-              <!-- Price Settings -->
-              <div class="group-box mb-8" v-if="sortedNormalSettings.length">
-                <div class="group-header">
-                  <v-icon color="amber lighten-3" size="22" class="mr-2">
-                    mdi-currency-usd
-                  </v-icon>
-                  <span>Price Settings</span>
-                </div>
-                <v-row dense>
-                  <v-col
-                    cols="12"
-                    md="4"
-                    v-for="item in sortedNormalSettings"
-                    :key="item.id"
-                  >
-                    <v-text-field
-                      v-model="item.value"
-                      :label="item.key"
-                      color="primary"
-                      variant="outlined"
-                      density="compact"
-                      type="number"
-                      class="mb-4 text-field-custom"
-                      @update:modelValue="updateSetting(item.key, $event)"
-                    />
-                  </v-col>
-                </v-row>
-              </div>
-
-              <!-- Mini Price Settings -->
-              <div class="group-box" v-if="sortedMiniSettings.length">
-                <div class="group-header">
+              <!-- 🟪 MINI + SUPER MINI SETTINGS (COMBINED) -->
+              <div
+                class="group-box mb-8"
+                v-if="miniSettings.length || superMiniSettings.length"
+              >
+                <div class="group-header mb-10">
                   <v-icon color="purple lighten-3" size="22" class="mr-2">
-                    mdi-scale-balance
+                    mdi-rocket-launch
                   </v-icon>
-                  <span>Mini Price Settings</span>
+                  <span>Mini & Super Mini Settings</span>
                 </div>
-                <v-row dense>
+
+                <!-- 🌐 COMMON MINI FIELDS -->
+                <v-row v-if="miniCommonFields.length">
                   <v-col
+                    v-for="item in miniCommonFields"
+                    :key="item.key"
                     cols="12"
                     md="4"
-                    v-for="item in sortedMiniSettings"
-                    :key="item.id"
+                    class="py-2"
                   >
                     <v-text-field
                       v-model="item.value"
@@ -157,36 +121,142 @@
                       variant="outlined"
                       density="compact"
                       type="number"
-                      class="mb-4 text-field-custom"
+                      class="text-field-custom"
                       @update:modelValue="updateSetting(item.key, $event)"
                     />
                   </v-col>
                 </v-row>
+
+                <!-- 🟪 MINI SETTINGS -->
+                <div v-if="miniSettings.length" class="mt-8">
+                  <div class="group-header" style="color: #ce93d8">
+                    <v-icon color="secondary" size="22" class="mr-2">
+                      mdi-scale-balance
+                    </v-icon>
+                    <span>Mini Settings</span>
+                  </div>
+                  <v-row>
+                    <v-col cols="12" md="6" class="py-2">
+                      <v-switch
+                        :model-value="getBool('ENABLE_BUY_MINI')"
+                        color="#ce93d8"
+                        inset
+                        :label="`Mua: ${
+                          getBool('ENABLE_BUY_MINI') ? 'Bật' : 'Tắt'
+                        }`"
+                        hide-details
+                        class="switch-custom"
+                        @update:modelValue="
+                          updateSetting('ENABLE_BUY_MINI', $event!)
+                        "
+                      />
+                    </v-col>
+                    <v-col cols="12" md="6" class="py-2">
+                      <v-switch
+                        :model-value="getBool('ENABLE_SELL_MINI')"
+                        color="#ce93d8"
+                        inset
+                        :label="`Bán: ${
+                          getBool('ENABLE_SELL_MINI') ? 'Bật' : 'Tắt'
+                        }`"
+                        hide-details
+                        class="switch-custom"
+                        @update:modelValue="
+                          updateSetting('ENABLE_SELL_MINI', $event!)
+                        "
+                      />
+                    </v-col>
+                  </v-row>
+
+                  <v-row>
+                    <v-col
+                      v-for="item in miniSpecificFields"
+                      :key="item.key"
+                      cols="12"
+                      md="4"
+                      class="py-2"
+                    >
+                      <v-text-field
+                        v-model="item.value"
+                        :label="item.key"
+                        color="secondary"
+                        variant="outlined"
+                        density="compact"
+                        type="number"
+                        class="text-field-custom"
+                        @update:modelValue="updateSetting(item.key, $event)"
+                      />
+                    </v-col>
+                  </v-row>
+                </div>
+
+                <!-- 🟥 SUPER MINI SETTINGS -->
+                <div v-if="superMiniSettings.length" class="mt-8">
+                  <div class="group-header" style="color: #f48fb1">
+                    <v-icon color="pink" size="22" class="mr-2">
+                      mdi-rocket-launch
+                    </v-icon>
+                    <span>Super Mini Settings</span>
+                  </div>
+
+                  <v-row>
+                    <v-col cols="12" md="6" class="py-2">
+                      <v-switch
+                        :model-value="getBool('ENABLE_BUY_SUPERMINI')"
+                        color="pink"
+                        inset
+                        :label="`Mua: ${
+                          getBool('ENABLE_BUY_SUPERMINI') ? 'Bật' : 'Tắt'
+                        }`"
+                        hide-details
+                        class="switch-custom"
+                        @update:modelValue="
+                          updateSetting('ENABLE_BUY_SUPERMINI', $event!)
+                        "
+                      />
+                    </v-col>
+                    <v-col cols="12" md="6" class="py-2">
+                      <v-switch
+                        :model-value="getBool('ENABLE_SELL_SUPERMINI')"
+                        color="pink"
+                        inset
+                        :label="`Bán: ${
+                          getBool('ENABLE_SELL_SUPERMINI') ? 'Bật' : 'Tắt'
+                        }`"
+                        hide-details
+                        class="switch-custom"
+                        @update:modelValue="
+                          updateSetting('ENABLE_SELL_SUPERMINI', $event!)
+                        "
+                      />
+                    </v-col>
+                  </v-row>
+
+                  <v-row>
+                    <v-col
+                      v-for="item in superMiniFields"
+                      :key="item.key"
+                      cols="12"
+                      md="4"
+                      class="py-2"
+                    >
+                      <v-text-field
+                        v-model="item.value"
+                        :label="item.key"
+                        color="pink"
+                        variant="outlined"
+                        density="compact"
+                        type="number"
+                        class="text-field-custom"
+                        @update:modelValue="updateSetting(item.key, $event)"
+                      />
+                    </v-col>
+                  </v-row>
+                </div>
               </div>
 
-              <!-- Loading -->
-              <v-row v-if="loading" justify="center" class="py-10">
-                <v-progress-circular
-                  indeterminate
-                  color="primary"
-                  size="40"
-                  width="4"
-                />
-              </v-row>
-
-              <!-- Empty -->
-              <v-row
-                v-if="!loading && settings.length === 0"
-                justify="center"
-                class="py-10"
-              >
-                <v-col cols="12" class="text-center text-grey text-h6">
-                  Không có dữ liệu cài đặt
-                </v-col>
-              </v-row>
-
               <!-- Save Button -->
-              <div class="text-right mt-6" v-if="settings.length > 0">
+              <div class="text-right mt-8" v-if="settings.length">
                 <v-btn
                   color="primary"
                   @click="saveAllSettings"
@@ -201,19 +271,16 @@
               </div>
             </v-tabs-window-item>
 
-            <!-- Advanced -->
+            <!-- Other tabs -->
             <v-tabs-window-item value="advanced">
               <v-card-title class="section-title">
                 <v-icon color="primary" class="mr-2">mdi-cog-outline</v-icon>
                 Advanced Settings
               </v-card-title>
               <v-divider class="divider my-6" />
-              <p class="text-grey">
-                Advanced settings will be implemented here.
-              </p>
+              <p class="text-grey">Advanced settings here.</p>
             </v-tabs-window-item>
 
-            <!-- Security -->
             <v-tabs-window-item value="security">
               <v-card-title class="section-title">
                 <v-icon color="primary" class="mr-2"
@@ -222,9 +289,7 @@
                 Security Settings
               </v-card-title>
               <v-divider class="divider my-6" />
-              <p class="text-grey">
-                Security settings will be implemented here.
-              </p>
+              <p class="text-grey">Security settings here.</p>
             </v-tabs-window-item>
           </v-tabs-window>
 
@@ -266,105 +331,182 @@ interface SettingItem {
 const api = useApi();
 const settings = ref<SettingItem[]>([]);
 const initialSettings = ref<SettingItem[]>([]);
-const localSettings = ref({
-  enableBuy: false,
-  enableSell: false,
-});
 const loading = ref(true);
 const saving = ref(false);
 const activeTab = ref("general");
 
-// Snackbar
 const snackbar = ref({
   show: false,
   message: "",
   color: "success",
 });
 
-const assetOrder = ["BTC", "BNB", "SOL", "USDT"];
+// 🧩 Nhóm key theo định nghĩa
+const ROOT_KEYS = [
+  "ENABLE_BUY",
+  "ENABLE_SELL",
+  "MAX_BNB_PRICE",
+  "MAX_SOL_PRICE",
+  "MAX_BTC_PRICE",
+  "DCA_WHEN_DROP_PERCENT",
+];
+const MINI_KEYS = [
+  "ENABLE_BUY_MINI",
+  "ENABLE_SELL_MINI",
+  "MAX_BNB_PRICE_MINI",
+  "MAX_SOL_PRICE_MINI",
+  "MAX_BTC_PRICE_MINI",
+  "DCA_WHEN_DROP_PERCENT_MINI",
+  "MINI_BUY_AMOUNT",
+];
+const SUPER_MINI_KEYS = [
+  "ENABLE_BUY_SUPERMINI",
+  "ENABLE_SELL_SUPERMINI",
+  "MAX_BNB_PRICE_SUPERMINI",
+  "MAX_SOL_PRICE_SUPERMINI",
+  "MAX_BTC_PRICE_SUPERMINI",
+  "DCA_WHEN_DROP_PERCENT_SUPERMINI",
+  "SUPER_MINI_BUY_AMOUNT",
+];
 
-const dcaSettings = computed(() =>
-  settings.value.filter((s) => ["DCA_WHEN_DROP_PERCENT"].includes(s.key))
+// 🧮 Phân loại setting
+const rootSettings = computed(() =>
+  settings.value
+    .filter((s) => ROOT_KEYS.includes(s.key))
+    .sort((a, b) => ROOT_KEYS.indexOf(a.key) - ROOT_KEYS.indexOf(b.key))
+);
+const miniSettings = computed(() =>
+  settings.value
+    .filter((s) => MINI_KEYS.includes(s.key))
+    .sort((a, b) => MINI_KEYS.indexOf(a.key) - MINI_KEYS.indexOf(b.key))
+);
+const superMiniSettings = computed(() =>
+  settings.value
+    .filter((s) => SUPER_MINI_KEYS.includes(s.key))
+    .sort(
+      (a, b) => SUPER_MINI_KEYS.indexOf(a.key) - SUPER_MINI_KEYS.indexOf(b.key)
+    )
 );
 
-const normalPriceSettings = computed(() =>
-  settings.value.filter(
-    (s) =>
-      !["ENABLE_BUY", "ENABLE_SELL", "DCA_WHEN_DROP_PERCENT"].includes(s.key) &&
-      !s.key.includes("_MINI")
-  )
+// 🧩 Field cho Mini & Super Mini
+const miniCommonFields = computed(() =>
+  miniSettings.value
+    .filter((s) =>
+      [
+        "MAX_BNB_PRICE_MINI",
+        "MAX_SOL_PRICE_MINI",
+        "MAX_BTC_PRICE_MINI",
+      ].includes(s.key)
+    )
+    .sort(
+      (a, b) =>
+        [
+          "MAX_BNB_PRICE_MINI",
+          "MAX_SOL_PRICE_MINI",
+          "MAX_BTC_PRICE_MINI",
+        ].indexOf(a.key) -
+        [
+          "MAX_BNB_PRICE_MINI",
+          "MAX_SOL_PRICE_MINI",
+          "MAX_BTC_PRICE_MINI",
+        ].indexOf(b.key)
+    )
+);
+const miniSpecificFields = computed(() =>
+  miniSettings.value
+    .filter(
+      (s) =>
+        ![
+          "MAX_BNB_PRICE_MINI",
+          "MAX_SOL_PRICE_MINI",
+          "MAX_BTC_PRICE_MINI",
+        ].includes(s.key) && !s.key.startsWith("ENABLE")
+    )
+    .sort(
+      (a, b) =>
+        ["DCA_WHEN_DROP_PERCENT_MINI", "MINI_BUY_AMOUNT"].indexOf(a.key) -
+        ["DCA_WHEN_DROP_PERCENT_MINI", "MINI_BUY_AMOUNT"].indexOf(b.key)
+    )
+);
+const superMiniFields = computed(() =>
+  superMiniSettings.value
+    .filter((s) => !s.key.startsWith("ENABLE"))
+    .sort(
+      (a, b) =>
+        [
+          "MAX_BNB_PRICE_SUPERMINI",
+          "MAX_SOL_PRICE_SUPERMINI",
+          "MAX_BTC_PRICE_SUPERMINI",
+          "DCA_WHEN_DROP_PERCENT_SUPERMINI",
+          "SUPER_MINI_BUY_AMOUNT",
+        ].indexOf(a.key) -
+        [
+          "MAX_BNB_PRICE_SUPERMINI",
+          "MAX_SOL_PRICE_SUPERMINI",
+          "MAX_BTC_PRICE_SUPERMINI",
+          "DCA_WHEN_DROP_PERCENT_SUPERMINI",
+          "SUPER_MINI_BUY_AMOUNT",
+        ].indexOf(b.key)
+    )
+);
+const rootFields = computed(() =>
+  rootSettings.value
+    .filter((s) => !s.key.startsWith("ENABLE"))
+    .sort(
+      (a, b) =>
+        [
+          "MAX_BNB_PRICE",
+          "MAX_SOL_PRICE",
+          "MAX_BTC_PRICE",
+          "DCA_WHEN_DROP_PERCENT",
+        ].indexOf(a.key) -
+        [
+          "MAX_BNB_PRICE",
+          "MAX_SOL_PRICE",
+          "MAX_BTC_PRICE",
+          "DCA_WHEN_DROP_PERCENT",
+        ].indexOf(b.key)
+    )
 );
 
-const miniPriceSettings = computed(() =>
-  settings.value.filter((s) => s.key.includes("_MINI"))
-);
-
-function sortByAssetOrder(items: SettingItem[]) {
-  return [...items].sort((a, b) => {
-    const aIndex = assetOrder.findIndex((x) => a.key.includes(x));
-    const bIndex = assetOrder.findIndex((x) => b.key.includes(x));
-    return aIndex - bIndex;
-  });
+// ✅ Helpers
+function getBool(key: string) {
+  const s = settings.value.find((x) => x.key === key);
+  return s?.value === true || s?.value === "true";
 }
-
-const sortedNormalSettings = computed(() =>
-  sortByAssetOrder(normalPriceSettings.value)
-);
-const sortedMiniSettings = computed(() =>
-  sortByAssetOrder(miniPriceSettings.value)
-);
-
-const hasChanges = computed(() => {
-  if (settings.value.length !== initialSettings.value.length) return true;
-  return settings.value.some((setting, index) => {
-    const initial = initialSettings.value[index];
-    return (
-      setting.key !== initial.key ||
-      setting.value !== initial.value ||
-      setting.id !== initial.id
-    );
-  });
-});
 
 function updateSetting(key: string, value: string | boolean) {
-  const setting = settings.value.find((s) => s.key === key);
-  if (setting) setting.value = value;
+  const s = settings.value.find((x) => x.key === key);
+  if (s) s.value = value;
 }
 
+// 🔄 Fetch API
 async function fetchSettings() {
   loading.value = true;
   try {
     const res = await api.get<SettingItem[]>("binance/settings");
     settings.value = res.map((s) => ({
       ...s,
-      value:
-        s.key === "ENABLE_BUY" || s.key === "ENABLE_SELL"
-          ? s.value === "true"
-          : s.value,
+      value: s.key.startsWith("ENABLE_") ? s.value === "true" : s.value,
     }));
     initialSettings.value = JSON.parse(JSON.stringify(settings.value));
-    localSettings.value.enableBuy =
-      settings.value.find((s) => s.key === "ENABLE_BUY")?.value === true;
-    localSettings.value.enableSell =
-      settings.value.find((s) => s.key === "ENABLE_SELL")?.value === true;
-  } catch (err) {
-    settings.value = [];
   } finally {
     loading.value = false;
   }
 }
 
+// 💾 Save all
+const hasChanges = computed(
+  () => JSON.stringify(settings.value) !== JSON.stringify(initialSettings.value)
+);
+
 async function saveAllSettings() {
-  if (!hasChanges.value) return;
   saving.value = true;
   try {
     const payload = settings.value.reduce(
       (acc, s) => ({
         ...acc,
-        [s.key]:
-          s.key === "ENABLE_BUY" || s.key === "ENABLE_SELL"
-            ? String(s.value)
-            : s.value,
+        [s.key]: s.key.startsWith("ENABLE_") ? String(s.value) : s.value,
       }),
       {}
     );
@@ -375,7 +517,7 @@ async function saveAllSettings() {
       message: "Lưu cài đặt thành công!",
       color: "success",
     };
-  } catch (err) {
+  } catch {
     snackbar.value = {
       show: true,
       message: "Lưu cài đặt thất bại!",
@@ -395,89 +537,34 @@ onMounted(fetchSettings);
   color: #fff;
   border-radius: 16px;
   height: 100%;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
-
 .main-card {
   background: linear-gradient(145deg, #111a2b 0%, #1b263a 100%);
   color: #fff;
 }
-
-.section-title {
-  display: flex;
-  align-items: center;
-  font-weight: 700;
-  color: #fff;
-  font-size: 1.2rem;
-}
-
-.divider {
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
 .group-box {
   background: rgba(255, 255, 255, 0.03);
   border-radius: 12px;
-  padding: 20px;
+  padding: 24px;
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
-
 .group-header {
   display: flex;
   align-items: center;
   color: #9ec6ff;
   font-weight: 600;
-  margin-bottom: 16px;
-  letter-spacing: 0.3px;
+  margin-bottom: 20px;
 }
-
-.tabs-custom :deep(.v-tab) {
-  color: #cfd8dc;
-  font-weight: 500;
-  border-radius: 10px;
-  justify-content: flex-start;
-  padding: 12px 14px;
-  transition: all 0.25s ease;
-}
-
-.tabs-custom :deep(.v-tab--active) {
-  background: linear-gradient(90deg, #42a5f5, #1e88e5);
-  color: #fff !important;
-}
-
-.tabs-custom :deep(.v-tab:hover) {
-  background: rgba(255, 255, 255, 0.06);
-}
-
-.text-field-custom :deep(.v-field) {
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 10px;
-  transition: 0.25s ease;
-}
-
-.text-field-custom :deep(.v-field--focused) {
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.5);
-}
-
-.text-field-custom :deep(.v-field__input) {
-  color: #fff !important;
-  font-weight: 500;
-}
-
-.text-field-custom :deep(.v-label) {
-  color: rgba(200, 200, 200, 0.7) !important;
-}
-
 .switch-custom :deep(.v-label) {
   color: #fff !important;
   font-weight: 500;
 }
-
+.text-field-custom :deep(.v-field) {
+  background: rgba(255, 255, 255, 0.05);
+  margin-bottom: 8px;
+}
 .save-btn {
   background: linear-gradient(90deg, #42a5f5, #1e88e5) !important;
-  color: white !important;
-  border-radius: 10px;
-  font-weight: 600;
-  text-transform: none;
+  color: #fff !important;
 }
 </style>

@@ -10,6 +10,14 @@ export const SETTING_KEY = keyMirror({
   MAX_SOL_PRICE_MINI: null,
   MAX_BTC_PRICE_MINI: null,
   DCA_WHEN_DROP_PERCENT: null,
+  ENABLE_BUY_MINI: null,
+  ENABLE_SELL_MINI: null,
+  ENABLE_BUY_SUPERMINI: null,
+  ENABLE_SELL_SUPERMINI: null,
+  DCA_WHEN_DROP_PERCENT_MINI: null,
+  DCA_WHEN_DROP_PERCENT_SUPERMINI: null,
+  MINI_BUY_AMOUNT: null,
+  SUPER_MINI_BUY_AMOUNT: null,
 });
 
 export type SETTING_KEY = keyof typeof SETTING_KEY;

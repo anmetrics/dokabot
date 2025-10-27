@@ -56,6 +56,14 @@ export class BinanceService implements OnModuleInit {
       [SETTING_KEY.MAX_SOL_PRICE_MINI]: '190',
       [SETTING_KEY.MAX_BTC_PRICE_MINI]: '110000',
       [SETTING_KEY.DCA_WHEN_DROP_PERCENT]: '0.03',
+      [SETTING_KEY.ENABLE_BUY_MINI]: 'false',
+      [SETTING_KEY.ENABLE_SELL_MINI]: 'false',
+      [SETTING_KEY.ENABLE_BUY_SUPERMINI]: 'false',
+      [SETTING_KEY.ENABLE_SELL_SUPERMINI]: 'false',
+      [SETTING_KEY.MINI_BUY_AMOUNT]: '10',
+      [SETTING_KEY.SUPER_MINI_BUY_AMOUNT]: '10',
+      [SETTING_KEY.DCA_WHEN_DROP_PERCENT_MINI]: '0.03',
+      [SETTING_KEY.DCA_WHEN_DROP_PERCENT_SUPERMINI]: '0.03',
     };
 
     const missingKeys = Object.keys(SETTING_KEY).filter(
@@ -401,6 +409,17 @@ export class BinanceService implements OnModuleInit {
     return {
       log,
     };
+  }
+
+  async getListPositionsBySymbol(symbol: string) {
+    return await this.prismaService.position.findMany({
+      where: {
+        symbol,
+      },
+      orderBy: {
+        buyPrice: 'asc',
+      },
+    });
   }
 
   async getOpenPositions(strategy: string) {

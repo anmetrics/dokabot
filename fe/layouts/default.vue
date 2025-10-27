@@ -103,6 +103,7 @@ const currentTab = ref(route.path);
 
 const menuItems = [
   { title: "Home", short: "Home", icon: "mdi-home-outline", to: "/" },
+  // { title: "Market", short: "Market", icon: "mdi-home-outline", to: "/market" },
   { title: "Buy crypto", short: "Buy", icon: "mdi-cash-plus", to: "/buy" },
   {
     title: "Assets",

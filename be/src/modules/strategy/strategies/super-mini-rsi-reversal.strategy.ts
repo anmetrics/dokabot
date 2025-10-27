@@ -20,7 +20,7 @@ type TimeframeData = {
   lastCandles: Candle[];
 };
 
-const SUPER_MINI_RSI_SUFFIX = '_SUPERMINI';
+export const SUPER_MINI_RSI_SUFFIX = '_SUPERMINI';
 
 export class SuperMiniReversalDcaStrategy implements IStrategy {
   private logger = new Logger('SuperMiniRsiReversalStrategy');
@@ -42,7 +42,6 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   constructor(
     private readonly binanceService: BinanceService,
     private readonly symbol: string,
-    private readonly baseBuyUsd: number,
     private readonly timeframe: '1m' | '3m' | '5m' | '15m' | '30m',
     private readonly minProfitPct: number,
   ) {}
@@ -53,7 +52,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, baseBuyUsd: ${this.baseBuyUsd}, BaseProfit:${this.minProfitPct}`,
+      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, BaseProfit:${this.minProfitPct}`,
     );
     const positions = await this.binanceService.getOpenPositions(
       this.symbol + SUPER_MINI_RSI_SUFFIX,
@@ -134,7 +133,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
         const dcaIndex = dcaTimes + 1;
 
         const dcaPriceSetting = await this.binanceService.getSettingByKey(
-          SETTING_KEY.DCA_WHEN_DROP_PERCENT,
+          SETTING_KEY.DCA_WHEN_DROP_PERCENT_SUPERMINI,
         );
 
         const DCA_PRICE_DROP_PCT = Number(dcaPriceSetting);
@@ -152,7 +151,9 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
             this.binanceService.getSettingByKey(
               getSettingKeyBySymbolMini(this.symbol),
             ),
-            this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
+            this.binanceService.getSettingByKey(
+              SETTING_KEY.ENABLE_BUY_SUPERMINI,
+            ),
           ]);
 
           if (enableBuy === 'true' && price < Number(settingMaxBuyPrice || 0)) {
@@ -172,7 +173,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
         });
 
         const enableSell = await this.binanceService.getSettingByKey(
-          SETTING_KEY.ENABLE_SELL,
+          SETTING_KEY.ENABLE_SELL_SUPERMINI,
         );
 
         if (!sellablePositions.length || enableSell !== 'true') {
@@ -189,7 +190,10 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   }
 
   private async buyPosition(price: number, dcaIndex: number) {
-    const usdToSpend = this.baseBuyUsd;
+    const baseBuyUsd = await this.binanceService.getSettingByKey(
+      SETTING_KEY.SUPER_MINI_BUY_AMOUNT,
+    );
+    const usdToSpend = Number(baseBuyUsd || 0);
 
     // Check root positions
 
