@@ -33,6 +33,7 @@ model Position {
   qty            Float @map("qty")
   usdSpent       Float @map("usd_spent")
   totalQtyActual Float  @map("total_qty_actual")
+  sellPrice      Float? @map("sell_price")
   dcaIndex       Int @map("dca_index")
 
   createdAt   DateTime  @default(now()) @map("created_at") 
