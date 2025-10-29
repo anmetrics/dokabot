@@ -115,6 +115,20 @@ export class BinanceController {
     return this.binanceService.sell(id, Number(price));
   }
 
+  @Patch('update-sell-price')
+  async updateSellPrice(
+    @Body()
+    body: {
+      id: string;
+      price: number;
+    },
+  ) {
+    const { id, price } = body;
+    if (!id?.trim() || !price) {
+      return;
+    }
+    return this.binanceService.updateSellPrice(id, Number(price));
+  }
   @Patch('settings')
   @HttpCode(HttpStatus.OK)
   async updateSettings(@Body() payload: Record<SETTING_KEY, string>) {

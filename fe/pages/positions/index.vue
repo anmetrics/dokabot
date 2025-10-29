@@ -10,16 +10,27 @@
             <v-icon size="24" color="primary">mdi-chart-line</v-icon>
           </v-avatar>
         </div>
-        <v-btn
-          color="primary"
-          @click="refresh"
-          variant="elevated"
-          :loading="loading"
-          class="refresh-btn"
-        >
-          <v-icon start>mdi-refresh</v-icon>
-          Refresh
-        </v-btn>
+        <div>
+          <v-btn
+            color="primary"
+            @click="refresh"
+            variant="elevated"
+            :loading="loading"
+            class="refresh-btn"
+          >
+            <v-icon start>mdi-refresh</v-icon>
+            Refresh
+          </v-btn>
+          <v-btn
+            color="deep-purple"
+            variant="elevated"
+            class="sell-manager-btn"
+            @click="goToSellManager"
+          >
+            <v-icon start>mdi-cash-multiple</v-icon>
+            Sell Manager
+          </v-btn>
+        </div>
       </div>
 
       <!-- Summary stats -->
@@ -233,6 +244,8 @@
 import { ref, computed, onMounted } from "vue";
 import { useApi } from "~/apis";
 
+const router = useRouter();
+
 const isMobile = ref(false);
 if (process.client) {
   isMobile.value = window.innerWidth <= 600;
@@ -340,6 +353,9 @@ async function sellConfirmed() {
     loading.value = false;
   }
 }
+function goToSellManager() {
+  router.push("/sell-manager");
+}
 
 onMounted(fetchPositions);
 </script>
@@ -405,6 +421,7 @@ onMounted(fetchPositions);
   border-radius: 8px;
   text-transform: none;
   font-weight: 500;
+  margin-right: 5px;
 }
 .dark-table {
   background: transparent;

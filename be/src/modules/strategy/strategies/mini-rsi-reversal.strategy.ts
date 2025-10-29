@@ -179,6 +179,9 @@ export class MiniReversalDcaStrategy implements IStrategy {
         }
 
         for (const pos of sellablePositions) {
+          if (pos.sellPrice && pos.sellPrice > 0 && price < pos.sellPrice) {
+            continue;
+          }
           await this.sellPosition(pos, price, timeframe);
         }
       }

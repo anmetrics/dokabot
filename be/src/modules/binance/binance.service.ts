@@ -680,6 +680,17 @@ export class BinanceService implements OnModuleInit {
     return order;
   }
 
+  async updateSellPrice(id: string, sellPrice: number) {
+    return this.prismaService.position.update({
+      where: {
+        id,
+      },
+      data: {
+        sellPrice,
+      },
+    });
+  }
+
   async getCumulativeProfits() {
     const data = await this.prismaService.sellSuccess.findMany({
       orderBy: {
