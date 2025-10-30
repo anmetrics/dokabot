@@ -64,6 +64,8 @@ export class BinanceService implements OnModuleInit {
       [SETTING_KEY.SUPER_MINI_BUY_AMOUNT]: '10',
       [SETTING_KEY.DCA_WHEN_DROP_PERCENT_MINI]: '0.03',
       [SETTING_KEY.DCA_WHEN_DROP_PERCENT_SUPERMINI]: '0.03',
+      [SETTING_KEY.MAX_PAXG_PRICE]: '4000',
+      [SETTING_KEY.PAXG_BUY_AMOUNT]: '100',
     };
 
     const missingKeys = Object.keys(SETTING_KEY).filter(

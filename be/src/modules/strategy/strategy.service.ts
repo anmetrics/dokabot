@@ -8,6 +8,7 @@ import { SuperMiniReversalDcaStrategy } from './strategies/super-mini-rsi-revers
 import { PrismaService } from 'src/prisma.service';
 import { SETTING_KEY } from '../settings/settings.enum';
 import { ChildRsiReversalDcaStrategy } from './strategies/child-rsi-reversal.strategy';
+import { GoldReversalDcaStrategy } from './strategies/gold-rsi-reversal.strategy';
 
 @Injectable()
 export class StrategyService {
@@ -27,6 +28,8 @@ export class StrategyService {
   private supermini1: IStrategy;
   private supermini2: IStrategy;
   private supermini3: IStrategy;
+
+  private goldStrategy1: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -133,6 +136,14 @@ export class StrategyService {
       0.005,
     );
 
+    //  Gold
+    this.goldStrategy1 = new GoldReversalDcaStrategy(
+      this.binanceService,
+      'PAXGUSDT',
+      '3m',
+      0.02,
+    );
+
     // Normal
     this.strategy1.startAll();
     this.strategy2.startAll();
@@ -152,6 +163,9 @@ export class StrategyService {
     this.supermini1.startAll();
     this.supermini2.startAll();
     this.supermini3.startAll();
+
+    // Gold
+    this.goldStrategy1.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }

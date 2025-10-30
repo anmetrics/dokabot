@@ -6,6 +6,7 @@ export const SETTING_KEY = keyMirror({
   MAX_BNB_PRICE: null,
   MAX_SOL_PRICE: null,
   MAX_BTC_PRICE: null,
+  MAX_PAXG_PRICE: null,
   MAX_BNB_PRICE_MINI: null,
   MAX_SOL_PRICE_MINI: null,
   MAX_BTC_PRICE_MINI: null,
@@ -16,6 +17,7 @@ export const SETTING_KEY = keyMirror({
   ENABLE_SELL_SUPERMINI: null,
   DCA_WHEN_DROP_PERCENT_MINI: null,
   DCA_WHEN_DROP_PERCENT_SUPERMINI: null,
+  PAXG_BUY_AMOUNT: null,
   MINI_BUY_AMOUNT: null,
   SUPER_MINI_BUY_AMOUNT: null,
 });
@@ -26,6 +28,7 @@ export const LIST_SYMBOL = keyMirror({
   BNBUSDT: null,
   SOLUSDT: null,
   BTCUSDT: null,
+  PAXGUSDT: null,
 });
 
 export function getSettingKeyBySymbol(symbol: string): SETTING_KEY | null {
@@ -36,6 +39,8 @@ export function getSettingKeyBySymbol(symbol: string): SETTING_KEY | null {
       return SETTING_KEY.MAX_SOL_PRICE;
     case LIST_SYMBOL.BTCUSDT:
       return SETTING_KEY.MAX_BTC_PRICE;
+    case LIST_SYMBOL.PAXGUSDT:
+      return SETTING_KEY.MAX_PAXG_PRICE;
     default:
       return null;
   }
