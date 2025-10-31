@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="py-10 px-md-16">
+  <v-container fluid class="py-4 px-md-8 pa-2">
     <v-row>
       <!-- Sidebar -->
       <v-col cols="12" md="3">
@@ -25,7 +25,7 @@
 
       <!-- Main content -->
       <v-col cols="12" md="9">
-        <v-card class="pa-8 rounded-xl main-card">
+        <v-card class="pa-2 rounded-xl main-card">
           <v-tabs-window v-model="activeTab">
             <!-- ========== GENERAL SETTINGS ========== -->
             <v-tabs-window-item value="general">
@@ -93,7 +93,36 @@
                 </v-row>
               </div>
 
-              <!-- 🟪 MINI + SUPER MINI SETTINGS (COMBINED) -->
+              <!-- 🟨 PAXG SETTINGS -->
+              <div class="group-box mb-8" v-if="paxgSettings.length">
+                <div class="group-header" style="color: #ffca28">
+                  <v-icon color="amber" size="22" class="mr-2">mdi-gold</v-icon>
+                  <span>PAXG Settings</span>
+                </div>
+
+                <v-row>
+                  <v-col
+                    v-for="item in paxgSettings"
+                    :key="item.key"
+                    cols="12"
+                    md="6"
+                    class="py-2"
+                  >
+                    <v-text-field
+                      v-model="item.value"
+                      :label="item.key"
+                      color="amber"
+                      variant="outlined"
+                      density="compact"
+                      type="number"
+                      class="text-field-custom"
+                      @update:modelValue="updateSetting(item.key, $event)"
+                    />
+                  </v-col>
+                </v-row>
+              </div>
+
+              <!-- 🟪 MINI + SUPER MINI SETTINGS -->
               <div
                 class="group-box mb-8"
                 v-if="miniSettings.length || superMiniSettings.length"
@@ -256,7 +285,7 @@
               </div>
 
               <!-- Save Button -->
-              <div class="text-right mt-8" v-if="settings.length">
+              <div class="text-right pa-2" v-if="settings.length">
                 <v-btn
                   color="primary"
                   @click="saveAllSettings"
@@ -350,6 +379,9 @@ const ROOT_KEYS = [
   "MAX_BTC_PRICE",
   "DCA_WHEN_DROP_PERCENT",
 ];
+
+const PAXG_KEYS = ["MAX_PAXG_PRICE", "PAXG_BUY_AMOUNT"];
+
 const MINI_KEYS = [
   "ENABLE_BUY_MINI",
   "ENABLE_SELL_MINI",
@@ -359,6 +391,7 @@ const MINI_KEYS = [
   "DCA_WHEN_DROP_PERCENT_MINI",
   "MINI_BUY_AMOUNT",
 ];
+
 const SUPER_MINI_KEYS = [
   "ENABLE_BUY_SUPERMINI",
   "ENABLE_SELL_SUPERMINI",
@@ -375,6 +408,11 @@ const rootSettings = computed(() =>
     .filter((s) => ROOT_KEYS.includes(s.key))
     .sort((a, b) => ROOT_KEYS.indexOf(a.key) - ROOT_KEYS.indexOf(b.key))
 );
+const paxgSettings = computed(() =>
+  settings.value
+    .filter((s) => PAXG_KEYS.includes(s.key))
+    .sort((a, b) => PAXG_KEYS.indexOf(a.key) - PAXG_KEYS.indexOf(b.key))
+);
 const miniSettings = computed(() =>
   settings.value
     .filter((s) => MINI_KEYS.includes(s.key))
@@ -388,85 +426,29 @@ const superMiniSettings = computed(() =>
     )
 );
 
-// 🧩 Field cho Mini & Super Mini
+// 🧩 Sub fields
+const rootFields = computed(() =>
+  rootSettings.value.filter((s) => !s.key.startsWith("ENABLE"))
+);
 const miniCommonFields = computed(() =>
-  miniSettings.value
-    .filter((s) =>
-      [
+  miniSettings.value.filter((s) =>
+    ["MAX_BNB_PRICE_MINI", "MAX_SOL_PRICE_MINI", "MAX_BTC_PRICE_MINI"].includes(
+      s.key
+    )
+  )
+);
+const miniSpecificFields = computed(() =>
+  miniSettings.value.filter(
+    (s) =>
+      ![
         "MAX_BNB_PRICE_MINI",
         "MAX_SOL_PRICE_MINI",
         "MAX_BTC_PRICE_MINI",
-      ].includes(s.key)
-    )
-    .sort(
-      (a, b) =>
-        [
-          "MAX_BNB_PRICE_MINI",
-          "MAX_SOL_PRICE_MINI",
-          "MAX_BTC_PRICE_MINI",
-        ].indexOf(a.key) -
-        [
-          "MAX_BNB_PRICE_MINI",
-          "MAX_SOL_PRICE_MINI",
-          "MAX_BTC_PRICE_MINI",
-        ].indexOf(b.key)
-    )
-);
-const miniSpecificFields = computed(() =>
-  miniSettings.value
-    .filter(
-      (s) =>
-        ![
-          "MAX_BNB_PRICE_MINI",
-          "MAX_SOL_PRICE_MINI",
-          "MAX_BTC_PRICE_MINI",
-        ].includes(s.key) && !s.key.startsWith("ENABLE")
-    )
-    .sort(
-      (a, b) =>
-        ["DCA_WHEN_DROP_PERCENT_MINI", "MINI_BUY_AMOUNT"].indexOf(a.key) -
-        ["DCA_WHEN_DROP_PERCENT_MINI", "MINI_BUY_AMOUNT"].indexOf(b.key)
-    )
+      ].includes(s.key) && !s.key.startsWith("ENABLE")
+  )
 );
 const superMiniFields = computed(() =>
-  superMiniSettings.value
-    .filter((s) => !s.key.startsWith("ENABLE"))
-    .sort(
-      (a, b) =>
-        [
-          "MAX_BNB_PRICE_SUPERMINI",
-          "MAX_SOL_PRICE_SUPERMINI",
-          "MAX_BTC_PRICE_SUPERMINI",
-          "DCA_WHEN_DROP_PERCENT_SUPERMINI",
-          "SUPER_MINI_BUY_AMOUNT",
-        ].indexOf(a.key) -
-        [
-          "MAX_BNB_PRICE_SUPERMINI",
-          "MAX_SOL_PRICE_SUPERMINI",
-          "MAX_BTC_PRICE_SUPERMINI",
-          "DCA_WHEN_DROP_PERCENT_SUPERMINI",
-          "SUPER_MINI_BUY_AMOUNT",
-        ].indexOf(b.key)
-    )
-);
-const rootFields = computed(() =>
-  rootSettings.value
-    .filter((s) => !s.key.startsWith("ENABLE"))
-    .sort(
-      (a, b) =>
-        [
-          "MAX_BNB_PRICE",
-          "MAX_SOL_PRICE",
-          "MAX_BTC_PRICE",
-          "DCA_WHEN_DROP_PERCENT",
-        ].indexOf(a.key) -
-        [
-          "MAX_BNB_PRICE",
-          "MAX_SOL_PRICE",
-          "MAX_BTC_PRICE",
-          "DCA_WHEN_DROP_PERCENT",
-        ].indexOf(b.key)
-    )
+  superMiniSettings.value.filter((s) => !s.key.startsWith("ENABLE"))
 );
 
 // ✅ Helpers
