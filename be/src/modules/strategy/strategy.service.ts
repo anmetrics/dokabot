@@ -141,7 +141,7 @@ export class StrategyService {
       this.binanceService,
       'PAXGUSDT',
       '3m',
-      0.015,
+      0.0042,
     );
 
     // Normal

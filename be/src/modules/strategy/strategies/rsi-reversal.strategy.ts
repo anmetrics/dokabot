@@ -26,10 +26,10 @@ export class RsiReversalDcaStrategy implements IStrategy {
 
   private DCA_PRICE_DROP_PCT = 0.08;
 
-  private rsiPeriod = 10;
-  private atrPeriod = 10;
+  private rsiPeriod = 12;
+  private atrPeriod = 12;
 
-  private rsiBuyThreshold = 15;
+  private rsiBuyThreshold = 16;
   private rsiSellThreshold = 80;
 
   private cooldownMs = 2 * 60 * 1000; // 2 phút
