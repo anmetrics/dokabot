@@ -30,8 +30,8 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 7;
   private dcaMultiplier = 1.8;
 
-  private rsiPeriod = 9;
-  private atrPeriod = 9;
+  private rsiPeriod = 12;
+  private atrPeriod = 12;
 
   private rsiBuyThreshold = 20;
 

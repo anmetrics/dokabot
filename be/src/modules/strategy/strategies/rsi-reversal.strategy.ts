@@ -24,12 +24,12 @@ export class RsiReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 2; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.05;
+  private DCA_PRICE_DROP_PCT = 0.08;
 
-  private rsiPeriod = 9;
-  private atrPeriod = 9;
+  private rsiPeriod = 10;
+  private atrPeriod = 10;
 
-  private rsiBuyThreshold = 20;
+  private rsiBuyThreshold = 15;
   private rsiSellThreshold = 80;
 
   private cooldownMs = 2 * 60 * 1000; // 2 phút
