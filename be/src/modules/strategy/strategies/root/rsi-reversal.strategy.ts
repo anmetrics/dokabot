@@ -3,11 +3,11 @@ import { Logger } from '@nestjs/common';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
-import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
-import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
-import { LIST_SYMBOL } from 'src/modules/settings/settings.enum';
+import { LIST_SYMBOL, SETTING_KEY } from 'src/modules/settings/settings.enum';
+import { IStrategy } from '../../strategy.interface';
+import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
 
 type TimeframeData = {
   closes: number[];
@@ -137,8 +137,14 @@ export class RsiReversalDcaStrategy implements IStrategy {
           price < minBuyPrice - lastAtr &&
           price < minBuyPrice * DCA_PERCENT;
 
+        const [enableBuy] = await Promise.all([
+          this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
+        ]);
+
         if (openPositions.length === 0 || isDcaValid) {
-          await this.buyPosition(price, dcaIndex || 0);
+          if (enableBuy === 'true') {
+            await this.buyPosition(price, dcaIndex || 0);
+          }
           this.lastTradeTime = now;
         }
       }

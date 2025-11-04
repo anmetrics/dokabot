@@ -3,9 +3,9 @@ import { Logger } from '@nestjs/common';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
-import { adjustToStepSize, getActualBought } from '../helpers/crypto';
+import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
 import Decimal from 'decimal.js';
-import { IStrategy } from '../strategy.interface';
+import { IStrategy } from '../../strategy.interface';
 import { Position } from 'generated/prisma';
 import {
   getSettingKeyBySymbol,

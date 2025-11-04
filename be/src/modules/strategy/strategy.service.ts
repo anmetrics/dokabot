@@ -2,13 +2,13 @@ import { Injectable, Logger } from '@nestjs/common';
 import { BinanceService } from '../binance/binance.service';
 import { IStrategy } from './strategy.interface';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { RsiReversalDcaStrategy } from './strategies/rsi-reversal.strategy';
-import { MiniReversalDcaStrategy } from './strategies/mini-rsi-reversal.strategy';
-import { SuperMiniReversalDcaStrategy } from './strategies/super-mini-rsi-reversal.strategy';
 import { PrismaService } from 'src/prisma.service';
 import { SETTING_KEY } from '../settings/settings.enum';
-import { ChildRsiReversalDcaStrategy } from './strategies/child-rsi-reversal.strategy';
+import { ChildRsiReversalDcaStrategy } from './strategies/root/child-rsi-reversal.strategy';
 import { GoldReversalDcaStrategy } from './strategies/gold-rsi-reversal.strategy';
+import { RsiReversalDcaStrategy } from './strategies/root/rsi-reversal.strategy';
+import { MiniReversalDcaStrategy } from './strategies/mini/mini-rsi-reversal.strategy';
+import { SuperMiniReversalDcaStrategy } from './strategies/mini/super-mini-rsi-reversal.strategy';
 
 @Injectable()
 export class StrategyService {
