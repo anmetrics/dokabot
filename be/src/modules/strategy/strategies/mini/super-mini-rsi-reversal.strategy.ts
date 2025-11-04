@@ -3,15 +3,15 @@ import { Logger } from '@nestjs/common';
 import { BinanceService } from 'src/modules/binance/binance.service';
 import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
-import { adjustToStepSize, getActualBought } from '../helpers/crypto';
 import Decimal from 'decimal.js';
-import { IStrategy } from '../strategy.interface';
 import { Position } from 'generated/prisma';
 import {
   getSettingKeyBySymbolMini,
   LIST_SYMBOL,
   SETTING_KEY,
 } from 'src/modules/settings/settings.enum';
+import { IStrategy } from '../../strategy.interface';
+import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
 
 type TimeframeData = {
   closes: number[];
