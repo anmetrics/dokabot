@@ -34,6 +34,7 @@ model Position {
   usdSpent       Float @map("usd_spent")
   totalQtyActual Float  @map("total_qty_actual")
   sellPrice      Float? @map("sell_price")
+  isDualInvestment Boolean @map("is_dual_investment") @default(false)
   dcaIndex       Int @map("dca_index")
 
   createdAt   DateTime  @default(now()) @map("created_at") 

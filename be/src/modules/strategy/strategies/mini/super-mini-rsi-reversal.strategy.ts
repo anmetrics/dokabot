@@ -12,6 +12,7 @@ import {
 } from 'src/modules/settings/settings.enum';
 import { IStrategy } from '../../strategy.interface';
 import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
+import { MINI_RSI_SUFFIX } from './mini-rsi-reversal.strategy';
 
 type TimeframeData = {
   closes: number[];
@@ -169,7 +170,10 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
           const dynamicMinProfitPct = this.getDynamicMinProfitPct(
             pos?.dcaIndex || 0,
           );
-          return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
+          return (
+            !pos.isDualInvestment &&
+            price >= pos.buyPrice * (1 + dynamicMinProfitPct)
+          );
         });
 
         const enableSell = await this.binanceService.getSettingByKey(
@@ -200,14 +204,18 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
     // Check root positions
 
-    const rootPositions = await this.binanceService.getOpenPositions(
-      this.symbol,
-    );
+    const [rootPositions, miniPositions] = await Promise.all([
+      this.binanceService.getOpenPositions(this.symbol),
+      this.binanceService.getOpenPositions(this.symbol + MINI_RSI_SUFFIX),
+    ]);
 
     // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
     const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
+    // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
+    const miniMinBuyPrice = Math.min(...miniPositions?.map((p) => p.buyPrice));
 
     if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
+    if (miniPositions?.length && price > miniMinBuyPrice * 0.994) return;
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(
@@ -255,7 +263,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.0003;
+    const increment = 0.001;
     return base + dcaIndex * increment;
   }
 

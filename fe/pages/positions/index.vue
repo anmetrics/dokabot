@@ -35,53 +35,15 @@
 
       <!-- Summary stats -->
       <v-row class="mb-5" dense>
-        <v-col cols="12" sm="6" md="3">
+        <v-col cols="12" sm="6" md="3" v-for="(stat, i) in stats" :key="i">
           <v-sheet class="pa-4 rounded-lg stat-card">
             <div class="d-flex align-center justify-space-between">
-              <v-icon color="cyan" size="24">mdi-briefcase-outline</v-icon>
-              <span class="stat-value">{{ positions.length }}</span>
+              <v-icon :color="stat.color" size="24">{{ stat.icon }}</v-icon>
+              <span class="stat-value" :class="stat.class || ''">{{
+                stat.value
+              }}</span>
             </div>
-            <div class="stat-label">Tổng vị thế</div>
-          </v-sheet>
-        </v-col>
-
-        <v-col cols="12" sm="6" md="3">
-          <v-sheet class="pa-4 rounded-lg stat-card">
-            <div class="d-flex align-center justify-space-between">
-              <v-icon color="amber" size="24">mdi-currency-usd</v-icon>
-              <span class="stat-value">{{ totalUsdSpent.toFixed(2) }}</span>
-            </div>
-            <div class="stat-label">Tổng vốn USDT</div>
-          </v-sheet>
-        </v-col>
-
-        <v-col cols="12" sm="6" md="3">
-          <v-sheet class="pa-4 rounded-lg stat-card">
-            <div class="d-flex align-center justify-space-between">
-              <v-icon color="green" size="24">mdi-trending-up</v-icon>
-              <span
-                class="stat-value"
-                :class="totalProfit >= 0 ? 'text-profit' : 'text-loss'"
-              >
-                {{ totalProfit.toFixed(2) }}
-              </span>
-            </div>
-            <div class="stat-label">Unrealized P/L</div>
-          </v-sheet>
-        </v-col>
-
-        <v-col cols="12" sm="6" md="3">
-          <v-sheet class="pa-4 rounded-lg stat-card">
-            <div class="d-flex align-center justify-space-between">
-              <v-icon color="deep-purple" size="24">mdi-finance</v-icon>
-              <span
-                class="stat-value"
-                :class="avgProfitPercent >= 0 ? 'text-profit' : 'text-loss'"
-              >
-                {{ avgProfitPercent.toFixed(2) }}%
-              </span>
-            </div>
-            <div class="stat-label">Tỷ suất trung bình</div>
+            <div class="stat-label">{{ stat.label }}</div>
           </v-sheet>
         </v-col>
       </v-row>
@@ -97,33 +59,74 @@
         density="compact"
         hide-default-footer
       >
-        <template #item.buyPrice="{ item }">
-          {{ Number(item.buyPrice).toLocaleString() }}
-        </template>
-        <template #item.usdSpent="{ item }">
-          {{ item.usdSpent.toFixed(2) }}
-        </template>
-        <template #item.createdAt="{ item }">
-          {{ formatDate(item.createdAt) }}
-        </template>
-        <template #item.profit="{ item }">
-          <span :class="item.profit > 0 ? 'text-profit' : 'text-loss'">
-            {{ item.profit.toFixed(2) }} USDT ({{
-              item.profitPercent.toFixed(2)
-            }}%)
-          </span>
-        </template>
-        <template #item.actions="{ item }">
-          <v-btn
-            small
-            :class="
-              item.profitPercent >= 0.5 ? 'btn-green' : 'btn-disabled-dark'
-            "
-            :disabled="item.profitPercent < 0.5"
-            @click="confirmSell(item)"
-          >
-            Bán
-          </v-btn>
+        <template #item="{ item }">
+          <tr :class="{ 'dual-row': item.isDualInvestment }">
+            <td>{{ item.symbol }}</td>
+            <td>
+              <span>
+                {{ item.strategy }}
+                <v-chip
+                  v-if="item.isDualInvestment"
+                  size="x-small"
+                  class="dual-label ml-1"
+                >
+                  Dual
+                </v-chip>
+              </span>
+            </td>
+            <td class="text-end">
+              {{ Number(item.buyPrice).toLocaleString() }}
+            </td>
+            <td class="text-end">{{ item.qty }}</td>
+            <td class="text-end">{{ item.usdSpent.toFixed(2) }}</td>
+            <td class="text-center">{{ item.dcaIndex }}</td>
+            <td class="text-center">{{ formatDate(item.createdAt) }}</td>
+            <td class="text-end">
+              <span :class="item.profit > 0 ? 'text-profit' : 'text-loss'">
+                {{ item.profit.toFixed(2) }} USDT ({{
+                  item.profitPercent.toFixed(2)
+                }}%)
+              </span>
+            </td>
+            <td class="text-center">
+              <div class="d-flex justify-center gap-1">
+                <!-- Bán -->
+                <v-btn
+                  v-if="!item.isDualInvestment"
+                  small
+                  :class="
+                    item.profitPercent >= 0.5
+                      ? 'btn-green'
+                      : 'btn-disabled-dark'
+                  "
+                  :disabled="item.profitPercent < 0.5"
+                  @click="confirmSell(item)"
+                >
+                  Bán
+                </v-btn>
+                <!-- Dual -->
+                <v-btn
+                  v-if="!item.isDualInvestment"
+                  small
+                  color="deep-purple"
+                  class="btn-dual"
+                  @click="confirmDual(item)"
+                >
+                  Dual
+                </v-btn>
+                <!-- Huỷ Dual -->
+                <v-btn
+                  v-else
+                  small
+                  color="grey-darken-2"
+                  class="btn-cancel-dual"
+                  @click="confirmCancelDual(item)"
+                >
+                  Huỷ Dual
+                </v-btn>
+              </div>
+            </td>
+          </tr>
         </template>
       </v-data-table>
 
@@ -138,7 +141,6 @@
             elevation="1"
           >
             <v-list-item-content>
-              <!-- Hàng trên: Symbol + % lợi nhuận -->
               <div class="d-flex justify-space-between align-center mb-2">
                 <span class="mobile-symbol text-h6 font-weight-medium">
                   {{ item.symbol }}
@@ -151,8 +153,6 @@
                   {{ item.profitPercent.toFixed(2) }}%
                 </v-chip>
               </div>
-
-              <!-- Hàng giữa: Chips thông tin -->
               <div class="d-flex flex-wrap mb-2 chip-group">
                 <v-chip size="small" color="cyan-darken-2" variant="flat">
                   Mua: {{ item.buyPrice.toLocaleString() }}
@@ -164,26 +164,53 @@
                 >
                   USDT: {{ item.usdSpent.toFixed(1) }}
                 </v-chip>
+                <v-chip
+                  v-if="item.isDualInvestment"
+                  size="small"
+                  color="purple"
+                  variant="flat"
+                  class="text-white"
+                >
+                  Dual
+                </v-chip>
               </div>
-
-              <!-- Ngày + nút hành động -->
               <div class="d-flex justify-space-between align-center">
                 <span class="text-caption text-grey">
                   {{ formatDate(item.createdAt) }}
                 </span>
-                <v-btn
-                  x-small
-                  rounded
-                  :class="
-                    item.profitPercent >= 0.5
-                      ? 'btn-green'
-                      : 'btn-disabled-dark'
-                  "
-                  @click.stop="confirmSell(item)"
-                  :disabled="item.profitPercent < 0.5"
-                >
-                  Bán
-                </v-btn>
+                <div class="d-flex gap-1">
+                  <v-btn
+                    x-small
+                    rounded
+                    :class="
+                      item.profitPercent >= 0.5
+                        ? 'btn-green'
+                        : 'btn-disabled-dark'
+                    "
+                    @click.stop="confirmSell(item)"
+                    :disabled="item.profitPercent < 0.5"
+                  >
+                    Bán
+                  </v-btn>
+                  <v-btn
+                    x-small
+                    rounded
+                    v-if="!item.isDualInvestment"
+                    color="deep-purple"
+                    @click.stop="confirmDual(item)"
+                  >
+                    Dual
+                  </v-btn>
+                  <v-btn
+                    x-small
+                    rounded
+                    v-else
+                    color="grey-darken-2"
+                    @click.stop="confirmCancelDual(item)"
+                  >
+                    Huỷ
+                  </v-btn>
+                </div>
               </div>
             </v-list-item-content>
           </v-list-item>
@@ -234,6 +261,50 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Confirm Dual Dialog -->
+    <v-dialog v-model="dualDialog" max-width="400">
+      <v-card class="dark-card pa-4">
+        <v-card-title class="text-h6 mb-2">
+          <v-icon color="deep-purple" start>mdi-swap-horizontal</v-icon>
+          Kích hoạt Dual Investment
+        </v-card-title>
+        <v-card-text>
+          Bạn có chắc muốn bật Dual cho
+          <strong>{{ selectedPosition?.symbol }}</strong
+          >?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text color="grey" @click="closeDualDialog">Hủy</v-btn>
+          <v-btn color="deep-purple" :loading="loading" @click="dualConfirmed">
+            Xác nhận
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Confirm Cancel Dual Dialog -->
+    <v-dialog v-model="cancelDualDialog" max-width="400">
+      <v-card class="dark-card pa-4">
+        <v-card-title class="text-h6 mb-2">
+          <v-icon color="orange" start>mdi-cancel</v-icon>
+          Huỷ Dual Investment
+        </v-card-title>
+        <v-card-text>
+          Bạn có chắc muốn huỷ Dual của
+          <strong>{{ selectedPosition?.symbol }}</strong
+          >?
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer></v-spacer>
+          <v-btn text color="grey" @click="closeCancelDualDialog">Hủy</v-btn>
+          <v-btn color="orange" :loading="loading" @click="cancelDualConfirmed">
+            Xác nhận
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </v-container>
 
   <!-- Chart component -->
@@ -245,6 +316,7 @@ import { ref, computed, onMounted } from "vue";
 import { useApi } from "~/apis";
 
 const router = useRouter();
+const api = useApi();
 
 const isMobile = ref(false);
 if (process.client) {
@@ -262,12 +334,12 @@ interface Position {
   qty: number;
   usdSpent: number;
   dcaIndex: number;
-  createdAt: string;
   profit: number;
   profitPercent: number;
+  isDualInvestment: boolean;
+  createdAt: string;
 }
 
-const api = useApi();
 const positions = ref<Position[]>([]);
 const loading = ref(false);
 
@@ -296,6 +368,35 @@ const avgProfitPercent = computed(() =>
     : 0
 );
 
+const stats = computed(() => [
+  {
+    label: "Tổng vị thế",
+    icon: "mdi-briefcase-outline",
+    color: "cyan",
+    value: positions.value.length,
+  },
+  {
+    label: "Tổng vốn USDT",
+    icon: "mdi-currency-usd",
+    color: "amber",
+    value: totalUsdSpent.value.toFixed(2),
+  },
+  {
+    label: "Unrealized P/L",
+    icon: "mdi-trending-up",
+    color: "green",
+    class: totalProfit.value >= 0 ? "text-profit" : "text-loss",
+    value: totalProfit.value.toFixed(2),
+  },
+  {
+    label: "Tỷ suất trung bình",
+    icon: "mdi-finance",
+    color: "deep-purple",
+    class: avgProfitPercent.value >= 0 ? "text-profit" : "text-loss",
+    value: `${avgProfitPercent.value.toFixed(2)}%`,
+  },
+]);
+
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString("vi-VN", {
     month: "short",
@@ -322,6 +423,8 @@ function refresh() {
 
 /* --- Dialog --- */
 const dialog = ref(false);
+const dualDialog = ref(false);
+const cancelDualDialog = ref(false);
 const selectedPosition = ref<Position | null>(null);
 const errorMessage = ref("");
 
@@ -334,10 +437,28 @@ function confirmSell(position: Position) {
   dialog.value = true;
 }
 
+function confirmDual(position: Position) {
+  selectedPosition.value = position;
+  dualDialog.value = true;
+}
+
+function confirmCancelDual(position: Position) {
+  selectedPosition.value = position;
+  cancelDualDialog.value = true;
+}
+
 function closeDialog() {
   dialog.value = false;
   selectedPosition.value = null;
   errorMessage.value = "";
+}
+function closeDualDialog() {
+  dualDialog.value = false;
+  selectedPosition.value = null;
+}
+function closeCancelDualDialog() {
+  cancelDualDialog.value = false;
+  selectedPosition.value = null;
 }
 
 async function sellConfirmed() {
@@ -353,6 +474,41 @@ async function sellConfirmed() {
     loading.value = false;
   }
 }
+
+async function dualConfirmed() {
+  if (!selectedPosition.value) return;
+  loading.value = true;
+  try {
+    await api.post("binance/dual", {
+      id: selectedPosition.value.id,
+      status: 1,
+    });
+    await fetchPositions();
+    closeDualDialog();
+  } catch (err: any) {
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function cancelDualConfirmed() {
+  if (!selectedPosition.value) return;
+  loading.value = true;
+  try {
+    await api.post("binance/dual", {
+      id: selectedPosition.value.id,
+      status: 0,
+    });
+    await fetchPositions();
+    closeCancelDualDialog();
+  } catch (err: any) {
+    console.error(err);
+  } finally {
+    loading.value = false;
+  }
+}
+
 function goToSellManager() {
   router.push("/sell-manager");
 }
@@ -404,16 +560,20 @@ onMounted(fetchPositions);
   color: #fff !important;
   text-transform: none;
   font-weight: 500;
-  transition: background 0.2s ease;
-}
-.btn-green:hover {
-  background-color: #00d6ab !important;
 }
 .btn-disabled-dark {
   background-color: #1a1a1a !important;
   color: #555555 !important;
-  cursor: not-allowed;
   pointer-events: none;
+}
+.btn-dual {
+  margin-left: 4px;
+  text-transform: none;
+  color: #fff !important;
+}
+.btn-cancel-dual {
+  text-transform: none;
+  color: #fff !important;
 }
 .refresh-btn {
   background: linear-gradient(90deg, #4fc3f7, #2196f3);
@@ -447,11 +607,6 @@ onMounted(fetchPositions);
 .text-grey {
   color: rgba(200, 200, 200, 0.6);
 }
-.chip-profit {
-  font-size: 11px;
-  font-weight: 500;
-  color: #fff !important;
-}
 @media (max-width: 600px) {
   .dark-table {
     display: none;
@@ -460,22 +615,36 @@ onMounted(fetchPositions);
     display: block;
   }
 }
-
+.dual-row {
+  background: linear-gradient(
+    90deg,
+    rgba(123, 31, 162, 0.15),
+    rgba(103, 58, 183, 0.25)
+  ) !important;
+  border-left: 3px solid #7e57c2;
+}
+.dual-label {
+  background: linear-gradient(90deg, #7e57c2, #9575cd);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 .mobile-card {
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
   padding: 12px;
   color: #fff;
 }
-
 .mobile-symbol {
   color: #fff;
 }
-
 .chip-group {
   gap: 4px;
 }
-
 .v-chip {
   font-size: 12px !important;
   font-weight: 500 !important;

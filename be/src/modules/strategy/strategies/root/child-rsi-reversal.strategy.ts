@@ -169,7 +169,10 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
           const dynamicMinProfitPct = this.getDynamicMinProfitPct(
             pos?.dcaIndex || 0,
           );
-          return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
+          return (
+            !pos.isDualInvestment &&
+            price >= pos.buyPrice * (1 + dynamicMinProfitPct)
+          );
         });
 
         const enableSell = await this.binanceService.getSettingByKey(
@@ -238,7 +241,7 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.00008;
+    const increment = 0.001;
     return base + dcaIndex * increment;
   }
 

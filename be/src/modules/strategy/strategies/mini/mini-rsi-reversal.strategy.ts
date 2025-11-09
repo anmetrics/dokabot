@@ -167,7 +167,10 @@ export class MiniReversalDcaStrategy implements IStrategy {
           const dynamicMinProfitPct = this.getDynamicMinProfitPct(
             pos?.dcaIndex || 0,
           );
-          return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
+          return (
+            !pos.isDualInvestment &&
+            price >= pos.buyPrice * (1 + dynamicMinProfitPct)
+          );
         });
 
         const enableSell = await this.binanceService.getSettingByKey(

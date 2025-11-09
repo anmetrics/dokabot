@@ -99,6 +99,16 @@ export class BinanceController {
     return this.binanceService.buy(dto);
   }
 
+  @Post('dual')
+  @HttpCode(HttpStatus.OK)
+  dualInvestment(@Body() dto: { id: string; status: number }) {
+    const { id, status } = dto;
+    if (![0, 1].includes(Number(status))) {
+      throw new BadRequestException('Invalid status');
+    }
+    return this.binanceService.dualInvestment(id, !!Number(status));
+  }
+
   @Post('sell')
   @HttpCode(HttpStatus.OK)
   sell(

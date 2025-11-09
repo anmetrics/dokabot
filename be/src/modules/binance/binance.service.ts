@@ -616,6 +616,27 @@ export class BinanceService implements OnModuleInit {
     return data;
   }
 
+  async dualInvestment(id: string, status: boolean) {
+    const position = await this.prismaService.position.findFirst({
+      where: {
+        id,
+        isDualInvestment: !status,
+      },
+    });
+    if (!position) {
+      throw new BadRequestException('Invalid position');
+    }
+
+    await this.prismaService.position.update({
+      where: {
+        id,
+      },
+      data: {
+        isDualInvestment: status,
+      },
+    });
+  }
+
   async sell(id: string, price?: number) {
     const openPosition = await this.prismaService.position.findFirst({
       where: {

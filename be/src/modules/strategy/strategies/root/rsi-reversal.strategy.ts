@@ -159,7 +159,10 @@ export class RsiReversalDcaStrategy implements IStrategy {
           const dynamicMinProfitPct = this.getDynamicMinProfitPct(
             pos?.dcaIndex || 0,
           );
-          return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
+          return (
+            !pos.isDualInvestment &&
+            price >= pos.buyPrice * (1 + dynamicMinProfitPct)
+          );
         });
         if (!sellablePositions.length) {
           return;
