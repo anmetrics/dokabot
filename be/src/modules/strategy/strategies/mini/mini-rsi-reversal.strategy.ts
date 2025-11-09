@@ -12,6 +12,7 @@ import {
 } from 'src/modules/settings/settings.enum';
 import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
 import { IStrategy } from '../../strategy.interface';
+import { SUPER_MINI_RSI_SUFFIX } from './super-mini-rsi-reversal.strategy';
 
 type TimeframeData = {
   closes: number[];
@@ -201,14 +202,21 @@ export class MiniReversalDcaStrategy implements IStrategy {
 
     // Check root positions
 
-    const rootPositions = await this.binanceService.getOpenPositions(
-      this.symbol,
+    const [rootPositions, superMiniPositions] = await Promise.all([
+      this.binanceService.getOpenPositions(this.symbol),
+      this.binanceService.getOpenPositions(this.symbol + SUPER_MINI_RSI_SUFFIX),
+    ]);
+    // eslint-disable-next-line no-unsafe-optional-chaining
+    const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
+    const superMiniMinBuyPrice = Math.min(
+      // eslint-disable-next-line no-unsafe-optional-chaining
+      ...superMiniPositions?.map((p) => p.buyPrice),
     );
 
-    // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
-    const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
-
     if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
+
+    if (superMiniPositions?.length && price > superMiniMinBuyPrice * 0.995)
+      return;
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(

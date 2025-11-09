@@ -215,7 +215,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
     const miniMinBuyPrice = Math.min(...miniPositions?.map((p) => p.buyPrice));
 
     if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
-    if (miniPositions?.length && price > miniMinBuyPrice * 0.994) return;
+    if (miniPositions?.length && price > miniMinBuyPrice * 0.995) return;
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(
