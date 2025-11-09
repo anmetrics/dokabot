@@ -31,7 +31,7 @@ type ReversalPattern = {
 
 @Injectable()
 export class BinanceService implements OnModuleInit {
-  private client: ReturnType<typeof Binance> | null = null;
+  public client: ReturnType<typeof Binance> | null = null;
   private logger = new Logger('BinanceService');
 
   constructor(
