@@ -5,7 +5,11 @@ import { Candle } from 'binance-api-node';
 import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
 import { Position } from 'generated/prisma';
-import { LIST_SYMBOL, SETTING_KEY } from 'src/modules/settings/settings.enum';
+import {
+  getSettingKeyBySymbol,
+  LIST_SYMBOL,
+  SETTING_KEY,
+} from 'src/modules/settings/settings.enum';
 import { IStrategy } from '../../strategy.interface';
 import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
 
@@ -24,7 +28,7 @@ export class RsiReversalDcaStrategy implements IStrategy {
   private maxDcaTimes = 7; // tối đa số lần DCA cho 1 vị thế
   private dcaMultiplier = 2; // mỗi lần DCA sau gấp x.x lần trước
 
-  private DCA_PRICE_DROP_PCT = 0.08;
+  private DCA_PRICE_DROP_PCT = 0.12;
 
   private rsiPeriod = 12;
   private atrPeriod = 12;
@@ -137,12 +141,15 @@ export class RsiReversalDcaStrategy implements IStrategy {
           price < minBuyPrice - lastAtr &&
           price < minBuyPrice * DCA_PERCENT;
 
-        const [enableBuy] = await Promise.all([
+        const [settingMaxBuyPrice, enableBuy] = await Promise.all([
+          this.binanceService.getSettingByKey(
+            getSettingKeyBySymbol(this.symbol),
+          ),
           this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
         ]);
 
         if (openPositions.length === 0 || isDcaValid) {
-          if (enableBuy === 'true') {
+          if (enableBuy === 'true' && price < Number(settingMaxBuyPrice || 0)) {
             await this.buyPosition(price, dcaIndex || 0);
           }
           this.lastTradeTime = now;
@@ -165,6 +172,14 @@ export class RsiReversalDcaStrategy implements IStrategy {
           );
         });
         if (!sellablePositions.length) {
+          return;
+        }
+
+        const enableSell = await this.binanceService.getSettingByKey(
+          SETTING_KEY.ENABLE_SELL,
+        );
+
+        if (!sellablePositions.length || enableSell !== 'true') {
           return;
         }
 
