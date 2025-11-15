@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@binance/spot": "^16.0.1",
+    "@flashbots/ethers-provider-bundle": "^1.0.0",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
@@ -31,10 +32,14 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.0.1",
+    "@nomiclabs/hardhat-ethers": "^2.2.3",
+    "@openzeppelin/contracts": "^5.4.0",
     "@prisma/client": "^5.16.1",
     "binance-api-node": "^0.12.9",
     "class-validator": "^0.14.2",
     "decimal.js": "^10.6.0",
+    "ethers": "6.7.1",
+    "hardhat": "^3.0.15",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^5.16.1",
@@ -66,7 +71,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.3",
+    "typescript": "~5.8.0",
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
@@ -88,5 +93,6 @@
   },
   "engines": {
     "node": "22.19.0"
-  }
+  },
+  "type": "module"
 }
