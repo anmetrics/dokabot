@@ -41,6 +41,10 @@ export class EthereumProvider {
   async sendFlashbots(tx: ethers.TransactionRequest) {
     if (!this.flashbots) throw new Error('Flashbots not ready');
     const block = await this.provider.getBlock('latest');
+
+    if (!block) {
+      throw new Error('Get block error');
+    }
     const target = block.number + 1;
 
     const bundle = [{ signer: this.wallet, transaction: tx }];

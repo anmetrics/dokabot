@@ -5,7 +5,7 @@ import {
   Contract,
   ContractTransaction,
 } from 'ethers';
-import FlashDualArbABI from './FlashDualArb.json';
+import FlashDualArbABI from '../../../../artifacts/contracts/FlashDualArb.sol/FlashDualArb.json';
 
 /* ==========================
    TYPES

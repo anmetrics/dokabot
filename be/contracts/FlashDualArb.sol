@@ -34,7 +34,7 @@ interface IUniswapV2Router02 {
 }
 
 /* ======================================================
-   FLASHDUALARB – SECURE MAINNET VERSION (FIXED)
+   FLASHDUALARB – SECURE MAINNET VERSION (MULTI-ROUTER)
    ====================================================== */
 contract FlashDualArb is ReentrancyGuard {
     using SafeERC20 for IERC20;
@@ -61,7 +61,20 @@ contract FlashDualArb is ReentrancyGuard {
     struct ArbitrageRoute {
         address[] path;
         uint amountOutMin;
+        address router;
     }
+
+    /* ======================================================
+       EVENTS
+       ====================================================== */
+    event RouterUpdated(address router, bool allowed);
+    event ArbitrageExecuted(
+        address indexed user,
+        address indexed repayToken,
+        uint repayTotal,
+        uint profit
+    );
+    event ArbitrageFailed(address indexed user, string reason);
 
     /* ======================================================
        ADMIN FUNCTIONS
@@ -73,7 +86,7 @@ contract FlashDualArb is ReentrancyGuard {
 
     function withdraw(IERC20 token) external onlyOwner {
         uint bal = token.balanceOf(address(this));
-        if (bal > 0) token.safeTransfer(owner, bal);
+        if (bal > 0) SafeERC20.safeTransfer(token, owner, bal);
     }
 
     /* ======================================================
@@ -95,12 +108,12 @@ contract FlashDualArb is ReentrancyGuard {
 
     function _safeApprove(IERC20 token, address spender, uint amount) internal {
         uint current = token.allowance(address(this), spender);
-
         if (current > 0) {
             SafeERC20.safeDecreaseAllowance(token, spender, current);
         }
-
-        SafeERC20.safeIncreaseAllowance(token, spender, amount);
+        if (amount > 0) {
+            SafeERC20.safeIncreaseAllowance(token, spender, amount);
+        }
     }
 
     function _validateBorrow(uint a0, uint a1) internal pure {
@@ -119,17 +132,30 @@ contract FlashDualArb is ReentrancyGuard {
         address router,
         uint minProfit
     ) external onlyOwner {
-        require(allowedRouters[router], 'Router blocked');
-        _validateBorrow(amount0Out, amount1Out);
+        if (!allowedRouters[router]) {
+            emit ArbitrageFailed(msg.sender, 'Router blocked');
+            return;
+        }
+
+        if (amount0Out == 0 && amount1Out == 0) {
+            emit ArbitrageFailed(msg.sender, 'No borrow amount');
+            return;
+        }
+
         _validateRealPair(pair);
 
         address borrowedToken = amount0Out > 0
             ? IUniswapV2Pair(pair).token0()
             : IUniswapV2Pair(pair).token1();
 
-        require(route.length >= 2, 'Route too short');
-        require(route[0] == borrowedToken, 'Wrong route start');
-        require(route[route.length - 1] == repayToken, 'Wrong route end');
+        if (
+            route.length < 2 ||
+            route[0] != borrowedToken ||
+            route[route.length - 1] != repayToken
+        ) {
+            emit ArbitrageFailed(msg.sender, 'Invalid route');
+            return;
+        }
 
         bytes memory data = abi.encode(
             msg.sender,
@@ -152,11 +178,13 @@ contract FlashDualArb is ReentrancyGuard {
         uint amount1Out,
         ArbitrageRoute[] calldata routes,
         address repayToken,
-        address router,
         uint minProfit
     ) external onlyOwner {
-        require(routes.length >= 2, 'Need >=2 routes');
-        require(allowedRouters[router], 'Router blocked');
+        if (routes.length < 2) {
+            emit ArbitrageFailed(msg.sender, 'Need >=2 routes');
+            return;
+        }
+
         _validateBorrow(amount0Out, amount1Out);
         _validateRealPair(pair);
 
@@ -164,26 +192,40 @@ contract FlashDualArb is ReentrancyGuard {
             ? IUniswapV2Pair(pair).token0()
             : IUniswapV2Pair(pair).token1();
 
-        require(routes[0].path[0] == borrowedToken, 'First route mismatch');
-        for (uint i = 0; i < routes.length - 1; i++) {
-            require(
-                routes[i].path[routes[i].path.length - 1] ==
-                    routes[i + 1].path[0],
-                'Broken route'
-            );
+        if (routes[0].path[0] != borrowedToken) {
+            emit ArbitrageFailed(msg.sender, 'First route mismatch');
+            return;
         }
-        require(
-            routes[routes.length - 1].path[
-                routes[routes.length - 1].path.length - 1
-            ] == repayToken,
-            'Last route output mismatch'
-        );
+
+        for (uint i = 0; i < routes.length; i++) {
+            if (!allowedRouters[routes[i].router]) {
+                emit ArbitrageFailed(msg.sender, 'Router blocked');
+                return;
+            }
+            if (i < routes.length - 1) {
+                if (
+                    routes[i].path[routes[i].path.length - 1] !=
+                    routes[i + 1].path[0]
+                ) {
+                    emit ArbitrageFailed(msg.sender, 'Broken route');
+                    return;
+                }
+            } else {
+                if (routes[i].path[routes[i].path.length - 1] != repayToken) {
+                    emit ArbitrageFailed(
+                        msg.sender,
+                        'Last route output mismatch'
+                    );
+                    return;
+                }
+            }
+        }
 
         bytes memory routesBytes = abi.encode(routes);
         bytes memory data = abi.encode(
             msg.sender,
             repayToken,
-            router,
+            address(0),
             minProfit,
             routesBytes,
             uint8(1) // mode=1 → multi
@@ -206,13 +248,11 @@ contract FlashDualArb is ReentrancyGuard {
         (
             address user,
             address repayToken,
-            address router,
+            address routerOrPlaceholder,
             uint minProfit,
             bytes memory extra,
             uint8 mode
         ) = abi.decode(data, (address, address, address, uint, bytes, uint8));
-
-        require(allowedRouters[router], 'Router blocked');
 
         address pair = msg.sender;
         _validateRealPair(pair);
@@ -222,7 +262,6 @@ contract FlashDualArb is ReentrancyGuard {
             : IUniswapV2Pair(pair).token1();
         uint borrowedAmount = amount0 > 0 ? amount0 : amount1;
 
-        // Ensure repayToken is one of the pair tokens
         address token0 = IUniswapV2Pair(pair).token0();
         address token1 = IUniswapV2Pair(pair).token1();
         require(
@@ -230,40 +269,38 @@ contract FlashDualArb is ReentrancyGuard {
             'Repay token invalid'
         );
 
-        /* ---------- Calculate debt (Uniswap 0.3%) ---------- */
         uint fee = (borrowedAmount * 3) / 997 + 1;
         uint repayAmount = borrowedAmount + fee;
-
         uint preBal = IERC20(repayToken).balanceOf(address(this));
 
-        /* ---------- Execute arbitrage ---------- */
         if (mode == 0) {
             _executeSingle(
                 borrowedToken,
                 borrowedAmount,
                 repayToken,
-                router,
-                extra
+                routerOrPlaceholder,
+                extra,
+                user
             );
         } else {
             _executeMulti(
                 borrowedToken,
                 borrowedAmount,
                 repayToken,
-                router,
-                extra
+                extra,
+                user
             );
         }
 
-        /* ---------- Profit & Repay ---------- */
         uint postBal = IERC20(repayToken).balanceOf(address(this));
         require(postBal >= repayAmount, 'Not enough to repay');
 
         uint netGain = postBal - preBal - fee;
         require(netGain >= minProfit, 'Profit < minProfit');
 
-        IERC20(repayToken).safeTransfer(pair, repayAmount);
-        if (netGain > 0) IERC20(repayToken).safeTransfer(user, netGain);
+        SafeERC20.safeTransfer(IERC20(repayToken), pair, repayAmount);
+        if (netGain > 0)
+            SafeERC20.safeTransfer(IERC20(repayToken), user, netGain);
 
         emit ArbitrageExecuted(user, repayToken, repayAmount, netGain);
     }
@@ -276,27 +313,34 @@ contract FlashDualArb is ReentrancyGuard {
         uint amountIn,
         address repayToken,
         address router,
-        bytes memory extra
+        bytes memory extra,
+        address user
     ) internal {
         address[] memory path = abi.decode(extra, (address[]));
-
         _safeApprove(IERC20(borrowedToken), router, amountIn);
 
-        IUniswapV2Router02(router).swapExactTokensForTokens(
-            amountIn,
-            1, // MIN AMOUNT > 0 to avoid MEV attack
-            path,
-            address(this),
-            block.timestamp + 180
-        );
+        try
+            IUniswapV2Router02(router).swapExactTokensForTokens(
+                amountIn,
+                1,
+                path,
+                address(this),
+                block.timestamp + 180
+            )
+        returns (uint[] memory out) {
+            // success
+        } catch {
+            revert('Swap failed');
+            emit ArbitrageFailed(user, 'Single swap failed');
+        }
     }
 
     function _executeMulti(
         address borrowedToken,
         uint amountIn,
         address repayToken,
-        address router,
-        bytes memory extra
+        bytes memory extra,
+        address user
     ) internal {
         ArbitrageRoute[] memory routes = abi.decode(extra, (ArbitrageRoute[]));
 
@@ -305,33 +349,32 @@ contract FlashDualArb is ReentrancyGuard {
 
         for (uint i = 0; i < routes.length; i++) {
             ArbitrageRoute memory r = routes[i];
-            require(r.path[0] == currentToken, 'Path mismatch');
+            if (r.path[0] != currentToken) {
+                emit ArbitrageFailed(user, 'Path mismatch in multi swap');
+                return;
+            }
+            if (!allowedRouters[r.router]) {
+                emit ArbitrageFailed(user, 'Router blocked in multi swap');
+                return;
+            }
 
-            _safeApprove(IERC20(currentToken), router, amount);
+            _safeApprove(IERC20(currentToken), r.router, amount);
 
-            uint[] memory out = IUniswapV2Router02(router)
-                .swapExactTokensForTokens(
+            try
+                IUniswapV2Router02(r.router).swapExactTokensForTokens(
                     amount,
                     r.amountOutMin,
                     r.path,
                     address(this),
                     block.timestamp + 180
-                );
-
-            amount = out[out.length - 1];
-            currentToken = r.path[r.path.length - 1];
+                )
+            returns (uint[] memory out) {
+                amount = out[out.length - 1];
+                currentToken = r.path[r.path.length - 1];
+            } catch {
+                emit ArbitrageFailed(user, 'Multi swap failed');
+                return;
+            }
         }
     }
-
-    /* ======================================================
-       EVENTS
-       ====================================================== */
-    event RouterUpdated(address router, bool allowed);
-
-    event ArbitrageExecuted(
-        address indexed user,
-        address indexed repayToken,
-        uint repayTotal,
-        uint profit
-    );
 }
