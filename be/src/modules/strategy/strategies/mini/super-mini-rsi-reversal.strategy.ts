@@ -263,8 +263,8 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.001;
-    return base + dcaIndex * increment;
+    const increment = 0.0007;
+    return Math.max(base + dcaIndex * increment, 0.004);
   }
 
   private async sellPosition(pos: Position, price: number, timeframe: string) {

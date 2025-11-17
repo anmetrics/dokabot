@@ -242,7 +242,7 @@ export class ChildRsiReversalDcaStrategy implements IStrategy {
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
     const increment = 0.001;
-    return base + dcaIndex * increment;
+    return Math.max(base + dcaIndex * increment, 0.007);
   }
 
   private async sellPosition(pos: Position, price: number, timeframe: string) {
