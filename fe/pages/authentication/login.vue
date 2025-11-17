@@ -55,7 +55,11 @@ const error = ref("");
 const loading = ref(false);
 
 const api = useApi();
-const authToken = useCookie("auth_token");
+const authToken = useCookie("auth_token", {
+  maxAge: 60 * 60 * 24 * 30, // 30d
+  sameSite: "none",
+  secure: true,
+});
 
 const onLogin = async () => {
   error.value = "";

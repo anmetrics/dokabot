@@ -2,7 +2,11 @@ import ky from "ky-universal";
 import { useCookie } from "#app";
 
 export function useApi() {
-  const authToken = useCookie("auth_token");
+  const authToken = useCookie("auth_token", {
+    maxAge: 60 * 60 * 24 * 30, // 30d
+    sameSite: "none",
+    secure: true,
+  });
 
   const api = ky.create({
     prefixUrl: "https://api.dokasan.com",

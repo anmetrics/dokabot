@@ -13,12 +13,30 @@
       >
         Doka
       </v-toolbar-title>
+
       <v-spacer />
 
-      <!-- Logout -->
-      <v-btn icon @click="logout" aria-label="Logout" class="mr-1">
-        <v-icon size="20">mdi-logout</v-icon>
-      </v-btn>
+      <div class="d-flex align-center">
+        <v-btn
+          class="import-wallet-btn text-none font-weight-bold text-white position-relative overflow-hidden mr-4"
+          @click="navigate('/import-wallet')"
+        >
+          <span class="btn-content d-flex align-center text-white">
+            <v-icon start size="22" color="white"
+              >mdi-wallet-plus-outline</v-icon
+            >
+            Import ví
+          </span>
+
+          <!-- Shine effect -->
+          <span class="shine"></span>
+        </v-btn>
+
+        <!-- Logout -->
+        <v-btn icon @click="logout" aria-label="Logout">
+          <v-icon size="20">mdi-logout</v-icon>
+        </v-btn>
+      </div>
     </v-app-bar>
 
     <!-- Navigation Drawer (desktop) -->
@@ -91,7 +109,11 @@ import { useCookie } from "#app";
 const router = useRouter();
 const route = useRoute();
 const theme = useTheme();
-const authToken = useCookie("auth_token");
+const authToken = useCookie("auth_token", {
+  maxAge: 60 * 60 * 24 * 30,
+  sameSite: "none",
+  secure: true,
+});
 
 const logout = () => {
   authToken.value = "";
@@ -103,8 +125,14 @@ const currentTab = ref(route.path);
 
 const menuItems = [
   { title: "Home", short: "Home", icon: "mdi-home-outline", to: "/" },
-  // { title: "Market", short: "Market", icon: "mdi-home-outline", to: "/market" },
+  { title: "My bot", short: "My bot", icon: "mdi-home-outline", to: "/my-bot" },
   { title: "Buy crypto", short: "Buy", icon: "mdi-cash-plus", to: "/buy" },
+  {
+    title: "Wallet",
+    short: "Wallet",
+    icon: "mdi-wallet-outline",
+    to: "/wallet",
+  },
   {
     title: "Assets",
     short: "Assets",
@@ -131,7 +159,6 @@ const menuItems = [
   },
 ];
 
-// Filter out "Home" for mobile bottom navigation
 const mobileMenuItems = computed(() =>
   menuItems.filter((item) => item.to !== "/")
 );
@@ -141,10 +168,6 @@ const navigate = (path: string) => {
   currentTab.value = path;
   router.push(path);
 };
-
-const isDark = computed(() => theme.global.name.value === "dark");
-const toggleTheme = () =>
-  (theme.global.name.value = isDark.value ? "light" : "dark");
 </script>
 
 <style scoped>
@@ -155,59 +178,106 @@ const toggleTheme = () =>
   border-bottom: 1px solid #2a3b4c;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
   backdrop-filter: blur(8px);
-  padding: 0 8px;
+  padding: 0 16px;
+  height: 64px !important;
 }
+
+.import-wallet-btn {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 4px 8px !important;
+  height: 32px !important;
+  font-size: 0.95rem;
+  letter-spacing: 0.8px;
+  background: #096fd6;
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 1;
+}
+
+.import-wallet-btn:hover {
+  transform: translateY(-2px) scale(1.01);
+}
+
+.import-wallet-btn::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  bottom: -1px;
+  animation: borderSpin 6s linear infinite;
+  z-index: -1;
+  opacity: 0.8;
+}
+
+/* Hiệu ứng sáng lướt qua khi hover */
+.shine {
+  position: absolute;
+  top: -50%;
+  left: -100%;
+  width: 50px;
+  height: 200%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.5),
+    transparent
+  );
+  transform: rotate(30deg);
+  transition: left 0.8s;
+}
+
+.import-wallet-btn:hover .shine {
+  left: 120%;
+  transition: left 0.8s;
+}
+
+/* Animation */
+@keyframes gradientMove {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes borderSpin {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 0%;
+  }
+}
+
+/* Responsive: Mobile vẫn đẹp */
+@media (max-width: 600px) {
+  .import-wallet-btn {
+    padding: 10px 20px !important;
+    font-size: 0.9rem;
+    height: 44px !important;
+  }
+  .import-wallet-btn .v-icon {
+    font-size: 20px !important;
+  }
+}
+
+/* Các style cũ giữ nguyên */
 .crypto-title {
   font-size: 0.95rem;
   user-select: none;
   cursor: pointer;
 }
-
-/* Drawer */
 .crypto-drawer {
   background: linear-gradient(180deg, #0d1a26 0%, #1a2635 100%);
   color: #d0d0d0;
   border-right: 1px solid #2a3b4c;
-  transition: width 0.25s ease;
 }
-.crypto-list-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  height: 46px;
-  padding: 2px 14px;
-  border-radius: 10px;
-  margin: 6px 4px;
-  transition: all 0.25s ease;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-.crypto-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(4px);
-}
-.crypto-list-item--active {
-  background: linear-gradient(
-    90deg,
-    rgba(79, 195, 247, 0.3),
-    rgba(79, 195, 247, 0.1)
-  );
-  color: #4fc3f7;
-  box-shadow: inset 0 0 6px rgba(79, 195, 247, 0.3);
-}
-.crypto-list-icon {
-  transition: all 0.25s ease;
-  font-size: 18px;
-}
-.crypto-list-item:hover .crypto-list-icon {
-  transform: scale(1.1);
-  color: #4fc3f7;
-}
-.crypto-list-item--active .crypto-list-icon {
-  color: #4fc3f7;
-}
-
-/* Main content */
 .crypto-main {
   background: linear-gradient(180deg, #121f2e 0%, #1c2a3b 100%);
   color: #d0d0d0;
@@ -215,48 +285,7 @@ const toggleTheme = () =>
   padding-bottom: 56px;
 }
 
-/* Bottom navigation (mobile) */
-.crypto-bottom-nav {
-  background: linear-gradient(180deg, #0d1a26 0%, #1a2635 100%) !important;
-  border-top: 1px solid #2a3b4c;
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.25);
-  position: fixed;
-  bottom: 0;
-  padding: 0 6px; /* khoảng cách 2 bên */
-}
-
-.crypto-bottom-btn {
-  flex: 1;
-  min-width: 36px; /* giảm min-width */
-  padding: 0 2px;
-  flex-direction: column;
-  font-size: 0.7rem;
-  text-transform: none;
-}
-
-.crypto-bottom-icon {
-  font-size: 18px;
-  transition: transform 0.25s ease;
-}
-
-.crypto-bottom-label {
-  font-size: 10px;
-  margin-top: 1px;
-  color: #a0a0a0;
-  transition: color 0.25s ease;
-}
-
-.crypto-bottom-label.active {
-  color: #4fc3f7;
-  font-weight: 500;
-}
-
-.crypto-bottom-btn:hover .crypto-bottom-icon {
-  transform: scale(1.1);
-  color: #4fc3f7;
-}
-
-/* Hide/show responsive */
+/* Bottom nav & responsive */
 .d-sm-none {
   display: none;
 }
