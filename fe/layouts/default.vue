@@ -159,6 +159,8 @@ const toggleTheme = () =>
 }
 .crypto-title {
   font-size: 0.95rem;
+  user-select: none;
+  cursor: pointer;
 }
 
 /* Drawer */
