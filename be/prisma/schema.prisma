@@ -14,6 +14,142 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  apiKeys   Exchange[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  autoTrade     Boolean  @default(false) 
+
+    subscription  Subscription?
+
+  @@map("user")
+}
+
+enum Token {
+  USDT
+  USDC
+}
+
+model Loan {
+  id           String   @id @default(uuid())
+  token        Token  
+  amount       Float  
+  interestRate Float
+  startDate    DateTime @default(now())
+  endDate      DateTime
+  status       String   @default("ACTIVE") // ACTIVE, CLOSED
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime? @updatedAt
+
+  repayments Repayment[]
+}
+
+
+model Plan {
+  id          String   @id @default(uuid())
+  name        String   // ví dụ: Basic, Pro, Premium
+  description String?
+  price       Float    // ví dụ 4.0
+  interval    String   // "month", "year"
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  subscriptions Subscription[]
+}
+
+model Subscription {
+  id        String   @id @default(uuid())
+  userId    String
+  planId    String
+  status    String   // ACTIVE, CANCELED, PAST_DUE
+  startDate DateTime
+  endDate   DateTime
+  cancelAt  DateTime? // nếu user hủy trước hạn
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
+}
+
+
+model Payment {
+  id             String   @id @default(uuid())
+  userId         String
+  subscriptionId String?
+  amount         Float
+  currency       String   // "USD"
+  status         String   // PAID, FAILED, PENDING
+  paymentMethod  String?  // Stripe, PayPal...
+  transactionId  String?  // id từ provider
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime? @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+  subscription Subscription? @relation(fields: [subscriptionId], references: [id])
+}
+
+model Exchange {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  apiKey    String
+  apiSecret String
+  createdAt DateTime @default(now())
+  updatedAt DateTime? @updatedAt
+
+  positions Position[]
+  orders    Order[]
+
+    @@map("exchange")
+}
+
+
+model Strategy {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime? @updatedAt
+
+  configs StrategyConfig[]
+}
+
+model StrategyConfig {
+  id         String   @id @default(uuid())
+  strategyId String
+  key        String   
+  value      String  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  strategy Strategy @relation(fields: [strategyId], references: [id])
+}
+
+
+model Order {
+  id         String   @id @default(uuid())
+  positionId String
+  exchangeId String
+  type       String   // BUY, SELL
+  price      Float
+  qty        Float
+  status     String   // PENDING, FILLED, CANCELED
+  orderId    String   // ID từ exchange
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  position Position @relation(fields: [positionId], references: [id])
+  exchange Exchange @relation(fields: [exchangeId], references: [id])
+
+  @@map("orders")
+}
+
+
+
 model Setting {
   id         String   @id @default(uuid())
   key        String   @unique @map("key")      
