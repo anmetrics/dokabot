@@ -30,8 +30,8 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
   // === CONFIG ===
   private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
 
-  private rsiPeriod = 8;
-  private atrPeriod = 8;
+  private rsiPeriod = 9;
+  private atrPeriod = 9;
 
   private rsiBuyThreshold = 18;
 
