@@ -36,7 +36,7 @@
               <v-divider class="divider my-6" />
 
               <!-- ROOT SETTINGS -->
-              <div class="group-box mb-8" v-if="rootSettings.length">
+              <div class="group-box mb-8">
                 <div class="group-header">
                   <v-icon color="amber lighten-3" size="22" class="mr-2">
                     mdi-currency-usd
@@ -386,11 +386,11 @@ const snackbar = ref({
   color: "success",
 });
 
-// Root, PAXG, MINI, SUPER_MINI keys
+// Keys
 const ROOT_KEYS = [
   "ENABLE_BUY",
   "ENABLE_SELL",
-  "ENABLE_FUTURE", // thêm key mới
+  "ENABLE_FUTURE",
   "MAX_BNB_PRICE",
   "MAX_SOL_PRICE",
   "MAX_BTC_PRICE",

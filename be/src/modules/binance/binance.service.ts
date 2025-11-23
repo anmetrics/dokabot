@@ -12,6 +12,7 @@ import Binance, {
   OrderSide,
   OrderSide_LT,
   OrderType,
+  PositionSide_LT,
 } from 'binance-api-node';
 import { OrderbookEvent } from './events/orderbook.event';
 import { MarketTrend } from './binance.enum';
@@ -201,6 +202,21 @@ export class BinanceService implements OnModuleInit {
     return this.client.candles({ symbol, interval, limit });
   }
 
+  async getFuturesHistoricalCandles(
+    symbol: string,
+    interval: CandleChartInterval_LT = '1m',
+    limit = 500,
+  ) {
+    if (!this.client) throw new Error('Client not initialized');
+    // binance-api-node provides client.candles
+    // returns array of { openTime, open, high, low, close, volume, closeTime, ...}
+    return this.client.futuresCandles({
+      symbol,
+      interval,
+      limit,
+    });
+  }
+
   // NEW: subscribe to kline/candles via websocket
   subscribeCandles(
     symbol: string,
@@ -214,6 +230,27 @@ export class BinanceService implements OnModuleInit {
       // We'll only call cb when candle.isFinal === true to avoid painting on partial bars
       if (candle.isFinal) cb(candle);
     });
+    // client.ws.candles returns an unsubscribe function
+    return unsub as () => void;
+  }
+
+  // NEW: subscribe to kline/candles via websocket
+  subscribeFuturesCandles(
+    symbol: string,
+    interval = '1m',
+    cb: (candle: Candle) => void,
+  ) {
+    if (!this.client) throw new Error('Client not initialized');
+    const lowercase = symbol.toLowerCase();
+    const unsub = this.client.ws.futuresCandles(
+      lowercase,
+      interval,
+      (candle) => {
+        // candle structure from binance-api-node: { isFinal, open, high, low, close, ... }
+        // We'll only call cb when candle.isFinal === true to avoid painting on partial bars
+        if (candle.isFinal) cb(candle);
+      },
+    );
     // client.ws.candles returns an unsubscribe function
     return unsub as () => void;
   }
@@ -804,7 +841,7 @@ export class BinanceService implements OnModuleInit {
     );
   }
 
-  async closeFuturesPosition(symbol: string, side: 'LONG' | 'SHORT') {
+  async closeFuturesPosition(symbol: string, side: PositionSide_LT) {
     const positions = await this.getFuturesPositions(symbol);
 
     if (!positions || !positions.length) return;
