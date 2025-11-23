@@ -27,7 +27,7 @@
       <v-col cols="12" md="9">
         <v-card class="pa-2 rounded-xl main-card">
           <v-tabs-window v-model="activeTab">
-            <!-- ========== GENERAL SETTINGS ========== -->
+            <!-- GENERAL SETTINGS -->
             <v-tabs-window-item value="general">
               <v-card-title class="section-title">
                 <v-icon color="primary" class="mr-2">mdi-tune-variant</v-icon>
@@ -35,7 +35,7 @@
               </v-card-title>
               <v-divider class="divider my-6" />
 
-              <!-- 🟩 ROOT SETTINGS -->
+              <!-- ROOT SETTINGS -->
               <div class="group-box mb-8" v-if="rootSettings.length">
                 <div class="group-header">
                   <v-icon color="amber lighten-3" size="22" class="mr-2">
@@ -46,7 +46,7 @@
 
                 <!-- ENABLE Switchers -->
                 <v-row>
-                  <v-col cols="12" md="6" class="py-2">
+                  <v-col cols="12" md="4" class="py-2">
                     <v-switch
                       :model-value="getBool('ENABLE_BUY')"
                       @update:modelValue="updateSetting('ENABLE_BUY', $event!)"
@@ -57,7 +57,7 @@
                       class="switch-custom"
                     />
                   </v-col>
-                  <v-col cols="12" md="6" class="py-2">
+                  <v-col cols="12" md="4" class="py-2">
                     <v-switch
                       :model-value="getBool('ENABLE_SELL')"
                       color="primary"
@@ -66,6 +66,21 @@
                       hide-details
                       class="switch-custom"
                       @update:modelValue="updateSetting('ENABLE_SELL', $event!)"
+                    />
+                  </v-col>
+                  <v-col cols="12" md="4" class="py-2">
+                    <v-switch
+                      :model-value="getBool('ENABLE_FUTURE')"
+                      color="primary"
+                      inset
+                      :label="`Futures: ${
+                        getBool('ENABLE_FUTURE') ? 'Bật' : 'Tắt'
+                      }`"
+                      hide-details
+                      class="switch-custom"
+                      @update:modelValue="
+                        updateSetting('ENABLE_FUTURE', $event!)
+                      "
                     />
                   </v-col>
                 </v-row>
@@ -93,7 +108,7 @@
                 </v-row>
               </div>
 
-              <!-- 🟨 PAXG SETTINGS -->
+              <!-- PAXG SETTINGS -->
               <div class="group-box mb-8" v-if="paxgSettings.length">
                 <div class="group-header" style="color: #ffca28">
                   <v-icon color="amber" size="22" class="mr-2">mdi-gold</v-icon>
@@ -122,7 +137,7 @@
                 </v-row>
               </div>
 
-              <!-- 🟪 MINI + SUPER MINI SETTINGS -->
+              <!-- MINI & SUPER MINI SETTINGS -->
               <div
                 class="group-box mb-8"
                 v-if="miniSettings.length || superMiniSettings.length"
@@ -134,7 +149,7 @@
                   <span>Mini & Super Mini Settings</span>
                 </div>
 
-                <!-- 🌐 COMMON MINI FIELDS -->
+                <!-- MINI COMMON FIELDS -->
                 <v-row v-if="miniCommonFields.length">
                   <v-col
                     v-for="item in miniCommonFields"
@@ -156,7 +171,7 @@
                   </v-col>
                 </v-row>
 
-                <!-- 🟪 MINI SETTINGS -->
+                <!-- MINI SETTINGS -->
                 <div v-if="miniSettings.length" class="mt-8">
                   <div class="group-header" style="color: #ce93d8">
                     <v-icon color="secondary" size="22" class="mr-2">
@@ -219,7 +234,7 @@
                   </v-row>
                 </div>
 
-                <!-- 🟥 SUPER MINI SETTINGS -->
+                <!-- SUPER MINI SETTINGS -->
                 <div v-if="superMiniSettings.length" class="mt-8">
                   <div class="group-header" style="color: #f48fb1">
                     <v-icon color="pink" size="22" class="mr-2">
@@ -300,7 +315,7 @@
               </div>
             </v-tabs-window-item>
 
-            <!-- Other tabs -->
+            <!-- Advanced -->
             <v-tabs-window-item value="advanced">
               <v-card-title class="section-title">
                 <v-icon color="primary" class="mr-2">mdi-cog-outline</v-icon>
@@ -310,6 +325,7 @@
               <p class="text-grey">Advanced settings here.</p>
             </v-tabs-window-item>
 
+            <!-- Security -->
             <v-tabs-window-item value="security">
               <v-card-title class="section-title">
                 <v-icon color="primary" class="mr-2"
@@ -370,18 +386,17 @@ const snackbar = ref({
   color: "success",
 });
 
-// 🧩 Nhóm key theo định nghĩa
+// Root, PAXG, MINI, SUPER_MINI keys
 const ROOT_KEYS = [
   "ENABLE_BUY",
   "ENABLE_SELL",
+  "ENABLE_FUTURE", // thêm key mới
   "MAX_BNB_PRICE",
   "MAX_SOL_PRICE",
   "MAX_BTC_PRICE",
   "DCA_WHEN_DROP_PERCENT",
 ];
-
 const PAXG_KEYS = ["MAX_PAXG_PRICE", "PAXG_BUY_AMOUNT"];
-
 const MINI_KEYS = [
   "ENABLE_BUY_MINI",
   "ENABLE_SELL_MINI",
@@ -391,7 +406,6 @@ const MINI_KEYS = [
   "DCA_WHEN_DROP_PERCENT_MINI",
   "MINI_BUY_AMOUNT",
 ];
-
 const SUPER_MINI_KEYS = [
   "ENABLE_BUY_SUPERMINI",
   "ENABLE_SELL_SUPERMINI",
@@ -402,7 +416,7 @@ const SUPER_MINI_KEYS = [
   "SUPER_MINI_BUY_AMOUNT",
 ];
 
-// 🧮 Phân loại setting
+// Computed groups
 const rootSettings = computed(() =>
   settings.value
     .filter((s) => ROOT_KEYS.includes(s.key))
@@ -426,7 +440,7 @@ const superMiniSettings = computed(() =>
     )
 );
 
-// 🧩 Sub fields
+// Sub-fields
 const rootFields = computed(() =>
   rootSettings.value.filter((s) => !s.key.startsWith("ENABLE"))
 );
@@ -451,7 +465,7 @@ const superMiniFields = computed(() =>
   superMiniSettings.value.filter((s) => !s.key.startsWith("ENABLE"))
 );
 
-// ✅ Helpers
+// Helpers
 function getBool(key: string) {
   const s = settings.value.find((x) => x.key === key);
   return s?.value === true || s?.value === "true";
@@ -462,7 +476,7 @@ function updateSetting(key: string, value: string | boolean) {
   if (s) s.value = value;
 }
 
-// 🔄 Fetch API
+// Fetch settings
 async function fetchSettings() {
   loading.value = true;
   try {
@@ -477,7 +491,7 @@ async function fetchSettings() {
   }
 }
 
-// 💾 Save all
+// Save all
 const hasChanges = computed(
   () => JSON.stringify(settings.value) !== JSON.stringify(initialSettings.value)
 );

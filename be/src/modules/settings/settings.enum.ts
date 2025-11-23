@@ -20,6 +20,7 @@ export const SETTING_KEY = keyMirror({
   PAXG_BUY_AMOUNT: null,
   MINI_BUY_AMOUNT: null,
   SUPER_MINI_BUY_AMOUNT: null,
+  ENABLE_FUTURE: null,
 });
 
 export type SETTING_KEY = keyof typeof SETTING_KEY;

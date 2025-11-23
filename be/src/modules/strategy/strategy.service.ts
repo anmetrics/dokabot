@@ -9,6 +9,7 @@ import { GoldReversalDcaStrategy } from './strategies/gold-rsi-reversal.strategy
 import { RsiReversalDcaStrategy } from './strategies/root/rsi-reversal.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini/mini-rsi-reversal.strategy';
 import { SuperMiniReversalDcaStrategy } from './strategies/mini/super-mini-rsi-reversal.strategy';
+import { FuturesEmaAtrStrategy } from './strategies/futures/future.strategy';
 
 @Injectable()
 export class StrategyService {
@@ -30,6 +31,8 @@ export class StrategyService {
   private supermini3: IStrategy;
 
   private goldStrategy1: IStrategy;
+
+  private future: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -144,6 +147,9 @@ export class StrategyService {
       0.0042,
     );
 
+    // Futures
+    this.future = new FuturesEmaAtrStrategy(this.binanceService);
+
     // Normal
     this.strategy1.startAll();
     this.strategy2.startAll();
@@ -166,6 +172,9 @@ export class StrategyService {
 
     // Gold
     this.goldStrategy1.startAll();
+
+    // Future
+    this.future.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }

@@ -66,6 +66,7 @@ export class BinanceService implements OnModuleInit {
       [SETTING_KEY.DCA_WHEN_DROP_PERCENT_SUPERMINI]: '0.03',
       [SETTING_KEY.MAX_PAXG_PRICE]: '4000',
       [SETTING_KEY.PAXG_BUY_AMOUNT]: '100',
+      [SETTING_KEY.ENABLE_FUTURE]: 'true',
     };
 
     const missingKeys = Object.keys(SETTING_KEY).filter(
@@ -774,5 +775,58 @@ export class BinanceService implements OnModuleInit {
       },
     });
     return setting?.value;
+  }
+
+  // =======================
+  // Futures Trading
+  // =======================
+  async placeFuturesMarketOrder(
+    symbol: string,
+    side: 'BUY' | 'SELL',
+    qty: number,
+  ) {
+    if (!this.client) return;
+
+    const o = await this.client.futuresOrder({
+      symbol,
+      side,
+      type: 'MARKET',
+      quantity: qty.toString(),
+    });
+    return o as unknown as Order;
+  }
+
+  async getFuturesPositions(symbol: string) {
+    if (!this.client) return;
+    const account = await this.client.futuresAccountInfo();
+    return account.positions.filter(
+      (p) => p.symbol === symbol && parseFloat(p.positionAmt) !== 0,
+    );
+  }
+
+  async closeFuturesPosition(symbol: string, side: 'LONG' | 'SHORT') {
+    const positions = await this.getFuturesPositions(symbol);
+
+    if (!positions || !positions.length) return;
+
+    const pos = positions.find((p) =>
+      side === 'LONG'
+        ? parseFloat(p.positionAmt) > 0
+        : parseFloat(p.positionAmt) < 0,
+    );
+    if (!pos) return null;
+
+    const closeSide = side === 'LONG' ? 'SELL' : 'BUY';
+    const qty = Math.abs(parseFloat(pos.positionAmt));
+
+    return await this.placeFuturesMarketOrder(symbol, closeSide, qty);
+  }
+
+  async getRevenueFromFuturesOrder(order: Order, symbol: string) {
+    if (!this.client) return;
+
+    const trades = await this.client.futuresUserTrades({ symbol });
+    const related = trades.filter((t) => t.orderId === order.orderId);
+    return related.reduce((acc, t) => acc + Number(t.realizedPnl), 0);
   }
 }
