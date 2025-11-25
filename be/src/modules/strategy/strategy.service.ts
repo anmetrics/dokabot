@@ -150,31 +150,31 @@ export class StrategyService {
     // Futures
     this.future = new FuturesEmaStrategy(this.binanceService);
 
-    // Normal
-    this.strategy1.startAll();
-    this.strategy2.startAll();
-    this.strategy3.startAll();
+    // // Normal
+    // this.strategy1.startAll();
+    // this.strategy2.startAll();
+    // this.strategy3.startAll();
 
-    // Child strategy
-    this.childStrategy1.startAll();
-    this.childStrategy2.startAll();
-    this.childStrategy3.startAll();
+    // // Child strategy
+    // this.childStrategy1.startAll();
+    // this.childStrategy2.startAll();
+    // this.childStrategy3.startAll();
 
-    // Mini
-    this.mini1.startAll();
-    this.mini2.startAll();
-    this.mini3.startAll();
+    // // Mini
+    // this.mini1.startAll();
+    // this.mini2.startAll();
+    // this.mini3.startAll();
 
-    // Supermini
-    this.supermini1.startAll();
-    this.supermini2.startAll();
-    this.supermini3.startAll();
+    // // Supermini
+    // this.supermini1.startAll();
+    // this.supermini2.startAll();
+    // this.supermini3.startAll();
 
-    // Gold
-    this.goldStrategy1.startAll();
+    // // Gold
+    // this.goldStrategy1.startAll();
 
     // Future
-    this.future.startAll();
+    // this.future.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }

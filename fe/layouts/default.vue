@@ -1,82 +1,74 @@
 <template>
-  <v-app dark>
-    <!-- App Bar -->
-    <v-app-bar flat class="crypto-app-bar">
+  <v-app dark class="app-wrapper">
+    <!-- TOP BAR -->
+    <v-app-bar flat height="54" class="app-bar-glass">
       <v-app-bar-nav-icon
         @click="drawer = !drawer"
-        class="ml-2 d-none d-sm-flex"
+        class="bar-icon d-none d-sm-flex"
       />
-      <v-toolbar-title
-        class="font-weight-bold text-uppercase crypto-title"
-        style="cursor: pointer"
-        @click="navigate('/')"
+
+      <v-toolbar-title @click="navigate('/')" class="brand"
+        >Doka</v-toolbar-title
       >
-        Doka
-      </v-toolbar-title>
+
       <v-spacer />
 
+      <!-- Toggle Theme -->
+      <v-btn icon @click="toggleTheme">
+        <v-icon size="20">mdi-weather-night</v-icon>
+      </v-btn>
+
       <!-- Logout -->
-      <v-btn icon @click="logout" aria-label="Logout" class="mr-1">
-        <v-icon size="20">mdi-logout</v-icon>
+      <v-btn icon class="logout-btn" @click="logout">
+        <v-icon size="22">mdi-logout</v-icon>
       </v-btn>
     </v-app-bar>
 
-    <!-- Navigation Drawer (desktop) -->
+    <!-- DRAWER Desktop -->
     <v-navigation-drawer
-      v-model="drawer"
       app
-      width="220"
-      class="crypto-drawer d-none d-sm-flex"
+      v-model="drawer"
+      width="230"
+      class="drawer-glass d-none d-sm-flex"
     >
-      <v-list dense nav class="pa-2">
+      <v-list density="compact" class="mt-3">
         <v-list-item
           v-for="item in menuItems"
-          :key="item.title"
-          :to="item.to"
-          :class="[
-            'crypto-list-item',
-            { 'crypto-list-item--active': isActive(item.to) },
-          ]"
+          :key="item.to"
           @click="navigate(item.to)"
+          :class="['menu-item', { active: isActive(item.to) }]"
         >
-          <v-icon class="crypto-list-icon" size="20">{{ item.icon }}</v-icon>
-          <v-list-item-title class="crypto-list-title">
-            {{ item.title }}
-          </v-list-item-title>
+          <div class="menu-item-container">
+            <v-icon size="22">{{ item.icon }}</v-icon>
+            <span>{{ item.title }}</span>
+          </div>
         </v-list-item>
       </v-list>
-      <v-divider class="my-2" />
     </v-navigation-drawer>
 
-    <!-- Main content -->
-    <v-main class="crypto-main">
+    <!-- MAIN PAGE -->
+    <v-main class="content-layer">
       <NuxtPage />
     </v-main>
 
-    <!-- Bottom Navigation (mobile) -->
+    <!-- MOBILE Floating Bottom Navigation -->
     <v-bottom-navigation
       v-model="currentTab"
       app
-      color="#162537"
-      height="56"
-      class="crypto-bottom-nav d-sm-none"
+      elevation="0"
+      class="bottom-float-nav d-sm-none"
     >
       <v-btn
         v-for="item in mobileMenuItems"
         :key="item.title"
-        @click="navigate(item.to)"
         :value="item.to"
-        class="crypto-bottom-btn"
+        @click="navigate(item.to)"
+        class="nav-btn"
       >
-        <v-icon
-          :color="isActive(item.to) ? '#4fc3f7' : '#a0a0a0'"
-          class="crypto-bottom-icon"
-        >
-          {{ item.icon }}
-        </v-icon>
-        <span :class="['crypto-bottom-label', { active: isActive(item.to) }]">
-          {{ item.short || item.title }}
-        </span>
+        <v-icon :class="{ active: isActive(item.to) }">{{ item.icon }}</v-icon>
+        <span :class="{ active: isActive(item.to) }">{{
+          item.short || item.title
+        }}</span>
       </v-btn>
     </v-bottom-navigation>
   </v-app>
@@ -93,6 +85,7 @@ const route = useRoute();
 const theme = useTheme();
 const authToken = useCookie("auth_token");
 
+/** 👉 Logout */
 const logout = () => {
   authToken.value = "";
   navigateTo("/login");
@@ -101,10 +94,10 @@ const logout = () => {
 const drawer = ref(true);
 const currentTab = ref(route.path);
 
+/** Menu Navigation */
 const menuItems = [
   { title: "Home", short: "Home", icon: "mdi-home-outline", to: "/" },
-  // { title: "Market", short: "Market", icon: "mdi-home-outline", to: "/market" },
-  { title: "Buy crypto", short: "Buy", icon: "mdi-cash-plus", to: "/buy" },
+  { title: "Buy Crypto", short: "Buy", icon: "mdi-cash-plus", to: "/buy" },
   {
     title: "Assets",
     short: "Assets",
@@ -131,7 +124,7 @@ const menuItems = [
   },
 ];
 
-// Filter out "Home" for mobile bottom navigation
+/** Bottom menu (No HOME) */
 const mobileMenuItems = computed(() =>
   menuItems.filter((item) => item.to !== "/")
 );
@@ -142,119 +135,127 @@ const navigate = (path: string) => {
   router.push(path);
 };
 
+/** Theme Dark Mode Toggle */
 const isDark = computed(() => theme.global.name.value === "dark");
 const toggleTheme = () =>
   (theme.global.name.value = isDark.value ? "light" : "dark");
 </script>
 
 <style scoped>
-/* App bar */
-.crypto-app-bar {
-  background: linear-gradient(135deg, #162537 0%, #1e2a40 60%, #0f1721 100%);
-  color: #d0d0d0;
-  border-bottom: 1px solid #2a3b4c;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
-  backdrop-filter: blur(8px);
-  padding: 0 8px;
-}
-.crypto-title {
-  font-size: 0.95rem;
+/* --- GLOBAL DARK UI --- */
+.app-wrapper {
+  background: #0e121a;
+  color: #cfd8dc;
+  font-family: Inter, sans-serif;
+  letter-spacing: 0.15px;
 }
 
-/* Drawer */
-.crypto-drawer {
-  background: linear-gradient(180deg, #0d1a26 0%, #1a2635 100%);
-  color: #d0d0d0;
-  border-right: 1px solid #2a3b4c;
-  transition: width 0.25s ease;
+/* --- TOP BAR --- */
+.app-bar-glass {
+  background: rgba(15, 18, 28, 0.55);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
-.crypto-list-item {
+.brand {
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 1.1rem;
+  letter-spacing: 0.5px;
+  transition: 0.25s;
+}
+.brand:hover {
+  color: #4fc3f7;
+  transform: scale(1.07);
+}
+
+/* --- ICON HOVER EFFECT --- */
+.bar-icon:hover {
+  color: #4fc3f7;
+  transform: scale(1.12);
+}
+.logout-btn:hover v-icon {
+  color: #ff7675;
+  transform: scale(1.14);
+}
+
+/* --- DRAWER | SIDE MENU --- */
+.drawer-glass {
+  background: rgba(18, 24, 38, 0.72);
+  backdrop-filter: blur(24px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.menu-item {
+  padding: 12px 16px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  color: #b7c6d3;
+  border-radius: 10px;
+  margin: 5px 12px;
+  font-size: 0.88rem;
+  transition: 0.25s;
+}
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+  transform: translateX(6px);
+}
+.menu-item.active {
+  background: linear-gradient(90deg, #4fc3f71b, #4fc3f705);
+  border: 1px solid #4fc3f72e;
+  color: #4fc3f7;
+  box-shadow: 0 0 10px #4fc3f725;
+}
+.menu-item.active v-icon {
+  color: #4fc3f7;
+}
+
+.menu-item-container {
   display: flex;
   align-items: center;
-  gap: 12px;
-  height: 46px;
-  padding: 2px 14px;
-  border-radius: 10px;
-  margin: 6px 4px;
-  transition: all 0.25s ease;
-  cursor: pointer;
-  font-size: 0.85rem;
-}
-.crypto-list-item:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  transform: translateX(4px);
-}
-.crypto-list-item--active {
-  background: linear-gradient(
-    90deg,
-    rgba(79, 195, 247, 0.3),
-    rgba(79, 195, 247, 0.1)
-  );
-  color: #4fc3f7;
-  box-shadow: inset 0 0 6px rgba(79, 195, 247, 0.3);
-}
-.crypto-list-icon {
-  transition: all 0.25s ease;
-  font-size: 18px;
-}
-.crypto-list-item:hover .crypto-list-icon {
-  transform: scale(1.1);
-  color: #4fc3f7;
-}
-.crypto-list-item--active .crypto-list-icon {
-  color: #4fc3f7;
+  gap: 4px;
 }
 
-/* Main content */
-.crypto-main {
-  background: linear-gradient(180deg, #121f2e 0%, #1c2a3b 100%);
-  color: #d0d0d0;
-  min-height: calc(100vh - 56px);
-  padding-bottom: 56px;
+/* --- BACKGROUND MAIN --- */
+.content-layer {
+  background: radial-gradient(circle at top, #131823, #0e121a 70%);
+  min-height: 100vh;
+  padding-bottom: 70px;
+  transition: 0.3s;
 }
 
-/* Bottom navigation (mobile) */
-.crypto-bottom-nav {
-  background: linear-gradient(180deg, #0d1a26 0%, #1a2635 100%) !important;
-  border-top: 1px solid #2a3b4c;
-  box-shadow: 0 -2px 6px rgba(0, 0, 0, 0.25);
+/* --- MOBILE NAV FLOAT OVER GLASS --- */
+.bottom-float-nav {
   position: fixed;
-  bottom: 0;
-  padding: 0 6px; /* khoảng cách 2 bên */
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88%;
+  border-radius: 18px;
+  background: rgba(20, 26, 40, 0.78);
+  backdrop-filter: blur(22px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 4px 6px;
 }
 
-.crypto-bottom-btn {
+.nav-btn {
   flex: 1;
-  min-width: 36px; /* giảm min-width */
-  padding: 0 2px;
-  flex-direction: column;
-  font-size: 0.7rem;
-  text-transform: none;
-}
-
-.crypto-bottom-icon {
-  font-size: 18px;
-  transition: transform 0.25s ease;
-}
-
-.crypto-bottom-label {
   font-size: 10px;
-  margin-top: 1px;
-  color: #a0a0a0;
-  transition: color 0.25s ease;
+  color: #7f8f9f;
+}
+.nav-btn v-icon {
+  font-size: 20px;
+  transition: 0.2s;
 }
 
-.crypto-bottom-label.active {
-  color: #4fc3f7;
-  font-weight: 500;
+/* ACTIVE GLOW */
+.nav-btn .active {
+  color: #4fc3f7 !important;
+  font-weight: 600;
+  text-shadow: 0 0 8px #4fc3f7;
 }
 
-.crypto-bottom-btn:hover .crypto-bottom-icon {
-  transform: scale(1.1);
-  color: #4fc3f7;
-}
-
-/* Hide/show responsive */
+/* RESPONSIVE */
 .d-sm-none {
   display: none;
 }
