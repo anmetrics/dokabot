@@ -6,13 +6,12 @@ import { randomUUID } from 'crypto';
 import Decimal from 'decimal.js';
 import { Position } from 'generated/prisma';
 import {
-  getSettingKeyBySymbolMini,
+  getSettingKeyBySymbol,
   LIST_SYMBOL,
   SETTING_KEY,
 } from 'src/modules/settings/settings.enum';
 import { IStrategy } from '../../strategy.interface';
 import { adjustToStepSize, getActualBought } from '../../helpers/crypto';
-import { MINI_RSI_SUFFIX } from './mini-rsi-reversal.strategy';
 
 type TimeframeData = {
   closes: number[];
@@ -21,19 +20,18 @@ type TimeframeData = {
   lastCandles: Candle[];
 };
 
-export const SUPER_MINI_RSI_SUFFIX = '_SUPERMINI';
-
-export class SuperMiniReversalDcaStrategy implements IStrategy {
-  private logger = new Logger('SuperMiniRsiReversalStrategy');
+export class GoldReversalDcaStrategy implements IStrategy {
+  private logger = new Logger('GoldRsiReversalStrategy');
   private cumulativeProfit = 0;
 
   // === CONFIG ===
-  private maxDcaTimes = 20; // tối đa số lần DCA cho 1 vị thế
+  private maxDcaTimes = 20;
+  private dcaMultiplier = 1;
 
-  private rsiPeriod = 9;
-  private atrPeriod = 9;
+  private rsiPeriod = 8;
+  private atrPeriod = 8;
 
-  private rsiBuyThreshold = 18;
+  private rsiBuyThreshold = 19;
 
   private cooldownMs = 1 * 60 * 1000; // 1 phút
   private lastTradeTime = 0;
@@ -53,12 +51,10 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private async start(timeframe: '1m' | '3m' | '5m' | '15m' | '30m') {
     console.log(
-      `Starting SUPERMINI RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, BaseProfit:${this.minProfitPct}`,
+      `Starting GOLD RSI Reversal + DCA Strategy for ${this.symbol} [${timeframe}]R, BaseProfit:${this.minProfitPct}`,
     );
-    const positions = await this.binanceService.getOpenPositions(
-      this.symbol + SUPER_MINI_RSI_SUFFIX,
-    );
-    console.log(this.symbol + SUPER_MINI_RSI_SUFFIX, positions);
+    const positions = await this.binanceService.getOpenPositions(this.symbol);
+    console.log(this.symbol + '_GOLD:', positions);
 
     console.log('-------------------');
 
@@ -119,7 +115,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
         this.lastTradeTime === 0 || now - this.lastTradeTime >= this.cooldownMs;
 
       const openPositions = await this.binanceService.getOpenPositions(
-        this.symbol + SUPER_MINI_RSI_SUFFIX,
+        this.symbol,
       );
 
       // === BUY or DCA với ATR filter ===
@@ -133,11 +129,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
         const dcaIndex = dcaTimes + 1;
 
-        const dcaPriceSetting = await this.binanceService.getSettingByKey(
-          SETTING_KEY.DCA_WHEN_DROP_PERCENT_SUPERMINI,
-        );
-
-        const DCA_PRICE_DROP_PCT = Number(dcaPriceSetting);
+        const DCA_PRICE_DROP_PCT = Number(0.03);
 
         const DCA_PERCENT = 1 - DCA_PRICE_DROP_PCT;
 
@@ -146,15 +138,12 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
           price < minBuyPrice - lastAtr &&
           price < minBuyPrice * DCA_PERCENT;
 
-        // Chỉ DCA nếu giá giảm ít nhất 1×ATR so với minBuyPrice
         if (openPositions.length === 0 || isDcaValid) {
           const [settingMaxBuyPrice, enableBuy] = await Promise.all([
             this.binanceService.getSettingByKey(
-              getSettingKeyBySymbolMini(this.symbol),
+              getSettingKeyBySymbol(this.symbol),
             ),
-            this.binanceService.getSettingByKey(
-              SETTING_KEY.ENABLE_BUY_SUPERMINI,
-            ),
+            this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY),
           ]);
 
           if (enableBuy === 'true' && price < Number(settingMaxBuyPrice || 0)) {
@@ -170,17 +159,10 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
           const dynamicMinProfitPct = this.getDynamicMinProfitPct(
             pos?.dcaIndex || 0,
           );
-          return (
-            !pos.isDualInvestment &&
-            price >= pos.buyPrice * (1 + dynamicMinProfitPct)
-          );
+          return price >= pos.buyPrice * (1 + dynamicMinProfitPct);
         });
 
-        const enableSell = await this.binanceService.getSettingByKey(
-          SETTING_KEY.ENABLE_SELL_SUPERMINI,
-        );
-
-        if (!sellablePositions.length || enableSell !== 'true') {
+        if (!sellablePositions.length) {
           return;
         }
 
@@ -198,24 +180,9 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private async buyPosition(price: number, dcaIndex: number) {
     const baseBuyUsd = await this.binanceService.getSettingByKey(
-      SETTING_KEY.SUPER_MINI_BUY_AMOUNT,
+      SETTING_KEY.PAXG_BUY_AMOUNT,
     );
     const usdToSpend = Number(baseBuyUsd || 0);
-
-    // Check root positions
-
-    const [rootPositions, miniPositions] = await Promise.all([
-      this.binanceService.getOpenPositions(this.symbol),
-      this.binanceService.getOpenPositions(this.symbol + MINI_RSI_SUFFIX),
-    ]);
-
-    // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
-    const rootMinBuyPrice = Math.min(...rootPositions?.map((p) => p.buyPrice));
-    // eslint-disable-next-line no-unsafe-optional-chaining, @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-return
-    const miniMinBuyPrice = Math.min(...miniPositions?.map((p) => p.buyPrice));
-
-    if (rootPositions?.length && price > rootMinBuyPrice * 1.03) return;
-    if (miniPositions?.length && price > miniMinBuyPrice * 0.995) return;
 
     const balances = await this.binanceService.getAccount();
     const freeUsdt = Number(
@@ -238,7 +205,6 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
       'BUY',
       qty,
     );
-
     const bnbPrice = await this.binanceService.getPrice(LIST_SYMBOL.BNBUSDT);
     const {
       totalQty: totalQtyActual,
@@ -253,7 +219,7 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
       usdSpent: totalSpent,
       totalQtyActual,
       dcaIndex,
-      strategy: this.symbol + SUPER_MINI_RSI_SUFFIX,
+      strategy: this.symbol,
       symbol: this.symbol,
     });
     console.log(
@@ -263,8 +229,8 @@ export class SuperMiniReversalDcaStrategy implements IStrategy {
 
   private getDynamicMinProfitPct(dcaIndex: number) {
     const base = this.minProfitPct;
-    const increment = 0.0007;
-    return Math.max(base + dcaIndex * increment, 0.004);
+    const increment = 0.007;
+    return base + dcaIndex * increment;
   }
 
   private async sellPosition(pos: Position, price: number, timeframe: string) {

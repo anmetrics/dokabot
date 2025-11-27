@@ -4,23 +4,13 @@ import { IStrategy } from './strategy.interface';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PrismaService } from 'src/prisma.service';
 import { SETTING_KEY } from '../settings/settings.enum';
-import { ChildRsiReversalDcaStrategy } from './strategies/root/child-rsi-reversal.strategy';
-import { GoldReversalDcaStrategy } from './strategies/gold-rsi-reversal.strategy';
-import { RsiReversalDcaStrategy } from './strategies/root/rsi-reversal.strategy';
-import { MiniReversalDcaStrategy } from './strategies/mini/mini-rsi-reversal.strategy';
-import { SuperMiniReversalDcaStrategy } from './strategies/mini/super-mini-rsi-reversal.strategy';
 import { FuturesEmaStrategy } from './strategies/futures/future.strategy';
+import { MiniReversalDcaStrategy } from './strategies/mini/mini_reversal_dca.strategy';
+import { GoldReversalDcaStrategy } from './strategies/gold/gold-rsi-reversal.strategy';
 
 @Injectable()
 export class StrategyService {
   private logger = new Logger('StrategyService');
-  private strategy1: IStrategy;
-  private strategy2: IStrategy;
-  private strategy3: IStrategy;
-
-  private childStrategy1: IStrategy;
-  private childStrategy2: IStrategy;
-  private childStrategy3: IStrategy;
 
   private mini1: IStrategy;
   private mini2: IStrategy;
@@ -50,92 +40,44 @@ export class StrategyService {
   }
 
   startStrategy(name: string) {
-    //  Strategy
-    this.strategy1 = new RsiReversalDcaStrategy(
-      this.binanceService,
-      'BTCUSDT',
-      50,
-      '5m',
-      0.02,
-    );
-    this.strategy2 = new RsiReversalDcaStrategy(
-      this.binanceService,
-      'BNBUSDT',
-      50,
-      '5m',
-      0.03,
-    );
-    this.strategy3 = new RsiReversalDcaStrategy(
-      this.binanceService,
-      'SOLUSDT',
-      20,
-      '5m',
-      0.02,
-    );
-
-    // Child strategy
-    this.childStrategy1 = new ChildRsiReversalDcaStrategy(
-      this.binanceService,
-      'BNBUSDT',
-      100,
-      '5m',
-      0.004,
-    );
-    this.childStrategy2 = new ChildRsiReversalDcaStrategy(
-      this.binanceService,
-      'BTCUSDT',
-      100,
-      '5m',
-      0.004,
-    );
-    this.childStrategy3 = new ChildRsiReversalDcaStrategy(
-      this.binanceService,
-      'SOLUSDT',
-      50,
-      '5m',
-      0.004,
-    );
-
-    // Super
-
     // Mini sclaping
     this.mini1 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      '3m',
+      '5m',
       0.005,
     );
     this.mini2 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      '3m',
+      '5m',
       0.005,
     );
 
     this.mini3 = new MiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      '3m',
+      '5m',
       0.005,
     );
 
     // Supermini sclaping
-    this.supermini1 = new SuperMiniReversalDcaStrategy(
+    this.supermini1 = new MiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      '1m',
+      '3m',
       0.005,
     );
-    this.supermini2 = new SuperMiniReversalDcaStrategy(
+    this.supermini2 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      '1m',
+      '3m',
       0.005,
     );
-    this.supermini3 = new SuperMiniReversalDcaStrategy(
+    this.supermini3 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      '1m',
+      '3m',
       0.005,
     );
 
@@ -143,24 +85,14 @@ export class StrategyService {
     this.goldStrategy1 = new GoldReversalDcaStrategy(
       this.binanceService,
       'PAXGUSDT',
-      '3m',
+      '5m',
       0.0042,
     );
 
     // Futures
     this.future = new FuturesEmaStrategy(this.binanceService);
 
-    // Normal
-    this.strategy1.startAll();
-    this.strategy2.startAll();
-    this.strategy3.startAll();
-
-    // Child strategy
-    this.childStrategy1.startAll();
-    this.childStrategy2.startAll();
-    this.childStrategy3.startAll();
-
-    // Mini
+    // // Mini
     this.mini1.startAll();
     this.mini2.startAll();
     this.mini3.startAll();
@@ -172,9 +104,6 @@ export class StrategyService {
 
     // Gold
     this.goldStrategy1.startAll();
-
-    // Future
-    this.future.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }
