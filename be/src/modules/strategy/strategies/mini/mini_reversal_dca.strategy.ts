@@ -360,7 +360,11 @@ export class MiniReversalDcaStrategy implements IStrategy {
         symbol: this.symbol,
         sellPrice: null,
         isDualInvestment: false,
-        createdAt: new Date(),
+        createdAt: new Date(
+          this.timeframeData[this.timeframe].lastCandles[
+            this.timeframeData[this.timeframe].lastCandles.length - 1
+          ].closeTime,
+        ),
         updatedAt: null,
       });
       return;
