@@ -353,6 +353,35 @@ export class RegimeRiskManager {
         allowSell: cfg.allowSell,
       };
     }
+    // --- SELL logic: allow sell ONLY on early reversal ---
+
+    let enableSell = false;
+
+    const recent = this.getObsWindowTail(30);
+
+    if (recent.length > 5) {
+      const momentum = recent[recent.length - 1] - recent[0];
+
+      const roc = momentum / Math.abs(recent[0] || 1) || 0;
+
+      // detect early reversal:
+      const last = recent[recent.length - 1];
+      const prev = recent[recent.length - 2];
+
+      const decreasingNow = last < prev;
+      const wasStrongUp = roc > 0.015;
+
+      if (wasStrongUp && decreasingNow) {
+        enableSell = true;
+      }
+
+      if (roc < -0.02) {
+        enableSell = true;
+      }
+    }
+
+    // override final sell permission
+    cfg.allowSell = cfg.allowSell && enableSell;
 
     return {
       sizeMultiplier: cfg.sizeMul,
