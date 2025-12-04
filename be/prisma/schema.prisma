@@ -25,12 +25,51 @@ model Setting {
   @@map("settings")
 }
 
+
+enum Exchange {
+  BINANCE
+  OKX
+  BYBIT
+  BITGET
+  BINGX
+}
+
+
+model ExchangeAPI {
+  id         Int       @id @default(autoincrement())
+  userId     Int
+  exchange   Exchange
+  apiKey     String    // encrypted
+  apiSecret  String    // encrypted
+  passphrase String?   // OKX, Bitget, BingX required
+
+  isReadOnly Boolean   @default(false)
+  nickname   String?   // VD: "Future account", "Main Spot"
+
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, exchange, apiKey])
+
+  @map("exchange_api")
+}
+
+
+enum PositionSide {
+  LONG
+  SHORT
+  NONE
+}
+
 model Position {
   id             String   @id @default(uuid())
   buyPrice       Float @map("buy_price")
   strategy       String   @map("strategy")
     symbol       String   @map("symbol")
   qty            Float @map("qty")
+  future_side        PositionSide? @default("NONE")
+  isFuture Boolean @map("is_future") @default(false)
   usdSpent       Float @map("usd_spent")
   totalQtyActual Float  @map("total_qty_actual")
   sellPrice      Float? @map("sell_price")
