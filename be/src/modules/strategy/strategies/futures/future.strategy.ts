@@ -10,20 +10,27 @@ export class FuturesEmaStrategy implements IStrategy {
   private logger = new Logger('FuturesEmaStrategy');
 
   private readonly symbol = 'SOLUSDT';
-  private readonly timeframe = '15m';
+  private readonly timeframe = '1m';
 
   private readonly emaSuperFastPeriod = 3;
   private readonly emaFastPeriod = 7;
   private readonly emaMediumPeriod = 25;
   private readonly emaSlowPeriod = 99;
 
-  private readonly usdPerTrade = 6; // 4 USD rủi ro mỗi lệnh
+  private readonly usdPerTrade = 6; // USD mỗi lệnh
   private readonly maxLeverage = 10;
-  private readonly sidewayThreshold = 0.001;
 
-  private readonly sidewaySlowThreadhold = 0.00011;
+  // Phí giao dịch Binance Futures
+  private readonly takerFee = 0.0005; // 0.05% taker fee
+  private readonly feePerTrade = this.takerFee * 2; // Entry + Exit = 0.1% tổng
 
-  private readonly sidewayMediumThreadhold = 0.0006;
+  // Threshold cho trend detection (nới lỏng hơn)
+  private readonly strongTrendThreshold = 0.0003; // 0.03% - Trend mạnh
+  private readonly sidewayThreshold = 0.0001; // 0.01% - Đi ngang
+
+  // Quick profit targets
+  private readonly quickProfitTarget = 0.5; // $0.4 chốt nhanh
+  private readonly cutLossAmount = -0.5; // -$0.5 cắt lỗ nhanh
 
   private timeframes: Record<
     string,
@@ -44,9 +51,7 @@ export class FuturesEmaStrategy implements IStrategy {
   }
 
   private async start() {
-    console.log(
-      '=== Starting Futures EMA Crossover Strategy (SOLUSDT 15m) ===',
-    );
+    console.log('=== Starting Futures EMA Crossover Strategy (SOLUSDT 1m) ===');
 
     const historicalCandles =
       await this.binanceService.getFuturesHistoricalCandles(
@@ -55,18 +60,18 @@ export class FuturesEmaStrategy implements IStrategy {
         1500,
       );
 
-    // const backtestResult = await this.runBacktest(historicalCandles as any);
-    // console.log('Backtest finished:', backtestResult);
+    const backtestResult = await this.runBacktest(historicalCandles as any);
+    console.log('Backtest finished:', backtestResult);
+    return;
 
     this.initLiveTrading(historicalCandles as any);
-    this.subscribe1MinCandles();
   }
 
   private initLiveTrading(historicalCandles: Candle[]) {
     // Khởi tạo dữ liệu EMA với nến lịch sử
     this.initializeTimeframe(this.timeframe, historicalCandles);
 
-    // Subscribe nến futures live từ Binance
+    // Subscribe nến futures live từ Binance (1m)
     this.binanceService.subscribeFuturesCandles(
       this.symbol,
       this.timeframe,
@@ -79,62 +84,14 @@ export class FuturesEmaStrategy implements IStrategy {
         let position: FuturesAccountPosition | null = null;
 
         if (positions && positions.length > 0) {
-          // Chỉ lấy position đang mở (giả định chỉ 1 position mỗi side)
           const pos = positions[0];
           position = pos;
         }
 
-        // Gọi onCandle với position hiện tại để xử lý sideway và crossover
+        // Xử lý logic vào lệnh và exit cho 1m
         await this.onCandle(this.timeframe, candle, false, position);
       },
     );
-  }
-
-  /** ================= SUBSCRIBE 1 MIN CANDLES ================= */
-  private subscribe1MinCandles() {
-    this.binanceService.subscribeFuturesCandles(
-      this.symbol,
-      '1m',
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      async (candle) => {
-        const positions = await this.binanceService.getFuturesPositions(
-          this.symbol,
-        );
-        const position =
-          positions && positions.length > 0 ? positions[0] : null;
-
-        if (position) {
-          await this.check1MinCandleForEarlyExit(position, +candle.close);
-        }
-      },
-    );
-  }
-
-  /** ================= CHECK 1 MIN CANDLE FOR EARLY EXIT ================= */
-  private async check1MinCandleForEarlyExit(
-    position: FuturesAccountPosition,
-    currentPrice: number,
-  ) {
-    const pnlPct =
-      position.positionSide === 'LONG'
-        ? (currentPrice - Number(position.entryPrice)) /
-          Number(position.entryPrice)
-        : (Number(position.entryPrice) - currentPrice) /
-          Number(position.entryPrice);
-
-    const profit = pnlPct * this.usdPerTrade * this.maxLeverage;
-
-    if (profit >= 0.2) {
-      await this.binanceService.closeFuturesPosition(
-        this.symbol,
-        position.positionSide,
-      );
-      console.log(
-        `[1M EARLY EXIT] Closed ${position.positionSide} | Profit: $${profit.toFixed(
-          2,
-        )} | Price: ${currentPrice}`,
-      );
-    }
   }
 
   private initializeTimeframe(tf: string, candles: Candle[]) {
@@ -244,91 +201,20 @@ export class FuturesEmaStrategy implements IStrategy {
     )
       return null;
 
+    const superFastNow = data.emaSuperFast[data.emaSuperFast.length - 1];
     const fastNow = data.emaFast[data.emaFast.length - 1];
     const fastPrev = data.emaFast[data.emaFast.length - 2];
-    const superFastNow = data.emaSuperFast[data.emaSuperFast.length - 1];
-    const superFastPrev = data.emaSuperFast[data.emaSuperFast.length - 2];
     const mediumNow = data.emaMedium[data.emaMedium.length - 1];
     const mediumPrev = data.emaMedium[data.emaMedium.length - 2];
     const slowNow = data.emaSlow[data.emaSlow.length - 1];
     const slowPrev = data.emaSlow[data.emaSlow.length - 2];
 
-    // ==== SIDEWAY CHECK ====
-    const slope = Math.abs((fastNow - fastPrev) / slowPrev);
-
+    // Tính slope để detect trend
+    const slopeFast = Math.abs((fastNow - fastPrev) / fastPrev);
     const slopeMedium = Math.abs((mediumNow - mediumPrev) / mediumPrev);
-
     const slopeSlow = Math.abs((slowNow - slowPrev) / slowPrev);
 
-    const fastCrossUp = fastPrev <= superFastPrev && fastNow > superFastNow;
-    const fastCrossDown = fastPrev >= superFastPrev && fastNow < superFastNow;
-
-    if (slope < this.sidewayThreshold || fastCrossUp || fastCrossDown) {
-      if (position) {
-        const pnlPct =
-          position.positionSide === 'LONG'
-            ? (closePrice - Number(position.entryPrice)) /
-              Number(position.entryPrice)
-            : (Number(position.entryPrice) - closePrice) /
-              Number(position.entryPrice);
-        const profit = pnlPct * this.usdPerTrade * this.maxLeverage;
-        if (profit > 0.2 && slope < this.sidewayThreshold) {
-          if (isBacktest) {
-            return {
-              ...position,
-              exitPrice: closePrice,
-              exitTime: this.toVietnamTime(new Date(candle.closeTime)),
-              profit,
-              isSideway: true,
-            };
-          } else {
-            await this.binanceService.closeFuturesPosition(
-              this.symbol,
-              position.positionSide,
-            );
-            return null;
-          }
-        }
-
-        if (profit > 0.2) {
-          if (position.positionSide === 'LONG' && fastCrossUp) {
-            // close LONG
-            if (isBacktest) {
-              return {
-                ...position,
-                exitPrice: closePrice,
-                exitTime: this.toVietnamTime(new Date(candle.closeTime)),
-                profit,
-                earlyExit: true,
-              };
-            }
-
-            await this.binanceService.closeFuturesPosition(this.symbol, 'LONG');
-            return null;
-          }
-
-          if (position.positionSide === 'SHORT' && fastCrossDown) {
-            // close SHORT
-            if (isBacktest) {
-              return {
-                ...position,
-                exitPrice: closePrice,
-                exitTime: this.toVietnamTime(new Date(candle.closeTime)),
-                profit,
-                earlyExit: true,
-              };
-            }
-
-            await this.binanceService.closeFuturesPosition(
-              this.symbol,
-              'SHORT',
-            );
-            return null;
-          }
-        }
-      }
-    }
-
+    // ==== EXIT LOGIC (TREND ĐI NGANG HOẶC ĐẢO CHIỀU) ====
     if (position) {
       const pnlPct =
         position.positionSide === 'LONG'
@@ -337,11 +223,35 @@ export class FuturesEmaStrategy implements IStrategy {
           : (Number(position.entryPrice) - closePrice) /
             Number(position.entryPrice);
 
-      const profit = pnlPct * this.usdPerTrade * this.maxLeverage;
+      // Tính profit sau phí (entry 0.05% + exit 0.05% = 0.1% total)
+      const profitBeforeFee = pnlPct * this.usdPerTrade * this.maxLeverage;
+      const feeAmount = this.usdPerTrade * this.maxLeverage * this.feePerTrade;
+      const profit = profitBeforeFee - feeAmount;
 
-      // ==== CUT-LOSS ====
-      if (profit < -1) {
-        // nếu lỗ > 1 USD
+      // 1. QUICK PROFIT - Chốt nhanh khi đạt target
+      if (profit >= this.quickProfitTarget) {
+        if (isBacktest) {
+          return {
+            ...position,
+            exitPrice: closePrice,
+            exitTime: this.toVietnamTime(new Date(candle.closeTime)),
+            profit,
+            quickProfit: true,
+          };
+        } else {
+          await this.binanceService.closeFuturesPosition(
+            this.symbol,
+            position.positionSide,
+          );
+          console.log(
+            `[QUICK EXIT] ${position.positionSide} +$${profit.toFixed(2)}`,
+          );
+          return null;
+        }
+      }
+
+      // 2. CUT LOSS - Cắt lỗ nhanh
+      if (profit <= this.cutLossAmount) {
         if (isBacktest) {
           return {
             ...position,
@@ -355,31 +265,95 @@ export class FuturesEmaStrategy implements IStrategy {
             this.symbol,
             position.positionSide,
           );
+          console.log(
+            `[CUT LOSS] ${position.positionSide} -$${Math.abs(profit).toFixed(2)}`,
+          );
+          return null;
+        }
+      }
+
+      // 3. TREND ĐI NGANG - Exit khi trend yếu đi + có lời
+      const isSideway = slopeMedium < this.sidewayThreshold;
+      if (isSideway && profit > 0.1) {
+        if (isBacktest) {
+          return {
+            ...position,
+            exitPrice: closePrice,
+            exitTime: this.toVietnamTime(new Date(candle.closeTime)),
+            profit,
+            sidewayExit: true,
+          };
+        } else {
+          await this.binanceService.closeFuturesPosition(
+            this.symbol,
+            position.positionSide,
+          );
+          console.log(
+            `[SIDEWAY EXIT] ${position.positionSide} +$${profit.toFixed(2)}`,
+          );
+          return null;
+        }
+      }
+
+      // 4. DẤU HIỆU ĐẢO CHIỀU - EMA đảo chiều + có lời
+      const fastCrossMedium =
+        position.positionSide === 'LONG'
+          ? fastPrev >= mediumPrev && fastNow < mediumNow // Fast cắt xuống Medium
+          : fastPrev <= mediumPrev && fastNow > mediumNow; // Fast cắt lên Medium
+
+      if (fastCrossMedium && profit > 0.1) {
+        if (isBacktest) {
+          return {
+            ...position,
+            exitPrice: closePrice,
+            exitTime: this.toVietnamTime(new Date(candle.closeTime)),
+            profit,
+            reversalExit: true,
+          };
+        } else {
+          await this.binanceService.closeFuturesPosition(
+            this.symbol,
+            position.positionSide,
+          );
+          console.log(
+            `[REVERSAL EXIT] ${position.positionSide} +$${profit.toFixed(2)}`,
+          );
           return null;
         }
       }
     }
 
-    // ==== CROSS SIGNAL ====
-    const crossUp = fastPrev <= slowPrev && fastNow > slowNow; // LONG
-    const crossDown = superFastPrev >= slowPrev && superFastNow < slowNow; // SHORT
+    // ==== ENTRY SIGNAL (NỚI LỎNG HƠN) ====
 
-    if (
-      (crossUp && slopeSlow < this.sidewaySlowThreadhold) ||
-      (crossDown && slopeSlow < this.sidewaySlowThreadhold) ||
-      (crossUp && slopeMedium < this.sidewayMediumThreadhold) ||
-      (crossDown && slopeMedium < this.sidewayMediumThreadhold)
-    ) {
-      return;
-    }
+    // 1. TREND DETECTION - Chỉ cần Medium hoặc Fast có trend + Slow không quá flat
+    const hasTrend =
+      (slopeMedium > this.strongTrendThreshold ||
+        slopeFast > this.strongTrendThreshold) &&
+      slopeSlow > this.sidewayThreshold;
 
-    if (crossUp) {
-      console.log('crossUp', crossUp, closePrice, slopeMedium);
-    }
+    // 2. EMA ALIGNMENT - Chỉ cần Fast, Medium, Slow align (bỏ SuperFast)
+    const emasBullish = fastNow > mediumNow && mediumNow > slowNow;
+    const emasBearish = fastNow < mediumNow && mediumNow < slowNow;
 
-    if (!crossUp && !crossDown) return null;
+    // 3. CROSSOVER CONFIRMATION - Fast cross Medium (tín hiệu entry)
+    const fastCrossUpMedium = fastPrev <= mediumPrev && fastNow > mediumNow;
+    const fastCrossDownMedium = fastPrev >= mediumPrev && fastNow < mediumNow;
 
-    const positionSide: 'LONG' | 'SHORT' = crossUp ? 'LONG' : 'SHORT';
+    // 4. MOMENTUM CONFIRMATION - SuperFast phải cùng hướng với Fast
+    const bullishMomentum = superFastNow > fastNow;
+    const bearishMomentum = superFastNow < fastNow;
+
+    // TÍN HIỆU LONG: Có trend + EMA bullish + Fast cắt lên Medium + Momentum bullish
+    const strongLongSignal =
+      hasTrend && emasBullish && fastCrossUpMedium && bullishMomentum;
+
+    // TÍN HIỆU SHORT: Có trend + EMA bearish + Fast cắt xuống Medium + Momentum bearish
+    const strongShortSignal =
+      hasTrend && emasBearish && fastCrossDownMedium && bearishMomentum;
+
+    if (!strongLongSignal && !strongShortSignal) return null;
+
+    const positionSide: 'LONG' | 'SHORT' = strongLongSignal ? 'LONG' : 'SHORT';
     const qty = (this.usdPerTrade * this.maxLeverage) / closePrice;
 
     if (isBacktest) {
@@ -478,7 +452,10 @@ export class FuturesEmaStrategy implements IStrategy {
 
         position.exitPrice = closePrice;
         position.exitTime = this.toVietnamTime(new Date(candle.closeTime));
-        position.profit = pnlPct * this.usdPerTrade * this.maxLeverage;
+        const profitBeforeFee = pnlPct * this.usdPerTrade * this.maxLeverage;
+        const feeAmount =
+          this.usdPerTrade * this.maxLeverage * this.feePerTrade;
+        position.profit = profitBeforeFee - feeAmount;
         trades.push({ ...position });
         position = null;
       }
@@ -504,7 +481,9 @@ export class FuturesEmaStrategy implements IStrategy {
       position.exitTime = this.toVietnamTime(
         new Date(testCandles[testCandles.length - 1].closeTime),
       );
-      position.profit = pnlPct * this.usdPerTrade * this.maxLeverage;
+      const profitBeforeFee = pnlPct * this.usdPerTrade * this.maxLeverage;
+      const feeAmount = this.usdPerTrade * this.maxLeverage * this.feePerTrade;
+      position.profit = profitBeforeFee - feeAmount;
       trades.push(position);
     }
 
