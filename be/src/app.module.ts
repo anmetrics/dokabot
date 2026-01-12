@@ -9,6 +9,9 @@ import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { AuthenticationModule } from './modules/authentication/authentication.module';
+import { UserModule } from './modules/user/user.module';
+import { PlatformCredentialModule } from './modules/platform-credential/platform-credential.module';
+import { UserStrategyModule } from './modules/user-strategy/user-strategy.module';
 
 @Global()
 @Module({
@@ -20,9 +23,12 @@ import { AuthenticationModule } from './modules/authentication/authentication.mo
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     AuthenticationModule,
+    UserModule,
+    PlatformCredentialModule,
     TelegramModule,
     BinanceModule,
     StrategyModule,
+    UserStrategyModule,
   ],
   controllers: [AppController],
   providers: [AppService],

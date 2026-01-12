@@ -24,6 +24,7 @@ import { PrismaService } from 'src/prisma.service';
 import { Prisma } from 'generated/prisma';
 import { LIST_SYMBOL, SETTING_KEY } from '../settings/settings.enum';
 import { BuyCoinDto } from './dto/buy-coin.dto';
+import { PlatformCredentialService } from '../platform-credential/platform-credential.service';
 
 type ReversalPattern = {
   name: string;
@@ -32,15 +33,25 @@ type ReversalPattern = {
 
 @Injectable()
 export class BinanceService implements OnModuleInit {
-  private client: ReturnType<typeof Binance> | null = null;
+  // Single client for public market data + authenticated requests
+  private client: ReturnType<typeof Binance>;
   private logger = new Logger('BinanceService');
+
+  // Cache user credentials: userId -> { apiKey, apiSecret, isTestnet }
+  private userCredentials: Map<
+    string,
+    { apiKey: string; apiSecret: string; isTestnet: boolean }
+  > = new Map();
 
   constructor(
     private eventEmitter: EventEmitter2,
     private readonly telegramService: TelegramService,
     private readonly prismaService: PrismaService,
+    private readonly platformCredentialService: PlatformCredentialService,
   ) {
-    this.init();
+    // Initialize single client (no credentials needed for public data)
+    this.client = Binance({});
+    this.logger.log('📊 Binance client initialized (single instance)');
   }
   async onModuleInit() {
     const existingSettings = await this.prismaService.setting.findMany({});
@@ -83,25 +94,93 @@ export class BinanceService implements OnModuleInit {
         skipDuplicates: true,
       });
     }
+
+    // Load all user credentials into cache
+    await this.loadAllUserCredentials();
   }
 
-  init() {
-    const apiKey = process.env.BINANCE_API_KEY || '';
-    const apiSecret = process.env.BINANCE_API_SECRET || '';
-    const useTestnet = !!process.env.BINANCE_TESTNET;
+  /**
+   * Load all active users' credentials into cache
+   */
+  async loadAllUserCredentials() {
+    try {
+      const credentials =
+        await this.platformCredentialService.findByPlatform('binance');
 
-    console.log('useTestnet:', useTestnet);
+      if (credentials.length === 0) {
+        this.logger.warn('No active Binance credentials found in database');
+        return;
+      }
 
-    this.client = Binance({
-      apiKey,
-      apiSecret,
-      httpBase: useTestnet ? 'https://testnet.binance.vision' : undefined,
-      wsBase: useTestnet ? 'wss://testnet.binance.vision' : undefined,
-    });
+      // Cache credentials for each user
+      for (const credential of credentials) {
+        this.userCredentials.set(credential.userId, {
+          apiKey: credential.apiKey,
+          apiSecret: credential.apiSecret,
+          isTestnet: credential.isTestnet,
+        });
+      }
 
-    this.logger.log(
-      'Binance client initialized' + (useTestnet ? ' (TESTNET)' : ''),
+      this.logger.log(
+        `✅ Loaded credentials for ${credentials.length} users`,
+      );
+    } catch (error) {
+      this.logger.error('Failed to load user credentials:', error);
+    }
+  }
+
+  /**
+   * Get credentials for a user (from cache or database)
+   */
+  async getUserCredentials(userId: string) {
+    // Check cache first
+    if (this.userCredentials.has(userId)) {
+      return this.userCredentials.get(userId)!;
+    }
+
+    // Load from database
+    const userCreds =
+      await this.platformCredentialService.findByUserId(userId);
+    const binanceCred = userCreds.find(
+      (c) => c.platform === 'binance' && c.isActive,
     );
+
+    if (!binanceCred) {
+      throw new Error(`No active Binance credentials for user ${userId}`);
+    }
+
+    // Cache it
+    const creds = {
+      apiKey: binanceCred.apiKey,
+      apiSecret: binanceCred.apiSecret,
+      isTestnet: binanceCred.isTestnet,
+    };
+    this.userCredentials.set(userId, creds);
+
+    return creds;
+  }
+
+  /**
+   * Create authenticated client for a user (when needed for specific operations)
+   * Most operations don't need this - they can use the shared client
+   */
+  async createUserClient(userId: string): Promise<ReturnType<typeof Binance>> {
+    const creds = await this.getUserCredentials(userId);
+
+    return Binance({
+      apiKey: creds.apiKey,
+      apiSecret: creds.apiSecret,
+      httpBase: creds.isTestnet ? 'https://testnet.binance.vision' : undefined,
+      wsBase: creds.isTestnet ? 'wss://testnet.binance.vision' : undefined,
+    });
+  }
+
+  /**
+   * Remove user credentials from cache
+   */
+  removeUserCredentials(userId: string) {
+    this.userCredentials.delete(userId);
+    this.logger.log(`🗑️ Removed credentials cache for user ${userId}`);
   }
 
   // existing methods...
