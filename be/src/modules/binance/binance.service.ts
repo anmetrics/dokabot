@@ -8,6 +8,7 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import Binance, {
   Candle,
   CandleChartInterval_LT,
+  CandleChartResult,
   Order,
   OrderSide,
   OrderSide_LT,
@@ -215,6 +216,52 @@ export class BinanceService implements OnModuleInit {
       interval,
       limit,
     });
+  }
+
+  async getAllFuturesHistoricalCandles(
+    symbol: string,
+    interval: CandleChartInterval_LT = '1m',
+    limit = 500,
+  ) {
+    if (!this.client) throw new Error('Client not initialized');
+
+    // Nếu limit <= 1500, gọi 1 lần
+    if (limit <= 1500) {
+      return this.client.futuresCandles({
+        symbol,
+        interval,
+        limit,
+      });
+    }
+
+    // Nếu limit > 1500, phải gọi nhiều lần
+    const allCandles: CandleChartResult[] = [];
+    let currentLimit = limit;
+    let endTime = Date.now();
+
+    while (currentLimit > 0) {
+      const batchSize = Math.min(1500, currentLimit);
+      const candles = await this.client.futuresCandles({
+        symbol,
+        interval,
+        limit: batchSize,
+        endTime,
+      });
+
+      if (!candles || candles.length === 0) break;
+
+      // Thêm vào đầu array để giữ thứ tự chronological
+      allCandles.unshift(...candles);
+
+      // Update endTime để lấy batch tiếp theo (trước đó)
+      endTime = +candles[0].openTime - 1;
+      currentLimit -= candles.length;
+
+      // Delay nhỏ để tránh rate limit
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+
+    return allCandles;
   }
 
   // NEW: subscribe to kline/candles via websocket
