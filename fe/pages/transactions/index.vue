@@ -1,94 +1,162 @@
 <template>
-  <v-container class="py-4 container-compact">
-    <v-card elevation="4" class="pa-4 pa-sm-6 dark-card">
-      <!-- Header -->
-      <div
-        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
-      >
-        <div class="d-flex align-center gap-2 gap-sm-3 mb-3 mb-sm-0">
-          <v-avatar size="32" class="header-icon">
-            <v-icon size="20" color="primary">mdi-history</v-icon>
-          </v-avatar>
+  <v-container fluid class="transactions-container">
+    <v-row justify="center">
+      <v-col cols="12" xl="10">
+        <!-- Page Header -->
+        <div class="page-header mb-6">
+          <div class="d-flex align-center gap-3">
+            <div class="header-icon-wrapper">
+              <v-icon size="28" color="white">mdi-history</v-icon>
+            </div>
+            <div>
+              <h1 class="page-title">Lịch sử giao dịch</h1>
+              <p class="page-subtitle">
+                Theo dõi toàn bộ lịch sử mua bán của bạn
+              </p>
+            </div>
+          </div>
+          <v-btn
+            @click="refresh"
+            :loading="loading"
+            class="refresh-btn"
+          >
+            <v-icon start>mdi-refresh</v-icon>
+            Làm mới
+          </v-btn>
         </div>
 
-        <v-btn
-          color="primary"
-          @click="refresh"
-          variant="elevated"
-          :loading="loading"
-          class="refresh-btn"
-          size="small"
-        >
-          <v-icon start size="18">mdi-refresh</v-icon>
-          Làm mới
-        </v-btn>
-      </div>
+        <!-- Summary Cards -->
+        <v-row class="mb-6">
+          <v-col cols="12" sm="6" md="3">
+            <v-card class="summary-card">
+              <div class="summary-icon-wrapper">
+                <v-icon size="24" color="#3b82f6">mdi-swap-horizontal</v-icon>
+              </div>
+              <div class="summary-content">
+                <div class="summary-label">Tổng giao dịch</div>
+                <div class="summary-value">{{ meta.total }}</div>
+              </div>
+            </v-card>
+          </v-col>
+          <v-col cols="12" sm="6" md="3">
+            <v-card class="summary-card">
+              <div class="summary-icon-wrapper">
+                <v-icon size="24" color="#10b981">mdi-trending-up</v-icon>
+              </div>
+              <div class="summary-content">
+                <div class="summary-label">Tổng lợi nhuận</div>
+                <div class="summary-value profit">{{ formatPrice(totalProfit) }}</div>
+              </div>
+            </v-card>
+          </v-col>
+          <v-col cols="12" sm="6" md="3">
+            <v-card class="summary-card">
+              <div class="summary-icon-wrapper">
+                <v-icon size="24" color="#f59e0b">mdi-currency-usd</v-icon>
+              </div>
+              <div class="summary-content">
+                <div class="summary-label">Tổng vốn</div>
+                <div class="summary-value">{{ formatPrice(totalInvested) }}</div>
+              </div>
+            </v-card>
+          </v-col>
+          <v-col cols="12" sm="6" md="3">
+            <v-card class="summary-card">
+              <div class="summary-icon-wrapper">
+                <v-icon size="24" color="#a78bfa">mdi-chart-line</v-icon>
+              </div>
+              <div class="summary-content">
+                <div class="summary-label">Tỷ suất ROI</div>
+                <div class="summary-value" :class="roiPercent >= 0 ? 'profit' : 'loss'">
+                  {{ roiPercent.toFixed(2) }}%
+                </div>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
 
-      <!-- Table -->
-      <v-data-table
-        :loading="loading"
-        :headers="headers"
-        :items="trades"
-        :items-per-page="meta.limit"
-        class="dark-table"
-        hide-default-footer
-        density="compact"
-      >
-        <template #item.buyPrices="{ item }">
-          {{ formatNumber(item.buyPrices[0]) }}
-        </template>
-
-        <template #item.sellPrice="{ item }">
-          {{ formatNumber(item.sellPrice) }}
-        </template>
-
-        <template #item.totalAmountBuyActual="{ item }">
-          {{ formatNumber(item.totalAmountBuyActual) }}
-        </template>
-
-        <template #item.totalAmountBuyUsdtSpent="{ item }">
-          {{ formatPrice(item.totalAmountBuyUsdtSpent) }}
-        </template>
-
-        <template #item.totalProfit="{ item }">
-          <span
-            :class="{
-              'text-success': item.totalProfit > 0,
-              'text-error': item.totalProfit < 0,
-              'text-grey': item.totalProfit === 0,
-            }"
+        <!-- Table Card -->
+        <v-card class="table-card">
+          <v-data-table
+            :loading="loading"
+            :headers="headers"
+            :items="trades"
+            :items-per-page="meta.limit"
+            class="dark-table"
+            hide-default-footer
+            density="comfortable"
           >
-            {{ formatPrice(item.totalProfit) }}
-          </span>
-        </template>
+            <template #item.symbol="{ item }">
+              <v-chip
+                size="small"
+                class="symbol-chip"
+                variant="flat"
+              >
+                {{ item.symbol }}
+              </v-chip>
+            </template>
 
-        <template #item.totalRevenueUsdt="{ item }">
-          {{ formatPrice(item.totalRevenueUsdt) }}
-        </template>
+            <template #item.buyPrices="{ item }">
+              <span class="price-text">{{ formatNumber(item.buyPrices[0]) }}</span>
+            </template>
 
-        <template #item.createdAt="{ item }">
-          {{ formatDate(item.createdAt) }}
-        </template>
-      </v-data-table>
+            <template #item.sellPrice="{ item }">
+              <span class="price-text">{{ formatNumber(item.sellPrice) }}</span>
+            </template>
 
-      <!-- Pagination -->
-      <v-row v-if="meta.totalPages > 1" justify="center" class="mt-4 mt-sm-6">
-        <v-pagination
-          v-model="page"
-          :length="meta.totalPages"
-          color="primary"
-          total-visible="5"
-          @update:model-value="fetchTrades"
-          class="pagination"
-          size="small"
-        />
-      </v-row>
-    </v-card>
+            <template #item.totalAmountBuyActual="{ item }">
+              {{ formatNumber(item.totalAmountBuyActual) }}
+            </template>
+
+            <template #item.totalAmountBuyUsdtSpent="{ item }">
+              {{ formatPrice(item.totalAmountBuyUsdtSpent) }}
+            </template>
+
+            <template #item.totalProfit="{ item }">
+              <v-chip
+                size="small"
+                :class="{
+                  'profit-chip': item.totalProfit > 0,
+                  'loss-chip': item.totalProfit < 0,
+                  'neutral-chip': item.totalProfit === 0,
+                }"
+                variant="flat"
+              >
+                {{ formatPrice(item.totalProfit) }}
+              </v-chip>
+            </template>
+
+            <template #item.totalRevenueUsdt="{ item }">
+              {{ formatPrice(item.totalRevenueUsdt) }}
+            </template>
+
+            <template #item.createdAt="{ item }">
+              <div class="date-cell">
+                <v-icon size="14" class="mr-1" color="#94a3b8">mdi-clock-outline</v-icon>
+                {{ formatDate(item.createdAt) }}
+              </div>
+            </template>
+          </v-data-table>
+
+          <!-- Pagination -->
+          <div v-if="meta.totalPages > 1" class="pagination-wrapper">
+            <v-pagination
+              v-model="page"
+              :length="meta.totalPages"
+              color="primary"
+              total-visible="7"
+              @update:model-value="fetchTrades"
+              class="custom-pagination"
+            />
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
   </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useApi } from "~/apis";
 
 interface Trade {
@@ -115,15 +183,27 @@ const meta = ref({
 });
 
 const headers = [
-  { title: "Symbol", key: "symbol", align: "start" },
-  { title: "Giá mua", key: "buyPrices", align: "end" },
-  { title: "Giá bán", key: "sellPrice", align: "end" },
-  { title: "SL", key: "totalAmountBuyActual", align: "end" },
-  { title: "Vốn USDT", key: "totalAmountBuyUsdtSpent", align: "end" },
-  { title: "Lãi/Lỗ", key: "totalProfit", align: "end" },
-  { title: "Doanh thu", key: "totalRevenueUsdt", align: "end" },
-  { title: "Ngày tạo", key: "createdAt", align: "center" },
+  { title: "Symbol", key: "symbol", align: "start" as const },
+  { title: "Giá mua", key: "buyPrices", align: "end" as const },
+  { title: "Giá bán", key: "sellPrice", align: "end" as const },
+  { title: "SL", key: "totalAmountBuyActual", align: "end" as const },
+  { title: "Vốn USDT", key: "totalAmountBuyUsdtSpent", align: "end" as const },
+  { title: "Lãi/Lỗ", key: "totalProfit", align: "center" as const },
+  { title: "Doanh thu", key: "totalRevenueUsdt", align: "end" as const },
+  { title: "Ngày tạo", key: "createdAt", align: "center" as const },
 ];
+
+const totalProfit = computed(() =>
+  trades.value.reduce((acc, t) => acc + t.totalProfit, 0)
+);
+
+const totalInvested = computed(() =>
+  trades.value.reduce((acc, t) => acc + t.totalAmountBuyUsdtSpent, 0)
+);
+
+const roiPercent = computed(() =>
+  totalInvested.value > 0 ? (totalProfit.value / totalInvested.value) * 100 : 0
+);
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleString("vi-VN", {
@@ -169,138 +249,285 @@ onMounted(fetchTrades);
 </script>
 
 <style scoped>
-.container-compact {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding-left: 8px !important;
-  padding-right: 8px !important;
+.transactions-container {
+  max-width: 1400px;
+  padding: 24px;
 }
 
-/* Card */
-.dark-card {
-  background: linear-gradient(145deg, #0d1723, #111b28);
-  border-radius: 14px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.3);
-  color: #fff;
-  transition: all 0.3s ease;
-}
-.dark-card:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(79, 195, 247, 0.15);
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
 }
 
-.header-icon {
-  background: rgba(79, 195, 247, 0.15);
-  border: 1px solid rgba(79, 195, 247, 0.3);
+.header-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
-.header-title {
-  font-size: 16px;
-  font-weight: 600;
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f1f5f9;
   margin: 0;
 }
 
-/* Table */
+.page-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 4px 0 0 0;
+}
+
+.refresh-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%) !important;
+  color: white;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 12px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+  transition: all 0.3s ease;
+}
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+/* Summary Cards */
+.summary-card {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.1) 0%,
+    rgba(167, 139, 250, 0.05) 100%
+  );
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.summary-card:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.15) 0%,
+    rgba(167, 139, 250, 0.08) 100%
+  );
+  transform: translateY(-3px);
+  border-color: rgba(167, 139, 250, 0.3);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
+}
+
+.summary-icon-wrapper {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(167, 139, 250, 0.1);
+  border-radius: 12px;
+}
+
+.summary-content {
+  position: relative;
+  z-index: 1;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.summary-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.summary-value.profit {
+  color: #10b981;
+}
+
+.summary-value.loss {
+  color: #ef4444;
+}
+
+/* Table Card */
+.table-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  overflow: hidden;
+}
+
 .dark-table {
   background: transparent;
-  color: #fff;
-  border-radius: 10px;
-  overflow-x: auto;
+  color: #f1f5f9;
 }
 
-.dark-table :deep(th) {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+.dark-table :deep(.v-data-table-header th) {
+  background: rgba(167, 139, 250, 0.08);
+  color: #f1f5f9 !important;
   font-weight: 600;
   font-size: 13px;
-  padding: 8px 6px;
-  white-space: nowrap;
+  padding: 16px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
-.dark-table :deep(td) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 12px;
-  padding: 6px 4px;
-  white-space: nowrap;
-}
-.dark-table :deep(tr:hover) {
-  background: rgba(79, 195, 247, 0.05);
+.dark-table :deep(.v-data-table__td) {
+  padding: 14px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.05);
+  color: #f1f5f9;
 }
 
-/* Refresh button */
-.refresh-btn {
-  background: linear-gradient(90deg, #4fc3f7, #2196f3);
-  color: #fff;
-  border-radius: 8px;
-  text-transform: none;
+.dark-table :deep(.v-data-table__tr:hover) {
+  background: rgba(167, 139, 250, 0.05);
+  transition: background 0.2s ease;
+}
+
+.symbol-chip {
+  background: rgba(124, 58, 237, 0.2) !important;
+  color: #a78bfa;
+  font-weight: 600;
+  border: 1px solid rgba(167, 139, 250, 0.3);
+}
+
+.price-text {
+  color: #f1f5f9;
   font-weight: 500;
 }
 
-/* Pagination */
-.pagination :deep(.v-pagination__item) {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
-  font-size: 12px;
-  border-radius: 6px;
-}
-.pagination :deep(.v-pagination__item--active) {
-  background: linear-gradient(90deg, #4fc3f7, #2196f3) !important;
-  color: #fff;
-  transform: scale(1.05);
+.profit-chip {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #10b981 !important;
+  font-weight: 600;
+  border: 1px solid rgba(16, 185, 129, 0.3);
 }
 
-/* Text colors */
-.text-success {
-  color: #00e676 !important;
+.loss-chip {
+  background: rgba(239, 68, 68, 0.15) !important;
+  color: #ef4444 !important;
+  font-weight: 600;
+  border: 1px solid rgba(239, 68, 68, 0.3);
 }
-.text-error {
-  color: #ff5252 !important;
+
+.neutral-chip {
+  background: rgba(100, 116, 139, 0.15) !important;
+  color: #94a3b8 !important;
+  font-weight: 600;
+  border: 1px solid rgba(100, 116, 139, 0.3);
 }
-.text-grey {
-  color: rgba(200, 200, 200, 0.7) !important;
+
+.date-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  font-size: 13px;
+}
+
+/* Pagination */
+.pagination-wrapper {
+  padding: 24px;
+  display: flex;
+  justify-content: center;
+  border-top: 1px solid rgba(167, 139, 250, 0.1);
+}
+
+.custom-pagination :deep(.v-pagination__item) {
+  background: rgba(167, 139, 250, 0.1);
+  color: #f1f5f9;
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.custom-pagination :deep(.v-pagination__item:hover) {
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
+.custom-pagination :deep(.v-pagination__item--is-active) {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%) !important;
+  color: white !important;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 /* Scrollbar */
-:deep(.v-data-table__wrapper::-webkit-scrollbar) {
-  height: 6px;
+.dark-table :deep(.v-data-table__wrapper::-webkit-scrollbar) {
+  height: 8px;
 }
-:deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
-  background-color: rgba(255, 255, 255, 0.15);
+
+.dark-table :deep(.v-data-table__wrapper::-webkit-scrollbar-thumb) {
+  background: rgba(167, 139, 250, 0.3);
   border-radius: 4px;
 }
-:deep(.v-data-table__wrapper::-webkit-scrollbar-track) {
+
+.dark-table :deep(.v-data-table__wrapper::-webkit-scrollbar-track) {
   background: rgba(0, 0, 0, 0.1);
 }
 
-/* ===== Responsive tweaks ===== */
-@media (max-width: 600px) {
-  .dark-card {
-    padding: 12px !important;
-    border-radius: 10px;
+/* Responsive */
+@media (max-width: 960px) {
+  .transactions-container {
+    padding: 16px;
   }
 
-  .header-title {
-    font-size: 14px;
+  .page-title {
+    font-size: 24px;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .refresh-btn {
+    width: 100%;
+  }
+
+  .summary-value {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .summary-value {
+    font-size: 18px;
+  }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
     font-size: 12px;
-    padding: 4px 8px !important;
-  }
-
-  .dark-table :deep(th),
-  .dark-table :deep(td) {
-    font-size: 11px !important;
-    padding: 4px 2px !important;
-  }
-
-  .container-compact {
-    padding-left: 4px !important;
-    padding-right: 4px !important;
-  }
-
-  .v-container {
-    padding: 4px !important;
+    padding: 10px 8px;
   }
 }
 </style>

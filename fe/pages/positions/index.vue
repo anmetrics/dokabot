@@ -1,64 +1,65 @@
 <template>
-  <v-container class="py-6 px-0 container-compact">
-    <v-card elevation="6" class="pa-4 pa-sm-6 dark-card">
-      <!-- Header -->
-      <div
-        class="d-flex flex-column flex-sm-row align-start align-sm-center justify-space-between mb-4 mb-sm-6"
-      >
-        <div class="d-flex align-center gap-2 mb-3 mb-sm-0">
-          <v-avatar size="36" class="header-icon">
-            <v-icon size="24" color="primary">mdi-chart-line</v-icon>
-          </v-avatar>
-        </div>
-        <div>
-          <v-btn
-            color="primary"
-            @click="refresh"
-            variant="elevated"
-            :loading="loading"
-            class="refresh-btn"
-          >
-            <v-icon start>mdi-refresh</v-icon>
-            Refresh
-          </v-btn>
-          <v-btn
-            color="deep-purple"
-            variant="elevated"
-            class="sell-manager-btn"
-            @click="goToSellManager"
-          >
-            <v-icon start>mdi-cash-multiple</v-icon>
-            Sell Manager
-          </v-btn>
-        </div>
-      </div>
-
-      <!-- Summary stats -->
-      <v-row class="mb-5" dense>
-        <v-col cols="12" sm="6" md="3" v-for="(stat, i) in stats" :key="i">
-          <v-sheet class="pa-4 rounded-lg stat-card">
-            <div class="d-flex align-center justify-space-between">
-              <v-icon :color="stat.color" size="24">{{ stat.icon }}</v-icon>
-              <span class="stat-value" :class="stat.class || ''">{{
-                stat.value
-              }}</span>
+  <v-container fluid class="positions-container">
+    <v-row justify="center">
+      <v-col cols="12" xl="10">
+        <!-- Page Header -->
+        <div class="page-header mb-6">
+          <div class="d-flex align-center gap-3">
+            <div class="header-icon-wrapper">
+              <v-icon size="28" color="white">mdi-chart-line-variant</v-icon>
             </div>
-            <div class="stat-label">{{ stat.label }}</div>
-          </v-sheet>
-        </v-col>
-      </v-row>
+            <div>
+              <h1 class="page-title">Vị thế giao dịch</h1>
+              <p class="page-subtitle">
+                Quản lý và theo dõi các vị thế đang mở
+              </p>
+            </div>
+          </div>
+          <div class="header-actions">
+            <v-btn
+              @click="refresh"
+              :loading="loading"
+              class="action-btn refresh-btn"
+            >
+              <v-icon start>mdi-refresh</v-icon>
+              Refresh
+            </v-btn>
+            <v-btn @click="goToSellManager" class="action-btn sell-manager-btn">
+              <v-icon start>mdi-cash-multiple</v-icon>
+              Sell Manager
+            </v-btn>
+          </div>
+        </div>
 
-      <!-- Table (desktop) -->
-      <v-data-table
-        v-if="!isMobile"
-        :items="positions"
-        :headers="headers"
-        :items-per-page="800"
-        class="dark-table"
-        :loading="loading"
-        density="compact"
-        hide-default-footer
-      >
+        <!-- Summary stats -->
+        <v-row class="mb-6">
+          <v-col cols="12" sm="6" md="3" v-for="(stat, i) in stats" :key="i">
+            <v-card class="stat-card">
+              <div class="stat-icon-wrapper-small">
+                <v-icon :color="stat.color" size="24">{{ stat.icon }}</v-icon>
+              </div>
+              <div class="stat-content">
+                <div class="stat-label">{{ stat.label }}</div>
+                <div class="stat-value" :class="stat.class || ''">
+                  {{ stat.value }}
+                </div>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+
+        <!-- Table (desktop) -->
+        <v-card class="table-card">
+          <v-data-table
+            v-if="!isMobile"
+            :items="positions"
+            :headers="headers"
+            :items-per-page="800"
+            class="dark-table"
+            :loading="loading"
+            density="comfortable"
+            hide-default-footer
+          >
         <template #item="{ item }">
           <tr :class="{ 'dual-row': item.isDualInvestment }">
             <td>{{ item.symbol }}</td>
@@ -89,49 +90,48 @@
               </span>
             </td>
             <td class="text-center">
-              <div class="d-flex justify-center gap-1">
+              <div class="d-flex justify-center gap-2">
                 <!-- Bán -->
                 <v-btn
                   v-if="!item.isDualInvestment"
-                  small
+                  size="small"
                   :class="
-                    item.profitPercent >= 0.5
-                      ? 'btn-green'
-                      : 'btn-disabled-dark'
+                    item.profitPercent >= 0.5 ? 'btn-sell' : 'btn-disabled'
                   "
                   :disabled="item.profitPercent < 0.5"
                   @click="confirmSell(item)"
                 >
+                  <v-icon start size="16">mdi-cash-check</v-icon>
                   Bán
                 </v-btn>
                 <!-- Dual -->
                 <v-btn
                   v-if="!item.isDualInvestment"
-                  small
-                  color="deep-purple"
+                  size="small"
                   class="btn-dual"
                   @click="confirmDual(item)"
                 >
+                  <v-icon start size="16">mdi-swap-horizontal</v-icon>
                   Dual
                 </v-btn>
                 <!-- Huỷ Dual -->
                 <v-btn
                   v-else
-                  small
-                  color="grey-darken-2"
+                  size="small"
                   class="btn-cancel-dual"
                   @click="confirmCancelDual(item)"
                 >
+                  <v-icon start size="16">mdi-cancel</v-icon>
                   Huỷ Dual
                 </v-btn>
               </div>
             </td>
           </tr>
         </template>
-      </v-data-table>
+          </v-data-table>
 
-      <!-- Mobile -->
-      <div v-else class="mobile-list">
+          <!-- Mobile -->
+          <div v-if="isMobile" class="mobile-list">
         <v-list>
           <v-list-item
             v-for="item in positions"
@@ -215,8 +215,10 @@
             </v-list-item-content>
           </v-list-item>
         </v-list>
-      </div>
-    </v-card>
+          </div>
+        </v-card>
+      </v-col>
+    </v-row>
 
     <!-- Confirm Sell Dialog -->
     <v-dialog v-model="dialog" max-width="400">
@@ -344,15 +346,15 @@ const positions = ref<Position[]>([]);
 const loading = ref(false);
 
 const headers = [
-  { title: "Symbol", key: "symbol" },
-  { title: "Chiến lược", key: "strategy" },
-  { title: "Giá mua", key: "buyPrice", align: "end" },
-  { title: "Số lượng", key: "qty", align: "end" },
-  { title: "USD đã dùng", key: "usdSpent", align: "end" },
-  { title: "DCA", key: "dcaIndex", align: "center" },
-  { title: "Ngày tạo", key: "createdAt", align: "center" },
-  { title: "Lợi nhuận", key: "profit", align: "end" },
-  { title: "Actions", key: "actions", align: "center" },
+  { title: "Symbol", key: "symbol", align: "start" as const },
+  { title: "Chiến lược", key: "strategy", align: "start" as const },
+  { title: "Giá mua", key: "buyPrice", align: "end" as const },
+  { title: "Số lượng", key: "qty", align: "end" as const },
+  { title: "USD đã dùng", key: "usdSpent", align: "end" as const },
+  { title: "DCA", key: "dcaIndex", align: "center" as const },
+  { title: "Ngày tạo", key: "createdAt", align: "center" as const },
+  { title: "Lợi nhuận", key: "profit", align: "end" as const },
+  { title: "Actions", key: "actions", align: "center" as const },
 ];
 
 const totalUsdSpent = computed(() =>
@@ -517,136 +519,338 @@ onMounted(fetchPositions);
 </script>
 
 <style scoped>
-.container-compact {
-  max-width: 1200px;
-  margin: 0 auto;
+.positions-container {
+  max-width: 1400px;
+  padding: 24px;
 }
-.dark-card {
-  background: linear-gradient(145deg, #0d1723, #111b28);
+
+/* Page Header */
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-icon-wrapper {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
   border-radius: 16px;
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
-.header-icon {
-  background: rgba(79, 195, 247, 0.15);
-  border: 1px solid rgba(79, 195, 247, 0.3);
+
+.page-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin: 0;
 }
-.stat-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #fff;
-  transition: all 0.2s ease;
+
+.page-subtitle {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 4px 0 0 0;
 }
-.stat-card:hover {
-  background: rgba(79, 195, 247, 0.08);
-  transform: translateY(-2px);
+
+.header-actions {
+  display: flex;
+  gap: 12px;
 }
-.stat-label {
-  color: rgba(200, 200, 200, 0.7);
-  font-size: 13px;
-  margin-top: 6px;
-}
-.stat-value {
+
+.action-btn {
+  text-transform: none;
   font-weight: 600;
-  font-size: 1.2rem;
+  border-radius: 12px;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+  transition: all 0.3s ease;
 }
-.text-profit {
-  color: #00e676;
-}
-.text-loss {
-  color: #ef5350;
-}
-.btn-green {
-  background-color: #00a068 !important;
-  color: #fff !important;
-  text-transform: none;
-  font-weight: 500;
-}
-.btn-disabled-dark {
-  background-color: #1a1a1a !important;
-  color: #555555 !important;
-  pointer-events: none;
-}
-.btn-dual {
-  margin-left: 4px;
-  text-transform: none;
-  color: #fff !important;
-}
-.btn-cancel-dual {
-  text-transform: none;
-  color: #fff !important;
-}
+
 .refresh-btn {
-  background: linear-gradient(90deg, #4fc3f7, #2196f3);
-  color: #fff;
-  border-radius: 8px;
-  text-transform: none;
-  font-weight: 500;
-  margin-right: 5px;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
 }
+
+.refresh-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.4);
+}
+
+.sell-manager-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%) !important;
+  color: white;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.sell-manager-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+}
+
+/* Stat Cards */
+.stat-card {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.1) 0%,
+    rgba(167, 139, 250, 0.05) 100%
+  );
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.15) 0%,
+    rgba(167, 139, 250, 0.08) 100%
+  );
+  transform: translateY(-3px);
+  border-color: rgba(167, 139, 250, 0.3);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
+}
+
+.stat-icon-wrapper-small {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(167, 139, 250, 0.1);
+  border-radius: 12px;
+}
+
+.stat-content {
+  position: relative;
+  z-index: 1;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #94a3b8;
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 24px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.text-profit {
+  color: #10b981 !important;
+}
+
+.text-loss {
+  color: #ef4444 !important;
+}
+
+/* Table Card */
+.table-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border-radius: 20px;
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  padding: 0;
+  overflow: hidden;
+}
+
 .dark-table {
   background: transparent;
-  color: #fff;
-  border-radius: 10px;
+  color: #f1f5f9;
 }
-.dark-table :deep(th) {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+
+.dark-table :deep(.v-data-table-header th) {
+  background: rgba(167, 139, 250, 0.08);
+  color: #f1f5f9 !important;
   font-weight: 600;
   font-size: 13px;
+  padding: 16px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
-.dark-table :deep(td) {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  font-size: 13px;
+
+.dark-table :deep(.v-data-table__td) {
+  padding: 14px 16px;
+  font-size: 14px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.05);
+  color: #f1f5f9;
 }
-.dark-table :deep(tr:hover) {
-  background: rgba(79, 195, 247, 0.05);
+
+.dark-table :deep(.v-data-table__tr:hover) {
+  background: rgba(167, 139, 250, 0.05);
+  transition: background 0.2s ease;
 }
-.mobile-list {
-  display: none;
-}
-.text-grey {
-  color: rgba(200, 200, 200, 0.6);
-}
-@media (max-width: 600px) {
-  .dark-table {
-    display: none;
-  }
-  .mobile-list {
-    display: block;
-  }
-}
+
 .dual-row {
   background: linear-gradient(
     90deg,
-    rgba(123, 31, 162, 0.15),
-    rgba(103, 58, 183, 0.25)
+    rgba(124, 58, 237, 0.15),
+    rgba(167, 139, 250, 0.1)
   ) !important;
-  border-left: 3px solid #7e57c2;
+  border-left: 3px solid #a78bfa;
 }
+
 .dual-label {
-  background: linear-gradient(90deg, #7e57c2, #9575cd);
+  background: linear-gradient(90deg, #7c3aed, #a78bfa);
   color: #fff;
   font-size: 11px;
   font-weight: 600;
-  padding: 2px 6px;
+  padding: 2px 8px;
   border-radius: 6px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
+
+/* Action Buttons */
+.btn-sell {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: white !important;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-sell:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+}
+
+.btn-disabled {
+  background: rgba(100, 116, 139, 0.2) !important;
+  color: #64748b !important;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.btn-dual {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%) !important;
+  color: white !important;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-dual:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+}
+
+.btn-cancel-dual {
+  background: linear-gradient(135deg, #64748b 0%, #475569 100%) !important;
+  color: white !important;
+  text-transform: none;
+  font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(100, 116, 139, 0.3);
+  transition: all 0.3s ease;
+}
+
+.btn-cancel-dual:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(100, 116, 139, 0.4);
+}
+
+/* Mobile */
+.mobile-list {
+  padding: 16px 0;
+}
+
 .mobile-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 12px;
-  color: #fff;
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.08) 0%,
+    rgba(167, 139, 250, 0.03) 100%
+  );
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  border-radius: 16px;
+  padding: 16px;
+  transition: all 0.3s ease;
 }
+
+.mobile-card:hover {
+  background: linear-gradient(
+    135deg,
+    rgba(124, 58, 237, 0.12) 0%,
+    rgba(167, 139, 250, 0.05) 100%
+  );
+  border-color: rgba(167, 139, 250, 0.3);
+}
+
 .mobile-symbol {
-  color: #fff;
+  color: #f1f5f9;
+  font-weight: 600;
 }
+
 .chip-group {
-  gap: 4px;
+  gap: 8px;
 }
-.v-chip {
-  font-size: 12px !important;
-  font-weight: 500 !important;
+
+.text-grey {
+  color: #94a3b8;
+}
+
+/* Dialog Styles */
+.dark-card {
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  color: #f1f5f9;
+}
+
+/* Responsive */
+@media (max-width: 960px) {
+  .positions-container {
+    padding: 16px;
+  }
+
+  .page-title {
+    font-size: 24px;
+  }
+
+  .header-icon-wrapper {
+    width: 48px;
+    height: 48px;
+  }
+
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .action-btn {
+    flex: 1;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-title {
+    font-size: 20px;
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
 }
 </style>
