@@ -26,9 +26,9 @@
       <v-row class="mb-6" dense>
         <v-col cols="12" sm="4">
           <v-sheet class="summary-card">
-            <v-icon size="26" color="cyan-lighten-3">mdi-finance</v-icon>
+            <v-icon size="28" color="#a78bfa">mdi-finance</v-icon>
             <div class="text-subtitle-2 text-grey mt-2">Tổng tài sản</div>
-            <div class="text-h6 font-weight-bold text-white mt-1">
+            <div class="text-h6 font-weight-bold mt-1" style="color: #f1f5f9">
               {{ balances.length }}
             </div>
           </v-sheet>
@@ -36,9 +36,9 @@
 
         <v-col cols="12" sm="4">
           <v-sheet class="summary-card">
-            <v-icon size="26" color="green-lighten-2">mdi-lock</v-icon>
+            <v-icon size="28" color="#10b981">mdi-lock</v-icon>
             <div class="text-subtitle-2 text-grey mt-2">Đang khóa</div>
-            <div class="text-h6 font-weight-bold text-white mt-1">
+            <div class="text-h6 font-weight-bold mt-1" style="color: #f1f5f9">
               {{
                 totalLocked.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -51,9 +51,9 @@
 
         <v-col cols="12" sm="4">
           <v-sheet class="summary-card">
-            <v-icon size="26" color="amber-lighten-2">mdi-currency-usd</v-icon>
+            <v-icon size="28" color="#f59e0b">mdi-currency-usd</v-icon>
             <div class="text-subtitle-2 text-grey mt-2">Tổng USD</div>
-            <div class="text-h6 font-weight-bold text-white mt-1">
+            <div class="text-h6 font-weight-bold mt-1" style="color: #f1f5f9">
               {{
                 totalUSD.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -194,94 +194,103 @@ function refresh() {
 
 <style scoped>
 .dark-card {
-  background: linear-gradient(145deg, #0d1723, #111b28);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   border-radius: 20px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
   transition: all 0.3s ease;
 }
 .dark-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(0, 150, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(124, 58, 237, 0.15);
 }
 
 /* Summary cards */
 .summary-card {
-  background: linear-gradient(135deg, #1c2535, #18202d);
-  border-radius: 14px;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(167, 139, 250, 0.05) 100%);
+  border-radius: 16px;
   text-align: center;
-  padding: 20px;
-  color: #ffffff;
+  padding: 24px;
+  color: #f1f5f9;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  backdrop-filter: blur(10px);
 }
 .summary-card:hover {
-  background: linear-gradient(135deg, #223048, #1a2435);
-  transform: translateY(-2px) scale(1.02);
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(167, 139, 250, 0.08) 100%);
+  transform: translateY(-3px);
+  border-color: rgba(167, 139, 250, 0.3);
+  box-shadow: 0 8px 20px rgba(124, 58, 237, 0.2);
 }
 
 /* Data table */
 .dark-table {
   background: transparent;
-  color: #ffffff;
+  color: #f1f5f9;
 }
 .dark-table :deep(.v-data-table-header th) {
-  background: linear-gradient(90deg, #232a35, #1a1f28);
-  color: #e0e0e0 !important;
+  background: rgba(167, 139, 250, 0.08);
+  color: #f1f5f9 !important;
   font-weight: 600;
   font-size: 13px;
-  padding: 10px 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 .dark-table :deep(.v-data-table__td) {
-  padding: 10px 12px;
+  padding: 12px 16px;
   font-size: 13px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.05);
 }
 .dark-table :deep(.v-data-table__tr:hover) {
-  background: rgba(30, 136, 229, 0.08);
+  background: rgba(167, 139, 250, 0.05);
   transition: background 0.2s ease;
 }
 
 /* Chip */
 .chip-bg {
-  background: linear-gradient(90deg, #232a35, #2f3a47) !important;
-  color: #ffffff;
+  background: rgba(124, 58, 237, 0.2) !important;
+  color: #a78bfa;
+  border: 1px solid rgba(167, 139, 250, 0.3);
 }
 .chip-asset {
   transition: all 0.3s ease;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 600;
 }
 .chip-asset:hover {
-  background: linear-gradient(90deg, #42a5f5, #2196f3) !important;
+  background: linear-gradient(90deg, #7c3aed, #a78bfa) !important;
+  color: #ffffff !important;
   transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
 }
 
 /* Button */
 .refresh-btn {
-  background: linear-gradient(90deg, #42a5f5 0%, #1e88e5 100%) !important;
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%) !important;
   color: #ffffff;
-  border-radius: 10px;
+  border-radius: 12px;
   text-transform: none;
-  font-weight: 500;
-  letter-spacing: 0.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
   font-size: 0.9rem;
-  box-shadow: 0 2px 8px rgba(33, 150, 243, 0.3);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
   transition: all 0.3s ease;
 }
 .refresh-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(33, 150, 243, 0.4);
+  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
+  filter: brightness(1.1);
 }
 
 /* Text */
 .text-grey {
-  color: rgba(200, 200, 200, 0.7);
+  color: #94a3b8;
 }
 
 /* Responsive */
 @media (max-width: 600px) {
   .summary-card {
-    padding: 14px !important;
+    padding: 18px !important;
   }
   .v-card {
     padding: 16px !important;
@@ -289,7 +298,7 @@ function refresh() {
   .dark-table :deep(.v-data-table-header th),
   .dark-table :deep(.v-data-table__td) {
     font-size: 0.8rem !important;
-    padding: 8px 10px;
+    padding: 10px 12px;
   }
 }
 </style>

@@ -8,7 +8,7 @@
       />
 
       <v-toolbar-title @click="navigate('/')" class="brand"
-        >Doka</v-toolbar-title
+        >Reveli</v-toolbar-title
       >
 
       <v-spacer />
@@ -96,29 +96,46 @@ const currentTab = ref(route.path);
 
 /** Menu Navigation */
 const menuItems = [
-  { title: "Home", short: "Home", icon: "mdi-home-outline", to: "/" },
-  { title: "Buy Crypto", short: "Buy", icon: "mdi-cash-plus", to: "/buy" },
   {
-    title: "Assets",
-    short: "Assets",
+    title: "Trang chủ",
+    short: "Home",
+    icon: "mdi-view-dashboard-outline",
+    to: "/",
+  },
+  { title: "Mua Crypto", short: "Mua", icon: "mdi-cash-plus", to: "/buy" },
+  {
+    title: "Tài sản",
+    short: "Tài sản",
     icon: "mdi-wallet-outline",
     to: "/assets",
   },
   {
-    title: "Positions",
-    short: "Positions",
-    icon: "mdi-chart-line",
+    title: "Vị thế",
+    short: "Vị thế",
+    icon: "mdi-chart-line-variant",
     to: "/positions",
   },
   {
-    title: "History",
-    short: "History",
+    title: "Lịch sử",
+    short: "Lịch sử",
     icon: "mdi-history",
     to: "/transactions",
   },
   {
-    title: "Settings",
-    short: "Settings",
+    title: "Thị trường",
+    short: "Thị trường",
+    icon: "mdi-chart-areaspline",
+    to: "/market",
+  },
+  {
+    title: "Bán tự động",
+    short: "Bán",
+    icon: "mdi-cash-minus",
+    to: "/sell-manager",
+  },
+  {
+    title: "Cài đặt",
+    short: "Cài đặt",
     icon: "mdi-cog-outline",
     to: "/settings",
   },
@@ -144,70 +161,101 @@ const toggleTheme = () =>
 <style scoped>
 /* --- GLOBAL DARK UI --- */
 .app-wrapper {
-  background: #0e121a;
-  color: #cfd8dc;
-  font-family: Inter, sans-serif;
-  letter-spacing: 0.15px;
+  background: #0f172a;
+  color: #f1f5f9;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  letter-spacing: 0.02em;
 }
 
 /* --- TOP BAR --- */
 .app-bar-glass {
-  background: rgba(15, 18, 28, 0.55);
-  backdrop-filter: blur(18px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 .brand {
-  font-weight: 700;
-  text-transform: uppercase;
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
-  transition: 0.25s;
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  transition: all 0.3s ease;
+  cursor: pointer;
 }
 .brand:hover {
-  color: #4fc3f7;
-  transform: scale(1.07);
+  transform: scale(1.05);
+  filter: brightness(1.2);
 }
 
 /* --- ICON HOVER EFFECT --- */
+.bar-icon {
+  transition: all 0.3s ease;
+}
 .bar-icon:hover {
-  color: #4fc3f7;
-  transform: scale(1.12);
+  color: #a78bfa;
+  transform: scale(1.1);
+}
+.logout-btn {
+  transition: all 0.3s ease;
+}
+.logout-btn:hover {
+  background: rgba(239, 68, 68, 0.1);
 }
 .logout-btn:hover v-icon {
-  color: #ff7675;
-  transform: scale(1.14);
+  color: #ef4444;
 }
 
 /* --- DRAWER | SIDE MENU --- */
 .drawer-glass {
-  background: rgba(18, 24, 38, 0.72);
-  backdrop-filter: blur(24px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-right: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .menu-item {
-  padding: 12px 16px;
+  padding: 14px 18px;
   display: flex;
-  gap: 14px;
+  gap: 16px;
   align-items: center;
-  color: #b7c6d3;
-  border-radius: 10px;
-  margin: 5px 12px;
-  font-size: 0.88rem;
-  transition: 0.25s;
+  color: #94a3b8;
+  border-radius: 14px;
+  margin: 6px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
 }
 .menu-item:hover {
-  background: rgba(255, 255, 255, 0.06);
-  transform: translateX(6px);
+  background: rgba(167, 139, 250, 0.08);
+  color: #a78bfa;
+  transform: translateX(4px);
 }
 .menu-item.active {
-  background: linear-gradient(90deg, #4fc3f71b, #4fc3f705);
-  border: 1px solid #4fc3f72e;
-  color: #4fc3f7;
-  box-shadow: 0 0 10px #4fc3f725;
+  background: linear-gradient(
+    90deg,
+    rgba(124, 58, 237, 0.15),
+    rgba(124, 58, 237, 0.05)
+  );
+  border: 1px solid rgba(124, 58, 237, 0.3);
+  color: #a78bfa;
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
+}
+.menu-item.active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 60%;
+  background: linear-gradient(180deg, #7c3aed, #a78bfa);
+  border-radius: 0 4px 4px 0;
 }
 .menu-item.active v-icon {
-  color: #4fc3f7;
+  color: #a78bfa;
 }
 
 .menu-item-container {
@@ -218,41 +266,60 @@ const toggleTheme = () =>
 
 /* --- BACKGROUND MAIN --- */
 .content-layer {
-  background: radial-gradient(circle at top, #131823, #0e121a 70%);
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
   min-height: 100vh;
   padding-bottom: 70px;
-  transition: 0.3s;
+  transition: background 0.3s ease;
+  position: relative;
+}
+.content-layer::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 400px;
+  background: radial-gradient(
+    circle at 50% 0%,
+    rgba(124, 58, 237, 0.1) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
 }
 
 /* --- MOBILE NAV FLOAT OVER GLASS --- */
 .bottom-float-nav {
   position: fixed;
-  bottom: 14px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: 88%;
-  border-radius: 18px;
-  background: rgba(20, 26, 40, 0.78);
-  backdrop-filter: blur(22px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 4px 6px;
+  width: 90%;
+  max-width: 420px;
+  border-radius: 24px;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(30px) saturate(180%);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  padding: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 .nav-btn {
   flex: 1;
-  font-size: 10px;
-  color: #7f8f9f;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 .nav-btn v-icon {
-  font-size: 20px;
-  transition: 0.2s;
+  font-size: 22px;
+  transition: all 0.3s ease;
 }
 
 /* ACTIVE GLOW */
 .nav-btn .active {
-  color: #4fc3f7 !important;
+  color: #a78bfa !important;
   font-weight: 600;
-  text-shadow: 0 0 8px #4fc3f7;
+  text-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
 }
 
 /* RESPONSIVE */

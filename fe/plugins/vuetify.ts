@@ -63,26 +63,26 @@ export default defineNuxtPlugin((nuxtApp) => {
         darkTheme: {
           dark: true,
           colors: {
-            primary: "#0EB3E8",
-            background: "#0D1A26",
-            surface: "#1E1E2F",
-            secondary: "#2A3B4C",
-            accent: "#4FC3F7",
-            success: "#00E676",
-            error: "#FF5252",
-            warning: "#FFC107",
-            info: "#2196F3",
+            primary: "#7C3AED", // Purple primary
+            background: "#0F172A", // Dark slate background
+            surface: "#1E293B", // Card surface
+            secondary: "#334155",
+            accent: "#A78BFA", // Light purple accent
+            success: "#10B981", // Green success
+            error: "#EF4444", // Red error
+            warning: "#F59E0B",
+            info: "#3B82F6",
             "on-primary": "#FFFFFF",
-            "on-background": "#E0E0E0",
-            "on-surface": "#E0E0E0",
-            "text-primary": "#E0E0E0",
-            "text-secondary": "rgba(224, 224, 224, 0.7)",
-            "text-disabled": "rgba(224, 224, 224, 0.38)",
-            border: "#2A3B4C",
-            hover: "rgba(255, 255, 255, 0.1)",
-            card: "#1E1E2F",
-            tableHeader: "#2A3B4C",
-            tableRowHover: "rgba(255, 255, 255, 0.05)",
+            "on-background": "#F1F5F9",
+            "on-surface": "#F1F5F9",
+            "text-primary": "#F1F5F9",
+            "text-secondary": "rgba(241, 245, 249, 0.7)",
+            "text-disabled": "rgba(241, 245, 249, 0.38)",
+            border: "#334155",
+            hover: "rgba(167, 139, 250, 0.1)",
+            card: "#1E293B",
+            tableHeader: "#334155",
+            tableRowHover: "rgba(167, 139, 250, 0.05)",
           },
         },
       },
