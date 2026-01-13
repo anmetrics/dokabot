@@ -33,6 +33,10 @@ export class FuturesEmaStrategy implements IStrategy {
   private minProfitToExit = 0.2; // $0.2 - profit tối thiểu để exit khi sideway/reversal
   private cutLossAmount = -1; // -$1 cắt lỗ (rộng hơn để tránh stop sớm)
 
+  // FVG (Fair Value Gap) settings
+  private fvgMinGapPercent = 0.001; // 0.1% - khoảng trống tối thiểu để coi là FVG
+  private fvgTargetMultiplier = 0.5; // 50% của FVG làm target
+
   private timeframes: Record<
     string,
     {
@@ -125,15 +129,17 @@ export class FuturesEmaStrategy implements IStrategy {
             exitPrice: (signal as any).exitPrice,
             exitTime: (signal as any).exitTime,
             profit: (signal as any).profit,
-            exitType: (signal as any).quickProfit
-              ? 'QUICK_PROFIT'
-              : (signal as any).cutLoss
-                ? 'CUT_LOSS'
-                : (signal as any).sidewayExit
-                  ? 'SIDEWAY'
-                  : (signal as any).reversalExit
-                    ? 'REVERSAL'
-                    : 'OTHER',
+            exitType: (signal as any).fvgTargetExit
+              ? 'FVG_TARGET'
+              : (signal as any).quickProfit
+                ? 'QUICK_PROFIT'
+                : (signal as any).cutLoss
+                  ? 'CUT_LOSS'
+                  : (signal as any).sidewayExit
+                    ? 'SIDEWAY'
+                    : (signal as any).reversalExit
+                      ? 'REVERSAL'
+                      : 'OTHER',
           };
           trades.push(exitTrade);
           totalProfit += (signal as any).profit;
@@ -381,6 +387,70 @@ export class FuturesEmaStrategy implements IStrategy {
   }
 
   /**
+   * Phát hiện FVG (Fair Value Gap) - khoảng trống giá giữa 3 nến
+   * Bullish FVG: low[2] > high[0] (gap giữa nến 0 và nến 2)
+   * Bearish FVG: high[2] < low[0] (gap giữa nến 0 và nến 2)
+   *
+   * @returns { type: 'bullish' | 'bearish', gapSize, fvgLow, fvgHigh, targetPrice }
+   */
+  private detectFVG(candles: Candle[]): {
+    type: 'bullish' | 'bearish' | null;
+    gapSize: number;
+    fvgLow: number;
+    fvgHigh: number;
+    targetPrice: number;
+  } | null {
+    if (candles.length < 3) return null;
+
+    // Lấy 3 nến gần nhất: [0] = cũ nhất, [1] = giữa, [2] = mới nhất
+    const candle0 = candles[0];
+    const candle2 = candles[2];
+
+    const high0 = +candle0.high;
+    const low0 = +candle0.low;
+    const high2 = +candle2.high;
+    const low2 = +candle2.low;
+
+    // Bullish FVG: nến 2 (mới) có low > high của nến 0 (cũ)
+    // → Có khoảng trống bên trên, giá có thể quay lại fill
+    const bullishGap = low2 - high0;
+    const bullishGapPercent = bullishGap / high0;
+
+    if (bullishGapPercent > this.fvgMinGapPercent) {
+      // FVG từ high0 đến low2
+      const targetPrice = high0 + bullishGap * this.fvgTargetMultiplier;
+
+      return {
+        type: 'bullish',
+        gapSize: bullishGap,
+        fvgLow: high0,
+        fvgHigh: low2,
+        targetPrice,
+      };
+    }
+
+    // Bearish FVG: nến 2 (mới) có high < low của nến 0 (cũ)
+    // → Có khoảng trống bên dưới, giá có thể quay lại fill
+    const bearishGap = low0 - high2;
+    const bearishGapPercent = bearishGap / low0;
+
+    if (bearishGapPercent > this.fvgMinGapPercent) {
+      // FVG từ high2 đến low0
+      const targetPrice = low0 - bearishGap * this.fvgTargetMultiplier;
+
+      return {
+        type: 'bearish',
+        gapSize: bearishGap,
+        fvgLow: high2,
+        fvgHigh: low0,
+        targetPrice,
+      };
+    }
+
+    return null;
+  }
+
+  /**
    * onCandle logic chung cho backtest và live
    * - isBacktest: true → chỉ tạo signal cho backtest
    * - position: truyền vào backtest để chốt khi sideway
@@ -460,6 +530,9 @@ export class FuturesEmaStrategy implements IStrategy {
     const slopeMedium = Math.abs((mediumNow - mediumPrev) / mediumPrev);
     const slopeSlow = Math.abs((slowNow - slowPrev) / slowPrev);
 
+    // Phát hiện FVG từ 3 nến gần nhất
+    const fvg = this.detectFVG(data.lastCandles);
+
     // ==== EXIT LOGIC (TREND ĐI NGANG HOẶC ĐẢO CHIỀU) ====
     if (position) {
       const pnlPct =
@@ -473,6 +546,40 @@ export class FuturesEmaStrategy implements IStrategy {
       const profitBeforeFee = pnlPct * this.usdPerTrade * this.maxLeverage;
       const feeAmount = this.usdPerTrade * this.maxLeverage * this.feePerTrade;
       const profit = profitBeforeFee - feeAmount;
+
+      // 0. FVG TARGET - Chốt khi đạt target FVG (nếu có FVG ngược chiều)
+      if (fvg) {
+        const shouldExitAtFvg =
+          (position.positionSide === 'LONG' &&
+            fvg.type === 'bearish' &&
+            closePrice >= fvg.targetPrice &&
+            profit > this.minProfitToExit) ||
+          (position.positionSide === 'SHORT' &&
+            fvg.type === 'bullish' &&
+            closePrice <= fvg.targetPrice &&
+            profit > this.minProfitToExit);
+
+        if (shouldExitAtFvg) {
+          if (isBacktest) {
+            return {
+              ...position,
+              exitPrice: closePrice,
+              exitTime: this.toVietnamTime(new Date(candle.closeTime)),
+              profit,
+              fvgTargetExit: true,
+            };
+          } else {
+            await this.binanceService.closeFuturesPosition(
+              this.symbol,
+              position.positionSide,
+            );
+            console.log(
+              `[FVG TARGET EXIT] ${position.positionSide} +$${profit.toFixed(2)} @ ${closePrice.toFixed(4)}`,
+            );
+            return null;
+          }
+        }
+      }
 
       // 1. QUICK PROFIT - Chốt nhanh khi đạt target
       if (profit >= this.quickProfitTarget) {
@@ -594,20 +701,26 @@ export class FuturesEmaStrategy implements IStrategy {
     const priceBelowMedium = closePrice < mediumNow;
 
     // TÍN HIỆU LONG: Có trend + Fast > Medium + Fast cắt lên + Momentum + Price > Medium
+    // + có FVG bullish hỗ trợ (optional nhưng tăng chất lượng)
+    const hasBullishFvg = fvg && fvg.type === 'bullish';
     const strongLongSignal =
       hasTrend &&
       emasBullish &&
       fastCrossUpMedium &&
       bullishMomentum &&
-      priceAboveMedium;
+      priceAboveMedium &&
+      hasBullishFvg; // Thêm điều kiện FVG
 
     // TÍN HIỆU SHORT: Có trend + Fast < Medium + Fast cắt xuống + Momentum + Price < Medium
+    // + có FVG bearish hỗ trợ (optional nhưng tăng chất lượng)
+    const hasBearishFvg = fvg && fvg.type === 'bearish';
     const strongShortSignal =
       hasTrend &&
       emasBearish &&
       fastCrossDownMedium &&
       bearishMomentum &&
-      priceBelowMedium;
+      priceBelowMedium &&
+      hasBearishFvg; // Thêm điều kiện FVG
 
     if (!strongLongSignal && !strongShortSignal) return null;
 
@@ -623,6 +736,7 @@ export class FuturesEmaStrategy implements IStrategy {
         entryTime: this.toVietnamTime(new Date(candle.closeTime)),
         entryPrice: closePrice,
         qty,
+        fvgTarget: fvg ? fvg.targetPrice : null, // Lưu target FVG
       };
     }
 
@@ -651,8 +765,12 @@ export class FuturesEmaStrategy implements IStrategy {
       positionSide === 'LONG' ? 'BUY' : 'SELL',
       adjustedQty,
     );
+
+    const fvgInfo = fvg
+      ? `| FVG Target: ${fvg.targetPrice.toFixed(4)} (Gap: ${(fvg.gapSize * 100).toFixed(2)}%)`
+      : '';
     console.log(
-      `[LIVE] OPENED ${positionSide} | Qty: ${adjustedQty.toFixed(4)} | Price: ${closePrice.toFixed(4)}`,
+      `[LIVE] OPENED ${positionSide} | Qty: ${adjustedQty.toFixed(4)} | Price: ${closePrice.toFixed(4)} ${fvgInfo}`,
     );
 
     return null;
