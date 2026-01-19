@@ -172,10 +172,10 @@ export class MiniReversalDcaStrategy implements IStrategy {
       this.regimeManager.pushObservation(obs);
     }
     // optional: log HMM params after seed
-    const hmm = this.regimeManager.getHMMParams();
-    console.log(
-      `[seedRegime] HMM mu: ${JSON.stringify(hmm.mu)}, sigma: ${JSON.stringify(hmm.sigma)}`,
-    );
+    // const hmm = this.regimeManager.getHMMParams();
+    // console.log(
+    //   `[seedRegime] HMM mu: ${JSON.stringify(hmm.mu)}, sigma: ${JSON.stringify(hmm.sigma)}`,
+    // );
   }
 
   private async calcSignal(timeframe: string) {
