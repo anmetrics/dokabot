@@ -91,6 +91,7 @@ let mainSeries: ISeriesApi<"Candlestick"> | ISeriesApi<"Line"> | ISeriesApi<"Are
 let volumeSeries: ISeriesApi<"Histogram"> | null = null;
 const indicatorSeries: Map<string, ISeriesApi<"Line">> = new Map();
 let stopWs: (() => void) | null = null;
+let resizeObserver: ResizeObserver | null = null;
 
 // 24h stats
 const high24h = ref(0);
@@ -555,11 +556,21 @@ onMounted(() => {
   initChart();
   loadData();
   window.addEventListener("resize", resizeChart);
+
+  // Use ResizeObserver to handle sidebar toggle and container resize
+  if (chartContainer.value) {
+    resizeObserver = new ResizeObserver(() => {
+      resizeChart();
+    });
+    resizeObserver.observe(chartContainer.value);
+  }
 });
 
 onBeforeUnmount(() => {
   stopWs?.();
   window.removeEventListener("resize", resizeChart);
+  resizeObserver?.disconnect();
+  resizeObserver = null;
   chart?.remove();
   chart = null;
   mainSeries = null;
