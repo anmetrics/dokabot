@@ -1,26 +1,31 @@
 <template>
   <v-app dark class="app-wrapper">
     <!-- TOP BAR -->
-    <v-app-bar flat height="54" class="app-bar-glass">
+    <v-app-bar flat height="48" class="app-bar-glass">
       <v-app-bar-nav-icon
         @click="drawer = !drawer"
         class="bar-icon d-none d-sm-flex"
       />
 
-      <v-toolbar-title @click="navigate('/')" class="brand"
-        >Reveli</v-toolbar-title
-      >
+      <div class="brand-wrapper" @click="navigate('/')">
+        <div class="brand-icon">
+          <v-icon size="20" color="white">mdi-chart-timeline-variant</v-icon>
+        </div>
+        <span class="brand">Reveli</span>
+      </div>
 
       <v-spacer />
 
       <!-- Toggle Theme -->
-      <v-btn icon @click="toggleTheme">
-        <v-icon size="20">mdi-weather-night</v-icon>
+      <v-btn icon class="topbar-btn" @click="toggleTheme">
+        <v-icon size="20">{{
+          isDark ? "mdi-weather-night" : "mdi-white-balance-sunny"
+        }}</v-icon>
       </v-btn>
 
       <!-- Logout -->
-      <v-btn icon class="logout-btn" @click="logout">
-        <v-icon size="22">mdi-logout</v-icon>
+      <v-btn icon class="topbar-btn logout-btn" @click="logout">
+        <v-icon size="20">mdi-logout</v-icon>
       </v-btn>
     </v-app-bar>
 
@@ -28,10 +33,15 @@
     <v-navigation-drawer
       app
       v-model="drawer"
-      width="230"
+      width="200"
       class="drawer-glass d-none d-sm-flex"
     >
-      <v-list density="compact" class="mt-3">
+      <!-- Drawer Header -->
+      <div class="drawer-header">
+        <span class="drawer-title">Menu</span>
+      </div>
+
+      <v-list density="compact" class="menu-list">
         <v-list-item
           v-for="item in menuItems"
           :key="item.to"
@@ -39,8 +49,13 @@
           :class="['menu-item', { active: isActive(item.to) }]"
         >
           <div class="menu-item-container">
-            <v-icon size="22">{{ item.icon }}</v-icon>
-            <span>{{ item.title }}</span>
+            <div
+              class="menu-icon-wrapper"
+              :class="{ active: isActive(item.to) }"
+            >
+              <v-icon size="20">{{ item.icon }}</v-icon>
+            </div>
+            <span class="menu-title">{{ item.title }}</span>
           </div>
         </v-list-item>
       </v-list>
@@ -142,7 +157,7 @@ const menuItems = [
 
 /** Bottom menu (No HOME) */
 const mobileMenuItems = computed(() =>
-  menuItems.filter((item) => item.to !== "/")
+  menuItems.filter((item) => item.to !== "/"),
 );
 
 const isActive = (path: string) => route.path === path;
@@ -162,105 +177,236 @@ const toggleTheme = () =>
 .app-wrapper {
   background: #0f172a;
   color: #f1f5f9;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family:
+    "Inter",
+    -apple-system,
+    BlinkMacSystemFont,
+    sans-serif;
   letter-spacing: 0.02em;
 }
 
 /* --- TOP BAR --- */
 .app-bar-glass {
-  background: rgba(15, 23, 42, 0.8);
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.95) 0%,
+    rgba(15, 23, 42, 0.9) 100%
+  );
   backdrop-filter: blur(20px) saturate(180%);
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
+
+.brand-wrapper {
+  margin-left: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.brand-wrapper:hover {
+  transform: translateX(2px);
+}
+
+.brand-wrapper:hover .brand-icon {
+  box-shadow: 0 3px 12px rgba(124, 58, 237, 0.5);
+}
+
+.brand-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  border-radius: 8px;
+  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+  transition: all 0.3s ease;
+}
+
+.brand-icon .v-icon {
+  font-size: 16px !important;
+}
+
 .brand {
   font-weight: 800;
-  font-size: 1.3rem;
+  font-size: 1rem;
   letter-spacing: -0.02em;
-  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  transition: all 0.3s ease;
-  cursor: pointer;
 }
-.brand:hover {
-  transform: scale(1.05);
-  filter: brightness(1.2);
+
+/* --- TOP BAR BUTTONS --- */
+.topbar-btn {
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  color: #94a3b8;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s ease;
+}
+
+.topbar-btn .v-icon {
+  font-size: 18px !important;
+}
+
+.topbar-btn:hover {
+  color: #f1f5f9;
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.25);
+  transform: translateY(-1px);
+}
+
+.topbar-btn.logout-btn:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 /* --- ICON HOVER EFFECT --- */
 .bar-icon {
-  transition: all 0.3s ease;
+  width: 32px;
+  height: 32px;
+  color: #94a3b8;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  border-radius: 8px;
+  transition: all 0.2s ease;
 }
+
 .bar-icon:hover {
   color: #a78bfa;
-  transform: scale(1.1);
-}
-.logout-btn {
-  transition: all 0.3s ease;
-}
-.logout-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-}
-.logout-btn:hover v-icon {
-  color: #ef4444;
+  background: rgba(167, 139, 250, 0.15);
+  border-color: rgba(167, 139, 250, 0.25);
 }
 
 /* --- DRAWER | SIDE MENU --- */
 .drawer-glass {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(30px) saturate(180%);
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   border-right: 1px solid rgba(167, 139, 250, 0.1);
 }
 
-.menu-item {
-  padding: 14px 18px;
+.drawer-header {
+  padding: 14px 14px 12px;
+  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
+  background: rgba(124, 58, 237, 0.03);
+}
+
+.drawer-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 1px;
   display: flex;
-  gap: 16px;
   align-items: center;
-  color: #94a3b8;
-  border-radius: 14px;
-  margin: 6px 16px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  gap: 6px;
+}
+
+.drawer-title::before {
+  content: "";
+  width: 3px;
+  height: 12px;
+  background: linear-gradient(180deg, #7c3aed, #a78bfa);
+  border-radius: 2px;
+}
+
+.menu-list {
+  padding: 8px 6px;
+  background: transparent;
+}
+
+.menu-item {
+  padding: 0;
+  margin: 2px 0;
+  border-radius: 8px;
+  transition: all 0.2s ease;
   position: relative;
+  min-height: auto;
 }
+
 .menu-item:hover {
-  background: rgba(167, 139, 250, 0.08);
-  color: #a78bfa;
-  transform: translateX(4px);
+  background: rgba(167, 139, 250, 0.06);
 }
+
 .menu-item.active {
   background: linear-gradient(
-    90deg,
-    rgba(124, 58, 237, 0.15),
-    rgba(124, 58, 237, 0.05)
+    135deg,
+    rgba(124, 58, 237, 0.12) 0%,
+    rgba(167, 139, 250, 0.08) 100%
   );
-  border: 1px solid rgba(124, 58, 237, 0.3);
-  color: #a78bfa;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
 }
+
 .menu-item.active::before {
   content: "";
   position: absolute;
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  width: 4px;
-  height: 60%;
+  width: 3px;
+  height: 50%;
   background: linear-gradient(180deg, #7c3aed, #a78bfa);
-  border-radius: 0 4px 4px 0;
-}
-.menu-item.active v-icon {
-  color: #a78bfa;
+  border-radius: 0 3px 3px 0;
 }
 
 .menu-item-container {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 10px;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.menu-icon-wrapper {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(167, 139, 250, 0.08);
+  border: 1px solid rgba(167, 139, 250, 0.1);
+  border-radius: 8px;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.menu-icon-wrapper .v-icon {
+  font-size: 16px !important;
+}
+
+.menu-item:hover .menu-icon-wrapper {
+  background: rgba(167, 139, 250, 0.12);
+  border-color: rgba(167, 139, 250, 0.2);
+  color: #a78bfa;
+}
+
+.menu-icon-wrapper.active {
+  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);
+}
+
+.menu-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.menu-item:hover .menu-title {
+  color: #f1f5f9;
+}
+
+.menu-item.active .menu-title {
+  color: #f1f5f9;
+  font-weight: 600;
 }
 
 /* --- BACKGROUND MAIN --- */
@@ -271,16 +417,17 @@ const toggleTheme = () =>
   transition: background 0.3s ease;
   position: relative;
 }
+
 .content-layer::before {
   content: "";
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  height: 400px;
+  height: 500px;
   background: radial-gradient(
-    circle at 50% 0%,
-    rgba(124, 58, 237, 0.1) 0%,
+    ellipse 80% 50% at 50% -10%,
+    rgba(124, 58, 237, 0.12) 0%,
     transparent 70%
   );
   pointer-events: none;
@@ -292,45 +439,77 @@ const toggleTheme = () =>
   bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  width: 90%;
-  max-width: 420px;
-  border-radius: 24px;
-  background: rgba(15, 23, 42, 0.95);
+  width: 92%;
+  max-width: 440px;
+  border-radius: 20px;
+  background: linear-gradient(
+    180deg,
+    rgba(30, 41, 59, 0.98) 0%,
+    rgba(15, 23, 42, 0.98) 100%
+  );
   backdrop-filter: blur(30px) saturate(180%);
-  border: 1px solid rgba(167, 139, 250, 0.2);
-  padding: 8px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  padding: 6px 8px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(167, 139, 250, 0.05) inset;
 }
 
 .nav-btn {
   flex: 1;
-  font-size: 11px;
+  font-size: 10px;
   color: #64748b;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
+  border-radius: 12px;
+  padding: 8px 4px;
 }
+
+.nav-btn:hover {
+  background: rgba(167, 139, 250, 0.08);
+}
+
 .nav-btn v-icon {
-  font-size: 22px;
-  transition: all 0.3s ease;
+  font-size: 20px;
+  transition: all 0.2s ease;
 }
 
 /* ACTIVE GLOW */
 .nav-btn .active {
   color: #a78bfa !important;
   font-weight: 600;
-  text-shadow: 0 0 12px rgba(167, 139, 250, 0.6);
 }
 
 /* RESPONSIVE */
 .d-sm-none {
   display: none;
 }
+
 @media (max-width: 600px) {
   .d-sm-none {
     display: flex !important;
   }
   .d-sm-flex {
     display: none !important;
+  }
+}
+
+@media (max-width: 1024px) {
+  .drawer-header {
+    padding: 12px;
+  }
+
+  .menu-item-container {
+    padding: 6px 8px;
+  }
+
+  .menu-icon-wrapper {
+    width: 28px;
+    height: 28px;
+  }
+
+  .menu-title {
+    font-size: 12px;
   }
 }
 </style>

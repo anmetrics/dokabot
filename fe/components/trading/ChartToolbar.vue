@@ -175,8 +175,8 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 .chart-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 4px;
+  padding: 5px 8px;
   background: rgba(30, 41, 59, 0.8);
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
   flex-wrap: wrap;
@@ -185,7 +185,7 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 .toolbar-section {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .toolbar-section.timeframes {
@@ -193,8 +193,8 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 }
 
 .tf-btn {
-  padding: 4px 10px;
-  font-size: 12px;
+  padding: 3px 6px;
+  font-size: 10px;
   font-weight: 500;
   color: #94a3b8;
   background: transparent;
@@ -216,7 +216,7 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 }
 
 .type-btn {
-  padding: 6px;
+  padding: 4px;
   color: #94a3b8;
   background: transparent;
   border: 1px solid transparent;
@@ -226,6 +226,10 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.type-btn .v-icon {
+  font-size: 14px !important;
 }
 
 .type-btn:hover {
@@ -242,9 +246,9 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 .indicator-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 12px;
-  font-size: 12px;
+  gap: 4px;
+  padding: 4px 8px;
+  font-size: 10px;
   font-weight: 500;
   color: #94a3b8;
   background: transparent;
@@ -252,6 +256,10 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.indicator-btn .v-icon {
+  font-size: 14px !important;
 }
 
 .indicator-btn:hover {
@@ -263,7 +271,7 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 .indicator-menu {
   background: #1e293b !important;
   border: 1px solid rgba(167, 139, 250, 0.2);
-  min-width: 240px;
+  min-width: 200px;
 }
 
 .indicator-menu :deep(.v-list) {
@@ -272,24 +280,29 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 
 .indicator-menu :deep(.v-list-subheader) {
   color: #64748b;
-  font-size: 11px;
+  font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  min-height: 24px;
+}
+
+.indicator-menu :deep(.v-list-item) {
+  min-height: 28px;
 }
 
 .indicator-menu :deep(.v-list-item-title) {
-  font-size: 13px;
+  font-size: 11px;
   color: #f1f5f9;
 }
 
 .color-dot {
-  width: 12px;
-  height: 12px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
 }
 
 .action-btn {
-  padding: 6px;
+  padding: 4px;
   color: #94a3b8;
   background: transparent;
   border: 1px solid transparent;
@@ -301,20 +314,24 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
   justify-content: center;
 }
 
+.action-btn .v-icon {
+  font-size: 14px !important;
+}
+
 .action-btn:hover {
   color: #f1f5f9;
   background: rgba(167, 139, 250, 0.1);
 }
 
 .toolbar-section.chart-types {
-  margin-left: 8px;
-  padding-left: 8px;
+  margin-left: 4px;
+  padding-left: 4px;
   border-left: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .toolbar-section.indicators {
-  margin-left: 8px;
-  padding-left: 8px;
+  margin-left: 4px;
+  padding-left: 4px;
   border-left: 1px solid rgba(167, 139, 250, 0.1);
 }
 
@@ -324,12 +341,12 @@ function isIndicatorEnabled(type: string, params: Record<string, number>): boole
 
 @media (max-width: 768px) {
   .chart-toolbar {
-    padding: 6px 8px;
+    padding: 4px 6px;
   }
 
   .tf-btn {
-    padding: 3px 6px;
-    font-size: 11px;
+    padding: 2px 4px;
+    font-size: 9px;
   }
 
   .indicator-btn span {

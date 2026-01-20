@@ -156,7 +156,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.1);
   overflow: hidden;
 }
@@ -165,18 +165,18 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 10px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .rt-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #f1f5f9;
 }
 
 .auto-scroll-btn {
-  padding: 4px;
+  padding: 3px;
   color: #64748b;
   background: transparent;
   border: 1px solid rgba(167, 139, 250, 0.1);
@@ -185,6 +185,10 @@ onBeforeUnmount(() => {
   transition: all 0.2s ease;
   display: flex;
   align-items: center;
+}
+
+.auto-scroll-btn .v-icon {
+  font-size: 12px !important;
 }
 
 .auto-scroll-btn:hover {
@@ -200,8 +204,8 @@ onBeforeUnmount(() => {
 
 .rt-columns {
   display: flex;
-  padding: 6px 12px;
-  font-size: 10px;
+  padding: 4px 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -227,7 +231,7 @@ onBeforeUnmount(() => {
 
 .rt-row {
   display: flex;
-  padding: 4px 12px;
+  padding: 2px 10px;
   transition: background 0.15s ease;
 }
 
@@ -250,7 +254,7 @@ onBeforeUnmount(() => {
 
 .rt-price {
   flex: 1.2;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   font-family: monospace;
 }
@@ -265,7 +269,7 @@ onBeforeUnmount(() => {
 
 .rt-amount {
   flex: 1;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
   color: #94a3b8;
   font-family: monospace;
@@ -273,7 +277,7 @@ onBeforeUnmount(() => {
 
 .rt-time {
   flex: 1;
-  font-size: 10px;
+  font-size: 9px;
   color: #64748b;
   text-align: right;
   font-family: monospace;
@@ -282,7 +286,7 @@ onBeforeUnmount(() => {
 .loading-state {
   display: flex;
   justify-content: center;
-  padding: 24px;
+  padding: 16px;
 }
 
 /* Scrollbar */

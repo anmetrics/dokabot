@@ -219,7 +219,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.1);
   overflow: hidden;
 }
@@ -228,12 +228,12 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 10px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .ob-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #f1f5f9;
 }
@@ -241,15 +241,19 @@ onBeforeUnmount(() => {
 .agg-btn {
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px 8px;
-  font-size: 11px;
+  gap: 3px;
+  padding: 3px 6px;
+  font-size: 9px;
   color: #94a3b8;
   background: rgba(167, 139, 250, 0.1);
   border: 1px solid rgba(167, 139, 250, 0.2);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+
+.agg-btn .v-icon {
+  font-size: 12px !important;
 }
 
 .agg-btn:hover {
@@ -262,11 +266,11 @@ onBeforeUnmount(() => {
 }
 
 .agg-menu :deep(.v-list-item) {
-  min-height: 32px;
+  min-height: 26px;
 }
 
 .agg-menu :deep(.v-list-item-title) {
-  font-size: 12px;
+  font-size: 10px;
   color: #f1f5f9;
 }
 
@@ -276,8 +280,8 @@ onBeforeUnmount(() => {
 
 .ob-columns {
   display: flex;
-  padding: 6px 12px;
-  font-size: 10px;
+  padding: 4px 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -306,7 +310,7 @@ onBeforeUnmount(() => {
 
 .ob-row {
   display: flex;
-  padding: 3px 12px;
+  padding: 2px 10px;
   cursor: pointer;
   position: relative;
   transition: background 0.15s ease;
@@ -334,7 +338,7 @@ onBeforeUnmount(() => {
 
 .ob-price {
   flex: 1.2;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   font-family: monospace;
   position: relative;
@@ -352,7 +356,7 @@ onBeforeUnmount(() => {
 .ob-amount,
 .ob-total {
   flex: 1;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 400;
   color: #94a3b8;
   text-align: right;
@@ -365,7 +369,7 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 12px;
+  padding: 5px 10px;
   background: rgba(167, 139, 250, 0.05);
   border-top: 1px solid rgba(167, 139, 250, 0.1);
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
@@ -374,10 +378,14 @@ onBeforeUnmount(() => {
 .spread-price {
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 14px;
+  gap: 3px;
+  font-size: 12px;
   font-weight: 700;
   font-family: monospace;
+}
+
+.spread-price .v-icon {
+  font-size: 12px !important;
 }
 
 .spread-price.up {
@@ -389,7 +397,7 @@ onBeforeUnmount(() => {
 }
 
 .spread-value {
-  font-size: 10px;
+  font-size: 9px;
   color: #64748b;
 }
 

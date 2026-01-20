@@ -585,7 +585,7 @@ onBeforeUnmount(() => {
   flex-direction: column;
   height: 100%;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.1);
   overflow: hidden;
 }
@@ -604,20 +604,20 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 8px 12px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
 }
 
 .price-info {
   display: flex;
   align-items: baseline;
-  gap: 12px;
+  gap: 8px;
 }
 
 .current-price {
-  font-size: 24px;
+  font-size: 18px;
   font-weight: 700;
 }
 
@@ -630,7 +630,7 @@ onBeforeUnmount(() => {
 }
 
 .price-change {
-  font-size: 14px;
+  font-size: 11px;
   font-weight: 500;
 }
 
@@ -644,23 +644,23 @@ onBeforeUnmount(() => {
 
 .market-stats {
   display: flex;
-  gap: 24px;
+  gap: 16px;
 }
 
 .stat {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: 9px;
   color: #64748b;
   text-transform: uppercase;
 }
 
 .stat-value {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 600;
   color: #f1f5f9;
 }
@@ -668,7 +668,7 @@ onBeforeUnmount(() => {
 .chart-container {
   flex: 1;
   position: relative;
-  min-height: 400px;
+  min-height: 300px;
 }
 
 .chart-wrapper {
@@ -690,23 +690,23 @@ onBeforeUnmount(() => {
 
 @media (max-width: 768px) {
   .price-header {
-    padding: 8px 12px;
+    padding: 6px 10px;
   }
 
   .current-price {
-    font-size: 20px;
+    font-size: 16px;
   }
 
   .market-stats {
-    gap: 16px;
+    gap: 12px;
   }
 
   .stat-value {
-    font-size: 12px;
+    font-size: 10px;
   }
 
   .chart-container {
-    min-height: 300px;
+    min-height: 250px;
   }
 }
 </style>

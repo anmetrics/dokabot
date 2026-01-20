@@ -209,15 +209,15 @@ function cancelOrder(orderId: string) {
   flex-direction: column;
   height: 100%;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.1);
   overflow: hidden;
 }
 
 .tabs-header {
   display: flex;
-  gap: 4px;
-  padding: 12px 16px;
+  gap: 3px;
+  padding: 8px 10px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
   overflow-x: auto;
 }
@@ -225,14 +225,14 @@ function cancelOrder(orderId: string) {
 .tab-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  font-size: 12px;
+  gap: 4px;
+  padding: 5px 10px;
+  font-size: 10px;
   font-weight: 500;
   color: #64748b;
   background: transparent;
   border: 1px solid transparent;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -250,12 +250,12 @@ function cancelOrder(orderId: string) {
 }
 
 .tab-count {
-  padding: 2px 6px;
-  font-size: 10px;
+  padding: 1px 5px;
+  font-size: 9px;
   font-weight: 600;
   color: #f59e0b;
   background: rgba(245, 158, 11, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .tabs-content {
@@ -271,8 +271,8 @@ function cancelOrder(orderId: string) {
 
 .panel-header {
   display: flex;
-  padding: 8px 16px;
-  font-size: 10px;
+  padding: 6px 10px;
+  font-size: 9px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -282,7 +282,7 @@ function cancelOrder(orderId: string) {
 
 .panel-header span {
   flex: 1;
-  min-width: 80px;
+  min-width: 60px;
 }
 
 .panel-header span:first-child {
@@ -301,7 +301,7 @@ function cancelOrder(orderId: string) {
 
 .panel-row {
   display: flex;
-  padding: 10px 16px;
+  padding: 6px 10px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.03);
   transition: background 0.15s ease;
 }
@@ -312,8 +312,8 @@ function cancelOrder(orderId: string) {
 
 .cell {
   flex: 1;
-  min-width: 80px;
-  font-size: 12px;
+  min-width: 60px;
+  font-size: 10px;
   color: #94a3b8;
 }
 
@@ -357,17 +357,17 @@ function cancelOrder(orderId: string) {
 
 .cell.fee {
   color: #64748b;
-  font-size: 11px;
+  font-size: 9px;
 }
 
 .cell.time {
-  font-size: 11px;
+  font-size: 9px;
   color: #64748b;
 }
 
 .cancel-btn {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 9px;
   font-weight: 500;
   color: #ef4444;
   background: rgba(239, 68, 68, 0.1);
@@ -387,16 +387,20 @@ function cancelOrder(orderId: string) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 48px 24px;
-  gap: 12px;
+  padding: 32px 16px;
+  gap: 8px;
   color: #475569;
-  font-size: 13px;
+  font-size: 11px;
+}
+
+.empty-state .v-icon {
+  font-size: 28px !important;
 }
 
 /* Scrollbar */
 .panel-scroll::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 3px;
+  height: 3px;
 }
 
 .panel-scroll::-webkit-scrollbar-track {
@@ -411,12 +415,12 @@ function cancelOrder(orderId: string) {
 @media (max-width: 768px) {
   .panel-header,
   .panel-row {
-    padding: 8px 12px;
+    padding: 5px 8px;
   }
 
   .cell {
-    min-width: 60px;
-    font-size: 11px;
+    min-width: 50px;
+    font-size: 9px;
   }
 }
 </style>

@@ -304,33 +304,33 @@ watch(sliderPercent, (pct) => {
   flex-direction: column;
   height: 100%;
   background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 12px;
+  border-radius: 8px;
   border: 1px solid rgba(167, 139, 250, 0.1);
   overflow: hidden;
 }
 
 .of-header {
-  padding: 12px;
+  padding: 8px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .of-tabs {
   display: flex;
-  gap: 4px;
+  gap: 3px;
   background: rgba(15, 23, 42, 0.5);
-  padding: 4px;
-  border-radius: 8px;
+  padding: 3px;
+  border-radius: 6px;
 }
 
 .of-tab {
   flex: 1;
-  padding: 8px 16px;
-  font-size: 13px;
+  padding: 6px 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #94a3b8;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -353,14 +353,14 @@ watch(sliderPercent, (pct) => {
 
 .of-type-selector {
   display: flex;
-  gap: 4px;
-  padding: 8px 12px;
+  gap: 3px;
+  padding: 6px 8px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.05);
 }
 
 .type-btn {
-  padding: 4px 10px;
-  font-size: 11px;
+  padding: 3px 8px;
+  font-size: 10px;
   font-weight: 500;
   color: #64748b;
   background: transparent;
@@ -382,23 +382,23 @@ watch(sliderPercent, (pct) => {
 
 .of-form {
   flex: 1;
-  padding: 12px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 8px;
 }
 
 .of-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 4px;
 }
 
 .field-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 11px;
+  font-size: 10px;
   color: #64748b;
 }
 
@@ -411,7 +411,7 @@ watch(sliderPercent, (pct) => {
   align-items: center;
   background: rgba(15, 23, 42, 0.5);
   border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 6px;
+  border-radius: 5px;
   transition: border-color 0.2s ease;
 }
 
@@ -424,7 +424,7 @@ watch(sliderPercent, (pct) => {
 }
 
 .input-btn {
-  padding: 8px;
+  padding: 5px;
   color: #64748b;
   background: transparent;
   border: none;
@@ -434,14 +434,18 @@ watch(sliderPercent, (pct) => {
   transition: color 0.2s ease;
 }
 
+.input-btn .v-icon {
+  font-size: 14px !important;
+}
+
 .input-btn:hover {
   color: #a78bfa;
 }
 
 .of-input {
   flex: 1;
-  padding: 8px;
-  font-size: 13px;
+  padding: 6px;
+  font-size: 11px;
   font-weight: 500;
   color: #f1f5f9;
   background: transparent;
@@ -464,12 +468,12 @@ watch(sliderPercent, (pct) => {
 .of-slider {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
 }
 
 .slider {
   width: 100%;
-  height: 4px;
+  height: 3px;
   -webkit-appearance: none;
   appearance: none;
   background: rgba(167, 139, 250, 0.2);
@@ -480,8 +484,8 @@ watch(sliderPercent, (pct) => {
 .slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   background: #a78bfa;
   border-radius: 50%;
   cursor: pointer;
@@ -490,18 +494,18 @@ watch(sliderPercent, (pct) => {
 .slider-marks {
   display: flex;
   justify-content: space-between;
-  gap: 4px;
+  gap: 3px;
 }
 
 .mark-btn {
   flex: 1;
-  padding: 4px;
-  font-size: 10px;
+  padding: 3px;
+  font-size: 9px;
   font-weight: 500;
   color: #64748b;
   background: rgba(15, 23, 42, 0.5);
   border: 1px solid rgba(167, 139, 250, 0.1);
-  border-radius: 4px;
+  border-radius: 3px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -521,8 +525,8 @@ watch(sliderPercent, (pct) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 0;
-  font-size: 11px;
+  padding: 4px 0;
+  font-size: 10px;
 }
 
 .balance-label {
@@ -536,12 +540,12 @@ watch(sliderPercent, (pct) => {
 }
 
 .of-submit {
-  padding: 12px;
-  font-size: 14px;
+  padding: 8px;
+  font-size: 12px;
   font-weight: 600;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
 }
@@ -571,12 +575,16 @@ watch(sliderPercent, (pct) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px;
-  font-size: 10px;
+  gap: 4px;
+  padding: 6px;
+  font-size: 9px;
   color: #f59e0b;
   background: rgba(245, 158, 11, 0.1);
-  border-radius: 6px;
+  border-radius: 5px;
   margin-top: auto;
+}
+
+.demo-notice .v-icon {
+  font-size: 12px !important;
 }
 </style>

@@ -282,19 +282,19 @@ onBeforeUnmount(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 10px 10px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .pairs-title {
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 600;
   color: #f1f5f9;
   margin: 0;
 }
 
 .collapse-btn {
-  padding: 4px;
+  padding: 3px;
   color: #64748b;
   background: transparent;
   border: none;
@@ -311,7 +311,7 @@ onBeforeUnmount(() => {
 }
 
 .search-wrapper {
-  padding: 8px 12px;
+  padding: 6px 8px;
 }
 
 .search-input :deep(.v-field) {
@@ -321,21 +321,21 @@ onBeforeUnmount(() => {
 }
 
 .search-input :deep(.v-field__input) {
-  font-size: 12px;
+  font-size: 11px;
   color: #f1f5f9;
-  padding: 6px 8px;
+  padding: 4px 6px;
 }
 
 .quote-filters {
   display: flex;
-  gap: 4px;
-  padding: 4px 12px 8px;
+  gap: 3px;
+  padding: 2px 8px 6px;
 }
 
 .quote-btn {
   flex: 1;
-  padding: 4px 8px;
-  font-size: 11px;
+  padding: 3px 6px;
+  font-size: 10px;
   font-weight: 600;
   color: #64748b;
   background: transparent;
@@ -358,7 +358,7 @@ onBeforeUnmount(() => {
 
 .sort-header {
   display: flex;
-  padding: 6px 12px;
+  padding: 4px 8px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
@@ -367,9 +367,9 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 4px;
-  padding: 4px;
-  font-size: 10px;
+  gap: 2px;
+  padding: 2px;
+  font-size: 9px;
   font-weight: 600;
   color: #64748b;
   background: transparent;
@@ -385,16 +385,16 @@ onBeforeUnmount(() => {
 }
 
 .favorites-section {
-  padding: 8px 0;
+  padding: 4px 0;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
 }
 
 .section-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  font-size: 11px;
+  gap: 4px;
+  padding: 3px 8px;
+  font-size: 9px;
   font-weight: 600;
   color: #64748b;
   text-transform: uppercase;
@@ -403,13 +403,13 @@ onBeforeUnmount(() => {
 .pairs-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 4px 0;
 }
 
 .pair-item {
   display: flex;
   align-items: center;
-  padding: 8px 12px;
+  padding: 5px 8px;
   cursor: pointer;
   transition: background 0.2s ease;
 }
@@ -426,12 +426,12 @@ onBeforeUnmount(() => {
   flex: 1.2;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   min-width: 0;
 }
 
 .star-btn {
-  padding: 2px;
+  padding: 1px;
   color: #475569;
   background: transparent;
   border: none;
@@ -439,6 +439,10 @@ onBeforeUnmount(() => {
   transition: color 0.2s ease;
   display: flex;
   align-items: center;
+}
+
+.star-btn .v-icon {
+  font-size: 12px !important;
 }
 
 .star-btn:hover {
@@ -450,7 +454,7 @@ onBeforeUnmount(() => {
 }
 
 .pair-symbol {
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   color: #f1f5f9;
   white-space: nowrap;
@@ -460,7 +464,7 @@ onBeforeUnmount(() => {
 
 .pair-price {
   flex: 1;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 500;
   color: #94a3b8;
   text-align: right;
@@ -468,7 +472,7 @@ onBeforeUnmount(() => {
 
 .pair-change {
   flex: 0.8;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 600;
   text-align: right;
 }
@@ -487,15 +491,15 @@ onBeforeUnmount(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 16px;
-  gap: 12px;
+  padding: 24px 12px;
+  gap: 8px;
   color: #64748b;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 /* Scrollbar */
 .pairs-scroll::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
 
 .pairs-scroll::-webkit-scrollbar-track {
