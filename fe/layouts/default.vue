@@ -102,7 +102,6 @@ const menuItems = [
     icon: "mdi-view-dashboard-outline",
     to: "/",
   },
-  { title: "Mua Crypto", short: "Mua", icon: "mdi-cash-plus", to: "/buy" },
   {
     title: "Tài sản",
     short: "Tài sản",
@@ -120,12 +119,6 @@ const menuItems = [
     short: "Lịch sử",
     icon: "mdi-history",
     to: "/transactions",
-  },
-  {
-    title: "Thị trường",
-    short: "Thị trường",
-    icon: "mdi-chart-areaspline",
-    to: "/market",
   },
   {
     title: "Giao dịch",

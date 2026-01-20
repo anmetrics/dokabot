@@ -308,9 +308,6 @@
       </v-card>
     </v-dialog>
   </v-container>
-
-  <!-- Chart component -->
-  <positions-chart />
 </template>
 
 <script setup lang="ts">
