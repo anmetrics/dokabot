@@ -33,12 +33,24 @@
     <v-navigation-drawer
       app
       v-model="drawer"
-      width="200"
+      :width="isCollapsed ? 72 : 200"
       class="drawer-glass d-none d-sm-flex"
+      :class="{ collapsed: isCollapsed }"
     >
       <!-- Drawer Header -->
       <div class="drawer-header">
-        <span class="drawer-title">Menu</span>
+        <span class="drawer-title" v-if="!isCollapsed">Menu</span>
+        <v-btn
+          icon
+          size="x-small"
+          class="collapse-btn"
+          @click="isCollapsed = !isCollapsed"
+          :class="{ collapsed: isCollapsed }"
+        >
+          <v-icon size="18">{{
+            isCollapsed ? "mdi-chevron-right" : "mdi-chevron-left"
+          }}</v-icon>
+        </v-btn>
       </div>
 
       <v-list density="compact" class="menu-list">
@@ -48,15 +60,25 @@
           @click="navigate(item.to)"
           :class="['menu-item', { active: isActive(item.to) }]"
         >
-          <div class="menu-item-container">
-            <div
-              class="menu-icon-wrapper"
-              :class="{ active: isActive(item.to) }"
-            >
-              <v-icon size="20">{{ item.icon }}</v-icon>
-            </div>
-            <span class="menu-title">{{ item.title }}</span>
-          </div>
+          <v-tooltip
+            :text="item.title"
+            location="end"
+            :disabled="!isCollapsed"
+          >
+            <template v-slot:activator="{ props }">
+              <div class="menu-item-container" v-bind="props">
+                <div
+                  class="menu-icon-wrapper"
+                  :class="{ active: isActive(item.to) }"
+                >
+                  <v-icon size="20">{{ item.icon }}</v-icon>
+                </div>
+                <span class="menu-title" v-if="!isCollapsed">{{
+                  item.title
+                }}</span>
+              </div>
+            </template>
+          </v-tooltip>
         </v-list-item>
       </v-list>
     </v-navigation-drawer>
@@ -107,6 +129,7 @@ const logout = () => {
 };
 
 const drawer = ref(true);
+const isCollapsed = ref(false);
 const currentTab = ref(route.path);
 
 /** Menu Navigation */
@@ -290,12 +313,21 @@ const toggleTheme = () =>
 .drawer-glass {
   background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
   border-right: 1px solid rgba(167, 139, 250, 0.1);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.drawer-glass.collapsed {
+  overflow-x: hidden;
 }
 
 .drawer-header {
   padding: 14px 14px 12px;
   border-bottom: 1px solid rgba(167, 139, 250, 0.1);
   background: rgba(124, 58, 237, 0.03);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .drawer-title {
@@ -307,6 +339,8 @@ const toggleTheme = () =>
   display: flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .drawer-title::before {
@@ -315,6 +349,29 @@ const toggleTheme = () =>
   height: 12px;
   background: linear-gradient(180deg, #7c3aed, #a78bfa);
   border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.collapse-btn {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  flex-shrink: 0;
+  background: rgba(167, 139, 250, 0.1);
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  color: #94a3b8;
+  transition: all 0.2s ease;
+}
+
+.collapse-btn:hover {
+  background: rgba(167, 139, 250, 0.2);
+  border-color: rgba(167, 139, 250, 0.3);
+  color: #a78bfa;
+  transform: scale(1.05);
+}
+
+.collapse-btn.collapsed {
+  margin: 0 auto;
 }
 
 .menu-list {
@@ -353,6 +410,17 @@ const toggleTheme = () =>
   height: 50%;
   background: linear-gradient(180deg, #7c3aed, #a78bfa);
   border-radius: 0 3px 3px 0;
+  transition: all 0.3s ease;
+}
+
+.drawer-glass.collapsed .menu-item.active::before {
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50%;
+  height: 3px;
+  top: auto;
+  bottom: 4px;
+  border-radius: 3px 3px 0 0;
 }
 
 .menu-item-container {
@@ -361,6 +429,11 @@ const toggleTheme = () =>
   gap: 10px;
   padding: 8px 10px;
   width: 100%;
+}
+
+.drawer-glass.collapsed .menu-item-container {
+  justify-content: center;
+  padding: 8px;
 }
 
 .menu-icon-wrapper {
@@ -398,6 +471,8 @@ const toggleTheme = () =>
   font-weight: 500;
   color: #94a3b8;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
 }
 
 .menu-item:hover .menu-title {
@@ -407,6 +482,14 @@ const toggleTheme = () =>
 .menu-item.active .menu-title {
   color: #f1f5f9;
   font-weight: 600;
+}
+
+.drawer-glass.collapsed .menu-title {
+  display: none;
+}
+
+.drawer-glass.collapsed .menu-icon-wrapper {
+  margin: 0;
 }
 
 /* --- BACKGROUND MAIN --- */
@@ -503,6 +586,10 @@ const toggleTheme = () =>
     padding: 6px 8px;
   }
 
+  .drawer-glass.collapsed .menu-item-container {
+    padding: 6px;
+  }
+
   .menu-icon-wrapper {
     width: 28px;
     height: 28px;
@@ -511,5 +598,18 @@ const toggleTheme = () =>
   .menu-title {
     font-size: 12px;
   }
+}
+
+/* Ensure tooltip works well with collapsed sidebar */
+.v-tooltip > .v-overlay__content {
+  background: rgba(30, 41, 59, 0.98);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(167, 139, 250, 0.2);
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #f1f5f9;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 </style>
