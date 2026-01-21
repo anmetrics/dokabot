@@ -128,6 +128,12 @@ const menuItems = [
     to: "/market",
   },
   {
+    title: "Giao dịch",
+    short: "Trade",
+    icon: "mdi-swap-horizontal-bold",
+    to: "/trade",
+  },
+  {
     title: "Bán tự động",
     short: "Bán",
     icon: "mdi-cash-minus",
