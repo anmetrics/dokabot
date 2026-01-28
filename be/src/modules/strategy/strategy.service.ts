@@ -7,6 +7,7 @@ import { SETTING_KEY } from '../settings/settings.enum';
 import { FuturesEmaStrategy } from './strategies/futures/future.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini/mini_reversal_dca.strategy';
 import { GoldReversalDcaStrategy } from './strategies/gold/gold-rsi-reversal.strategy';
+import { IctSclapingStrategy } from './strategies/mini/ict.strategy';
 
 @Injectable()
 export class StrategyService {
@@ -40,44 +41,46 @@ export class StrategyService {
   }
 
   startStrategy(name: string) {
-    // Mini sclaping
-    this.mini1 = new MiniReversalDcaStrategy(
+    // ICT Multi-Timeframe Strategy
+    // HTF: 1D + 4H (bias & structure)
+    // LTF: 5m (execution)
+    this.mini1 = new IctSclapingStrategy(
       this.binanceService,
       'BNBUSDT',
       '5m',
-      0.005,
+      0.006,
     );
-    this.mini2 = new MiniReversalDcaStrategy(
+    this.mini2 = new IctSclapingStrategy(
       this.binanceService,
       'BTCUSDT',
       '5m',
-      0.005,
+      0.006,
     );
 
-    this.mini3 = new MiniReversalDcaStrategy(
+    this.mini3 = new IctSclapingStrategy(
       this.binanceService,
       'SOLUSDT',
       '5m',
-      0.005,
+      0.006,
     );
 
     // Supermini sclaping
     this.supermini1 = new MiniReversalDcaStrategy(
       this.binanceService,
       'SOLUSDT',
-      '3m',
+      '5m',
       0.005,
     );
     this.supermini2 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BTCUSDT',
-      '3m',
+      '5m',
       0.005,
     );
     this.supermini3 = new MiniReversalDcaStrategy(
       this.binanceService,
       'BNBUSDT',
-      '3m',
+      '5m',
       0.005,
     );
 
@@ -98,13 +101,42 @@ export class StrategyService {
     this.mini3.startAll();
 
     // Supermini
-    this.supermini1.startAll();
-    this.supermini2.startAll();
-    this.supermini3.startAll();
+    // this.supermini1.startAll();
+    // this.supermini2.startAll();
+    // this.supermini3.startAll();
 
     // Gold
-    this.goldStrategy1.startAll();
+    // this.goldStrategy1.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
+  }
+
+  // ============================================================================
+  // ICT ANALYSIS API
+  // ============================================================================
+
+  getICTStrategies(): IctSclapingStrategy[] {
+    const strategies: IctSclapingStrategy[] = [];
+    if (this.mini1 instanceof IctSclapingStrategy) strategies.push(this.mini1);
+    if (this.mini2 instanceof IctSclapingStrategy) strategies.push(this.mini2);
+    if (this.mini3 instanceof IctSclapingStrategy) strategies.push(this.mini3);
+    return strategies;
+  }
+
+  getICTAnalysis() {
+    const strategies = this.getICTStrategies();
+    return strategies.map((s) => s.getAnalysisData());
+  }
+
+  getICTAnalysisBySymbol(symbol: string) {
+    const strategies = this.getICTStrategies();
+    const strategy = strategies.find((s) => s.getSymbol() === symbol);
+    return strategy ? strategy.getAnalysisData() : null;
+  }
+
+  getICTCandleData(symbol: string) {
+    const strategies = this.getICTStrategies();
+    const strategy = strategies.find((s) => s.getSymbol() === symbol);
+    return strategy ? strategy.getCandleData() : null;
   }
 }

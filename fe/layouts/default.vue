@@ -171,6 +171,12 @@ const menuItems = [
     to: "/sell-manager",
   },
   {
+    title: "ICT Dashboard",
+    short: "ICT",
+    icon: "mdi-chart-timeline-variant-shimmer",
+    to: "/ict-dashboard",
+  },
+  {
     title: "Cài đặt",
     short: "Cài đặt",
     icon: "mdi-cog-outline",

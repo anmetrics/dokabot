@@ -13,14 +13,18 @@ export const SETTING_KEY = keyMirror({
   DCA_WHEN_DROP_PERCENT: null,
   ENABLE_BUY_MINI: null,
   ENABLE_SELL_MINI: null,
-  ENABLE_BUY_SUPERMINI: null,
-  ENABLE_SELL_SUPERMINI: null,
   DCA_WHEN_DROP_PERCENT_MINI: null,
-  DCA_WHEN_DROP_PERCENT_SUPERMINI: null,
   PAXG_BUY_AMOUNT: null,
   MINI_BUY_AMOUNT: null,
-  SUPER_MINI_BUY_AMOUNT: null,
   ENABLE_FUTURE: null,
+  // ICT Strategy Settings
+  ENABLE_BUY_ICT: null,
+  ENABLE_SELL_ICT: null,
+  MAX_BNB_PRICE_ICT: null,
+  MAX_SOL_PRICE_ICT: null,
+  MAX_BTC_PRICE_ICT: null,
+  DCA_WHEN_DROP_PERCENT_ICT: null,
+  ICT_BUY_AMOUNT: null,
 });
 
 export type SETTING_KEY = keyof typeof SETTING_KEY;
@@ -55,6 +59,19 @@ export function getSettingKeyBySymbolMini(symbol: string): SETTING_KEY | null {
       return SETTING_KEY.MAX_SOL_PRICE_MINI;
     case LIST_SYMBOL.BTCUSDT:
       return SETTING_KEY.MAX_BTC_PRICE_MINI;
+    default:
+      return null;
+  }
+}
+
+export function getSettingKeyBySymbolICT(symbol: string): SETTING_KEY | null {
+  switch (symbol.toUpperCase()) {
+    case LIST_SYMBOL.BNBUSDT:
+      return SETTING_KEY.MAX_BNB_PRICE_ICT;
+    case LIST_SYMBOL.SOLUSDT:
+      return SETTING_KEY.MAX_SOL_PRICE_ICT;
+    case LIST_SYMBOL.BTCUSDT:
+      return SETTING_KEY.MAX_BTC_PRICE_ICT;
     default:
       return null;
   }

@@ -171,42 +171,45 @@
             </div>
           </div>
 
-          <!-- Super Mini Settings -->
-          <div v-if="superMiniSettings.length" class="section">
+                  </div>
+
+        <!-- ICT Tab -->
+        <div v-if="activeTab === 'ict'" class="tab-content">
+          <div class="section">
             <div class="section-header">
-              <span class="section-title">Super Mini</span>
-              <v-icon size="14" color="#ec4899">mdi-rocket</v-icon>
+              <span class="section-title">ICT Strategy</span>
+              <v-icon size="14" color="#06b6d4">mdi-chart-timeline-variant-shimmer</v-icon>
             </div>
             <div class="toggle-grid mb-3">
               <label class="toggle-item">
                 <div class="toggle-info">
-                  <v-icon size="14" :color="getBool('ENABLE_BUY_SUPERMINI') ? '#ec4899' : '#64748b'">mdi-cart</v-icon>
-                  <span>Mua</span>
+                  <v-icon size="14" :color="getBool('ENABLE_BUY_ICT') ? '#06b6d4' : '#64748b'">mdi-cart</v-icon>
+                  <span>Mua ICT</span>
                 </div>
                 <v-switch
-                  :model-value="getBool('ENABLE_BUY_SUPERMINI')"
-                  @update:modelValue="updateSetting('ENABLE_BUY_SUPERMINI', $event!)"
-                  color="pink"
+                  :model-value="getBool('ENABLE_BUY_ICT')"
+                  @update:modelValue="updateSetting('ENABLE_BUY_ICT', $event!)"
+                  color="cyan"
                   density="compact"
                   hide-details
                 />
               </label>
               <label class="toggle-item">
                 <div class="toggle-info">
-                  <v-icon size="14" :color="getBool('ENABLE_SELL_SUPERMINI') ? '#ec4899' : '#64748b'">mdi-cash</v-icon>
-                  <span>Bán</span>
+                  <v-icon size="14" :color="getBool('ENABLE_SELL_ICT') ? '#06b6d4' : '#64748b'">mdi-cash</v-icon>
+                  <span>Bán ICT</span>
                 </div>
                 <v-switch
-                  :model-value="getBool('ENABLE_SELL_SUPERMINI')"
-                  @update:modelValue="updateSetting('ENABLE_SELL_SUPERMINI', $event!)"
-                  color="pink"
+                  :model-value="getBool('ENABLE_SELL_ICT')"
+                  @update:modelValue="updateSetting('ENABLE_SELL_ICT', $event!)"
+                  color="cyan"
                   density="compact"
                   hide-details
                 />
               </label>
             </div>
             <div class="input-grid">
-              <div v-for="item in superMiniFields" :key="item.key" class="input-item">
+              <div v-for="item in ictFields" :key="item.key" class="input-item">
                 <label class="input-label">{{ formatLabel(item.key) }}</label>
                 <input
                   v-model="item.value"
@@ -270,6 +273,7 @@ const snackbar = ref({
 const tabs = [
   { value: "general", title: "Chung", icon: "mdi-tune" },
   { value: "mini", title: "Mini", icon: "mdi-scale-balance" },
+  { value: "ict", title: "ICT", icon: "mdi-chart-timeline-variant-shimmer" },
   { value: "security", title: "Bảo mật", icon: "mdi-shield-lock" },
   { value: "advanced", title: "Nâng cao", icon: "mdi-cog" },
 ];
@@ -293,14 +297,14 @@ const MINI_KEYS = [
   "DCA_WHEN_DROP_PERCENT_MINI",
   "MINI_BUY_AMOUNT",
 ];
-const SUPER_MINI_KEYS = [
-  "ENABLE_BUY_SUPERMINI",
-  "ENABLE_SELL_SUPERMINI",
-  "MAX_BNB_PRICE_SUPERMINI",
-  "MAX_SOL_PRICE_SUPERMINI",
-  "MAX_BTC_PRICE_SUPERMINI",
-  "DCA_WHEN_DROP_PERCENT_SUPERMINI",
-  "SUPER_MINI_BUY_AMOUNT",
+const ICT_KEYS = [
+  "ENABLE_BUY_ICT",
+  "ENABLE_SELL_ICT",
+  "MAX_BNB_PRICE_ICT",
+  "MAX_SOL_PRICE_ICT",
+  "MAX_BTC_PRICE_ICT",
+  "DCA_WHEN_DROP_PERCENT_ICT",
+  "ICT_BUY_AMOUNT",
 ];
 
 const rootSettings = computed(() =>
@@ -318,10 +322,10 @@ const miniSettings = computed(() =>
     .filter((s) => MINI_KEYS.includes(s.key))
     .sort((a, b) => MINI_KEYS.indexOf(a.key) - MINI_KEYS.indexOf(b.key))
 );
-const superMiniSettings = computed(() =>
+const ictSettings = computed(() =>
   settings.value
-    .filter((s) => SUPER_MINI_KEYS.includes(s.key))
-    .sort((a, b) => SUPER_MINI_KEYS.indexOf(a.key) - SUPER_MINI_KEYS.indexOf(b.key))
+    .filter((s) => ICT_KEYS.includes(s.key))
+    .sort((a, b) => ICT_KEYS.indexOf(a.key) - ICT_KEYS.indexOf(b.key))
 );
 
 const rootFields = computed(() => rootSettings.value.filter((s) => !s.key.startsWith("ENABLE")));
@@ -337,7 +341,7 @@ const miniSpecificFields = computed(() =>
       !s.key.startsWith("ENABLE")
   )
 );
-const superMiniFields = computed(() => superMiniSettings.value.filter((s) => !s.key.startsWith("ENABLE")));
+const ictFields = computed(() => ictSettings.value.filter((s) => !s.key.startsWith("ENABLE")));
 
 function getBool(key: string) {
   const s = settings.value.find((x) => x.key === key);
@@ -362,11 +366,12 @@ function formatLabel(key: string): string {
     MAX_BTC_PRICE_MINI: "BTC",
     DCA_WHEN_DROP_PERCENT_MINI: "DCA Drop %",
     MINI_BUY_AMOUNT: "Số lượng",
-    MAX_BNB_PRICE_SUPERMINI: "BNB",
-    MAX_SOL_PRICE_SUPERMINI: "SOL",
-    MAX_BTC_PRICE_SUPERMINI: "BTC",
-    DCA_WHEN_DROP_PERCENT_SUPERMINI: "DCA Drop %",
-    SUPER_MINI_BUY_AMOUNT: "Số lượng",
+    // ICT
+    MAX_BNB_PRICE_ICT: "BNB",
+    MAX_SOL_PRICE_ICT: "SOL",
+    MAX_BTC_PRICE_ICT: "BTC",
+    DCA_WHEN_DROP_PERCENT_ICT: "DCA Drop %",
+    ICT_BUY_AMOUNT: "Số lượng",
   };
   return labels[key] || key;
 }
