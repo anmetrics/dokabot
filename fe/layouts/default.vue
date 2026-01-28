@@ -60,11 +60,7 @@
           @click="navigate(item.to)"
           :class="['menu-item', { active: isActive(item.to) }]"
         >
-          <v-tooltip
-            :text="item.title"
-            location="end"
-            :disabled="!isCollapsed"
-          >
+          <v-tooltip :text="item.title" location="end" :disabled="!isCollapsed">
             <template v-slot:activator="{ props }">
               <div class="menu-item-container" v-bind="props">
                 <div
@@ -141,6 +137,18 @@ const menuItems = [
     to: "/",
   },
   {
+    title: "ICT",
+    short: "ICT",
+    icon: "mdi-chart-timeline-variant-shimmer",
+    to: "/ict-dashboard",
+  },
+  {
+    title: "Thị trường",
+    short: "Trade",
+    icon: "mdi-swap-horizontal-bold",
+    to: "/trade",
+  },
+  {
     title: "Tài sản",
     short: "Tài sản",
     icon: "mdi-wallet-outline",
@@ -158,24 +166,12 @@ const menuItems = [
     icon: "mdi-history",
     to: "/transactions",
   },
-  {
-    title: "Giao dịch",
-    short: "Trade",
-    icon: "mdi-swap-horizontal-bold",
-    to: "/trade",
-  },
-  {
-    title: "Bán tự động",
-    short: "Bán",
-    icon: "mdi-cash-minus",
-    to: "/sell-manager",
-  },
-  {
-    title: "ICT Dashboard",
-    short: "ICT",
-    icon: "mdi-chart-timeline-variant-shimmer",
-    to: "/ict-dashboard",
-  },
+  // {
+  //   title: "Bán tự động",
+  //   short: "Bán",
+  //   icon: "mdi-cash-minus",
+  //   to: "/sell-manager",
+  // },
   {
     title: "Cài đặt",
     short: "Cài đặt",
