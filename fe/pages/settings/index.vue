@@ -1,498 +1,245 @@
 <template>
-  <v-container fluid class="settings-container">
-    <v-row justify="center">
-      <v-col cols="12" xl="10">
-        <!-- Page Header -->
-        <div class="page-header mb-6">
-          <div class="d-flex align-center gap-3">
-            <div class="header-icon-wrapper">
-              <v-icon size="28" color="white">mdi-cog-outline</v-icon>
+  <v-container fluid class="settings-page pa-4">
+    <div class="settings-wrapper">
+      <!-- Compact Header -->
+      <div class="settings-header">
+        <div class="header-left">
+          <v-icon size="20" color="#a78bfa">mdi-cog</v-icon>
+          <span class="header-title">Cài đặt</span>
+        </div>
+        <v-btn
+          v-if="hasChanges"
+          @click="saveAllSettings"
+          :loading="saving"
+          size="small"
+          variant="flat"
+          class="save-btn"
+        >
+          <v-icon size="16" start>mdi-check</v-icon>
+          Lưu
+        </v-btn>
+      </div>
+
+      <!-- Tabs Navigation -->
+      <div class="tabs-nav">
+        <button
+          v-for="tab in tabs"
+          :key="tab.value"
+          :class="['tab-btn', { active: activeTab === tab.value }]"
+          @click="activeTab = tab.value"
+        >
+          <v-icon size="16">{{ tab.icon }}</v-icon>
+          <span>{{ tab.title }}</span>
+        </button>
+      </div>
+
+      <!-- Content -->
+      <div class="settings-content">
+        <!-- General Tab -->
+        <div v-if="activeTab === 'general'" class="tab-content">
+          <!-- Trading Toggles -->
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">Chế độ giao dịch</span>
             </div>
-            <div>
-              <h1 class="page-title">Cài đặt hệ thống</h1>
-              <p class="page-subtitle">
-                Quản lý cấu hình giao dịch và tham số hệ thống
-              </p>
+            <div class="toggle-grid">
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_BUY') ? '#10b981' : '#64748b'">mdi-cart</v-icon>
+                  <span>Mua</span>
+                </div>
+                <v-switch
+                  :model-value="getBool('ENABLE_BUY')"
+                  @update:modelValue="updateSetting('ENABLE_BUY', $event!)"
+                  color="success"
+                  density="compact"
+                  hide-details
+                />
+              </label>
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_SELL') ? '#ef4444' : '#64748b'">mdi-cash</v-icon>
+                  <span>Bán</span>
+                </div>
+                <v-switch
+                  :model-value="getBool('ENABLE_SELL')"
+                  @update:modelValue="updateSetting('ENABLE_SELL', $event!)"
+                  color="error"
+                  density="compact"
+                  hide-details
+                />
+              </label>
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_FUTURE') ? '#f59e0b' : '#64748b'">mdi-chart-line</v-icon>
+                  <span>Futures</span>
+                </div>
+                <v-switch
+                  :model-value="getBool('ENABLE_FUTURE')"
+                  @update:modelValue="updateSetting('ENABLE_FUTURE', $event!)"
+                  color="warning"
+                  density="compact"
+                  hide-details
+                />
+              </label>
             </div>
           </div>
-          <v-btn
-            v-if="hasChanges"
-            @click="saveAllSettings"
-            :loading="saving"
-            class="save-all-btn"
-          >
-            <v-icon start>mdi-content-save</v-icon>
-            Lưu tất cả
-          </v-btn>
+
+          <!-- Price Limits -->
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">Giá mua tối đa</span>
+            </div>
+            <div class="input-grid">
+              <div v-for="item in rootFields" :key="item.key" class="input-item">
+                <label class="input-label">{{ formatLabel(item.key) }}</label>
+                <input
+                  v-model="item.value"
+                  type="number"
+                  class="input-field"
+                  @input="updateSetting(item.key, ($event.target as HTMLInputElement).value)"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- PAXG -->
+          <div v-if="paxgSettings.length" class="section">
+            <div class="section-header">
+              <span class="section-title">PAXG</span>
+              <v-icon size="14" color="#f59e0b">mdi-gold</v-icon>
+            </div>
+            <div class="input-grid">
+              <div v-for="item in paxgSettings" :key="item.key" class="input-item">
+                <label class="input-label">{{ formatLabel(item.key) }}</label>
+                <input
+                  v-model="item.value"
+                  type="number"
+                  class="input-field"
+                  @input="updateSetting(item.key, ($event.target as HTMLInputElement).value)"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <!-- Settings Layout with Sidebar -->
-        <v-row>
-          <!-- Left Sidebar Navigation -->
-          <v-col cols="12" md="3">
-            <v-card class="sidebar-card">
-              <div class="sidebar-header">
-                <v-icon size="20" color="#a78bfa">mdi-view-list</v-icon>
-                <span class="sidebar-title">Danh mục</span>
+        <!-- Mini Tab -->
+        <div v-if="activeTab === 'mini'" class="tab-content">
+          <!-- Mini Settings -->
+          <div class="section">
+            <div class="section-header">
+              <span class="section-title">Mini</span>
+            </div>
+            <div class="toggle-grid mb-3">
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_BUY_MINI') ? '#a78bfa' : '#64748b'">mdi-cart</v-icon>
+                  <span>Mua Mini</span>
+                </div>
+                <v-switch
+                  :model-value="getBool('ENABLE_BUY_MINI')"
+                  @update:modelValue="updateSetting('ENABLE_BUY_MINI', $event!)"
+                  color="secondary"
+                  density="compact"
+                  hide-details
+                />
+              </label>
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_SELL_MINI') ? '#a78bfa' : '#64748b'">mdi-cash</v-icon>
+                  <span>Bán Mini</span>
+                </div>
+                <v-switch
+                  :model-value="getBool('ENABLE_SELL_MINI')"
+                  @update:modelValue="updateSetting('ENABLE_SELL_MINI', $event!)"
+                  color="secondary"
+                  density="compact"
+                  hide-details
+                />
+              </label>
+            </div>
+            <div class="input-grid">
+              <div v-for="item in [...miniCommonFields, ...miniSpecificFields]" :key="item.key" class="input-item">
+                <label class="input-label">{{ formatLabel(item.key) }}</label>
+                <input
+                  v-model="item.value"
+                  type="number"
+                  class="input-field"
+                  @input="updateSetting(item.key, ($event.target as HTMLInputElement).value)"
+                />
               </div>
-              <v-list class="sidebar-nav">
-                <v-list-item
-                  v-for="tab in tabs"
-                  :key="tab.value"
-                  :class="{ 'nav-item-active': activeTab === tab.value }"
-                  class="nav-item"
-                  @click="activeTab = tab.value"
-                >
-                  <template #prepend>
-                    <div class="nav-icon-wrapper" :style="{ background: activeTab === tab.value ? tab.gradient : 'rgba(167, 139, 250, 0.1)' }">
-                      <v-icon size="20" :color="activeTab === tab.value ? 'white' : tab.color">{{ tab.icon }}</v-icon>
-                    </div>
-                  </template>
-                  <v-list-item-title class="nav-title">
-                    {{ tab.title }}
-                  </v-list-item-title>
-                  <template #append>
-                    <v-icon v-if="activeTab === tab.value" size="16" color="#a78bfa">mdi-chevron-right</v-icon>
-                  </template>
-                </v-list-item>
-              </v-list>
-            </v-card>
-          </v-col>
-
-          <!-- Main Content Area -->
-          <v-col cols="12" md="9">
-            <!-- General Settings Tab -->
-            <div v-if="activeTab === 'general'" class="content-wrapper">
-              <!-- Root Settings -->
-              <v-card class="settings-card mb-6">
-                <div class="card-header">
-                  <div class="d-flex align-center gap-3">
-                    <div class="section-icon-wrapper root-icon">
-                      <v-icon size="24" color="white">mdi-tune-variant</v-icon>
-                    </div>
-                    <div>
-                      <h2 class="section-title">Cài đặt chính</h2>
-                      <p class="section-subtitle">Cấu hình giao dịch cơ bản</p>
-                    </div>
-                  </div>
-                </div>
-
-                <v-card-text class="pa-6">
-                  <!-- Enable Switches Row -->
-                  <v-row class="mb-4">
-                    <v-col cols="12" sm="6" md="4">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#10b981">mdi-shopping</v-icon>
-                          <span class="switch-label">Chế độ mua</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_BUY')"
-                          @update:modelValue="updateSetting('ENABLE_BUY', $event!)"
-                          color="success"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_BUY') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_BUY') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-
-                    <v-col cols="12" sm="6" md="4">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#ef4444">mdi-cash-multiple</v-icon>
-                          <span class="switch-label">Chế độ bán</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_SELL')"
-                          @update:modelValue="updateSetting('ENABLE_SELL', $event!)"
-                          color="error"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_SELL') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_SELL') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-
-                    <v-col cols="12" sm="6" md="4">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#f59e0b">mdi-chart-timeline-variant</v-icon>
-                          <span class="switch-label">Futures</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_FUTURE')"
-                          @update:modelValue="updateSetting('ENABLE_FUTURE', $event!)"
-                          color="warning"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_FUTURE') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_FUTURE') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-                  </v-row>
-
-                  <v-divider class="my-6"></v-divider>
-
-                  <!-- Price Settings -->
-                  <h3 class="subsection-title mb-4">Giá mua tối đa</h3>
-                  <v-row>
-                    <v-col
-                      v-for="item in rootFields"
-                      :key="item.key"
-                      cols="12"
-                      sm="6"
-                      md="4"
-                    >
-                      <v-text-field
-                        v-model="item.value"
-                        :label="item.key"
-                        variant="outlined"
-                        density="comfortable"
-                        type="number"
-                        class="input-field"
-                        @update:modelValue="updateSetting(item.key, $event)"
-                      >
-                        <template #prepend-inner>
-                          <v-icon size="18" color="#a78bfa">mdi-currency-usd</v-icon>
-                        </template>
-                      </v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
-
-              <!-- PAXG Settings -->
-              <v-card v-if="paxgSettings.length" class="settings-card mb-6">
-                <div class="card-header">
-                  <div class="d-flex align-center gap-3">
-                    <div class="section-icon-wrapper paxg-icon">
-                      <v-icon size="24" color="white">mdi-gold</v-icon>
-                    </div>
-                    <div>
-                      <h2 class="section-title">PAXG Settings</h2>
-                      <p class="section-subtitle">Cấu hình giao dịch vàng số</p>
-                    </div>
-                  </div>
-                </div>
-
-                <v-card-text class="pa-6">
-                  <v-row>
-                    <v-col
-                      v-for="item in paxgSettings"
-                      :key="item.key"
-                      cols="12"
-                      sm="6"
-                      md="4"
-                    >
-                      <v-text-field
-                        v-model="item.value"
-                        :label="item.key"
-                        variant="outlined"
-                        density="comfortable"
-                        type="number"
-                        class="input-field"
-                        @update:modelValue="updateSetting(item.key, $event)"
-                      >
-                        <template #prepend-inner>
-                          <v-icon size="18" color="#f59e0b">mdi-gold</v-icon>
-                        </template>
-                      </v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
             </div>
+          </div>
 
-            <!-- Mini Settings Tab -->
-            <div v-if="activeTab === 'mini'" class="content-wrapper">
-              <!-- Mini Settings -->
-              <v-card v-if="miniSettings.length" class="settings-card mb-6">
-                <div class="card-header">
-                  <div class="d-flex align-center gap-3">
-                    <div class="section-icon-wrapper mini-icon">
-                      <v-icon size="24" color="white">mdi-scale-balance</v-icon>
-                    </div>
-                    <div>
-                      <h2 class="section-title">Mini Settings</h2>
-                      <p class="section-subtitle">Cấu hình giao dịch mini</p>
-                    </div>
-                  </div>
-                </div>
-
-                <v-card-text class="pa-6">
-                  <!-- Mini Enable Switches -->
-                  <v-row class="mb-4">
-                    <v-col cols="12" sm="6">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#a78bfa">mdi-shopping</v-icon>
-                          <span class="switch-label">Mini - Mua</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_BUY_MINI')"
-                          @update:modelValue="updateSetting('ENABLE_BUY_MINI', $event!)"
-                          color="secondary"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_BUY_MINI') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_BUY_MINI') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-
-                    <v-col cols="12" sm="6">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#a78bfa">mdi-cash-multiple</v-icon>
-                          <span class="switch-label">Mini - Bán</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_SELL_MINI')"
-                          @update:modelValue="updateSetting('ENABLE_SELL_MINI', $event!)"
-                          color="secondary"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_SELL_MINI') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_SELL_MINI') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-                  </v-row>
-
-                  <v-divider class="my-6"></v-divider>
-
-                  <!-- Mini Fields -->
-                  <v-row>
-                    <v-col
-                      v-for="item in [...miniCommonFields, ...miniSpecificFields]"
-                      :key="item.key"
-                      cols="12"
-                      sm="6"
-                      md="4"
-                    >
-                      <v-text-field
-                        v-model="item.value"
-                        :label="item.key"
-                        variant="outlined"
-                        density="comfortable"
-                        type="number"
-                        class="input-field"
-                        @update:modelValue="updateSetting(item.key, $event)"
-                      >
-                        <template #prepend-inner>
-                          <v-icon size="18" color="#a78bfa">mdi-currency-usd</v-icon>
-                        </template>
-                      </v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
-
-              <!-- Super Mini Settings -->
-              <v-card v-if="superMiniSettings.length" class="settings-card mb-6">
-                <div class="card-header">
-                  <div class="d-flex align-center gap-3">
-                    <div class="section-icon-wrapper supermini-icon">
-                      <v-icon size="24" color="white">mdi-rocket-launch</v-icon>
-                    </div>
-                    <div>
-                      <h2 class="section-title">Super Mini Settings</h2>
-                      <p class="section-subtitle">Cấu hình giao dịch super mini</p>
-                    </div>
-                  </div>
-                </div>
-
-                <v-card-text class="pa-6">
-                  <!-- Super Mini Enable Switches -->
-                  <v-row class="mb-4">
-                    <v-col cols="12" sm="6">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#ec4899">mdi-shopping</v-icon>
-                          <span class="switch-label">Super Mini - Mua</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_BUY_SUPERMINI')"
-                          @update:modelValue="updateSetting('ENABLE_BUY_SUPERMINI', $event!)"
-                          color="pink"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_BUY_SUPERMINI') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_BUY_SUPERMINI') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-
-                    <v-col cols="12" sm="6">
-                      <div class="switch-card">
-                        <div class="switch-header">
-                          <v-icon size="20" color="#ec4899">mdi-cash-multiple</v-icon>
-                          <span class="switch-label">Super Mini - Bán</span>
-                        </div>
-                        <v-switch
-                          :model-value="getBool('ENABLE_SELL_SUPERMINI')"
-                          @update:modelValue="updateSetting('ENABLE_SELL_SUPERMINI', $event!)"
-                          color="pink"
-                          inset
-                          hide-details
-                          class="switch-custom"
-                        >
-                          <template #label>
-                            <span :class="getBool('ENABLE_SELL_SUPERMINI') ? 'switch-on' : 'switch-off'">
-                              {{ getBool('ENABLE_SELL_SUPERMINI') ? 'Bật' : 'Tắt' }}
-                            </span>
-                          </template>
-                        </v-switch>
-                      </div>
-                    </v-col>
-                  </v-row>
-
-                  <v-divider class="my-6"></v-divider>
-
-                  <!-- Super Mini Fields -->
-                  <v-row>
-                    <v-col
-                      v-for="item in superMiniFields"
-                      :key="item.key"
-                      cols="12"
-                      sm="6"
-                      md="4"
-                    >
-                      <v-text-field
-                        v-model="item.value"
-                        :label="item.key"
-                        variant="outlined"
-                        density="comfortable"
-                        type="number"
-                        class="input-field"
-                        @update:modelValue="updateSetting(item.key, $event)"
-                      >
-                        <template #prepend-inner>
-                          <v-icon size="18" color="#ec4899">mdi-currency-usd</v-icon>
-                        </template>
-                      </v-text-field>
-                    </v-col>
-                  </v-row>
-                </v-card-text>
-              </v-card>
+          <!-- Super Mini Settings -->
+          <div v-if="superMiniSettings.length" class="section">
+            <div class="section-header">
+              <span class="section-title">Super Mini</span>
+              <v-icon size="14" color="#ec4899">mdi-rocket</v-icon>
             </div>
-
-            <!-- Security Settings Tab -->
-            <div v-if="activeTab === 'security'" class="content-wrapper">
-              <v-card class="settings-card">
-                <div class="card-header">
-                  <div class="d-flex align-center gap-3">
-                    <div class="section-icon-wrapper security-icon">
-                      <v-icon size="24" color="white">mdi-shield-lock</v-icon>
-                    </div>
-                    <div>
-                      <h2 class="section-title">Cài đặt bảo mật</h2>
-                      <p class="section-subtitle">Quản lý xác thực và quyền truy cập</p>
-                    </div>
-                  </div>
+            <div class="toggle-grid mb-3">
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_BUY_SUPERMINI') ? '#ec4899' : '#64748b'">mdi-cart</v-icon>
+                  <span>Mua</span>
                 </div>
-
-                <v-card-text class="pa-6">
-                  <div class="empty-state">
-                    <v-icon size="80" color="#64748b">mdi-shield-lock-outline</v-icon>
-                    <h3 class="empty-title">Sắp ra mắt</h3>
-                    <p class="empty-subtitle">
-                      Chức năng cài đặt bảo mật đang được phát triển
-                    </p>
-                  </div>
-                </v-card-text>
-              </v-card>
-            </div>
-
-            <!-- Advanced Settings Tab -->
-            <div v-if="activeTab === 'advanced'" class="content-wrapper">
-              <v-card class="settings-card">
-                <div class="card-header">
-                  <div class="d-flex align-center gap-3">
-                    <div class="section-icon-wrapper advanced-icon">
-                      <v-icon size="24" color="white">mdi-cog-outline</v-icon>
-                    </div>
-                    <div>
-                      <h2 class="section-title">Cài đặt nâng cao</h2>
-                      <p class="section-subtitle">Tùy chỉnh hệ thống chuyên sâu</p>
-                    </div>
-                  </div>
+                <v-switch
+                  :model-value="getBool('ENABLE_BUY_SUPERMINI')"
+                  @update:modelValue="updateSetting('ENABLE_BUY_SUPERMINI', $event!)"
+                  color="pink"
+                  density="compact"
+                  hide-details
+                />
+              </label>
+              <label class="toggle-item">
+                <div class="toggle-info">
+                  <v-icon size="14" :color="getBool('ENABLE_SELL_SUPERMINI') ? '#ec4899' : '#64748b'">mdi-cash</v-icon>
+                  <span>Bán</span>
                 </div>
-
-                <v-card-text class="pa-6">
-                  <div class="empty-state">
-                    <v-icon size="80" color="#64748b">mdi-tools</v-icon>
-                    <h3 class="empty-title">Sắp ra mắt</h3>
-                    <p class="empty-subtitle">
-                      Các tùy chỉnh nâng cao đang được phát triển
-                    </p>
-                  </div>
-                </v-card-text>
-              </v-card>
+                <v-switch
+                  :model-value="getBool('ENABLE_SELL_SUPERMINI')"
+                  @update:modelValue="updateSetting('ENABLE_SELL_SUPERMINI', $event!)"
+                  color="pink"
+                  density="compact"
+                  hide-details
+                />
+              </label>
             </div>
-
-            <!-- Save Button Bottom -->
-            <div v-if="hasChanges" class="text-center mt-6">
-              <v-btn
-                @click="saveAllSettings"
-                :loading="saving"
-                size="large"
-                class="save-bottom-btn"
-              >
-                <v-icon start>mdi-check-circle</v-icon>
-                Lưu tất cả thay đổi
-              </v-btn>
+            <div class="input-grid">
+              <div v-for="item in superMiniFields" :key="item.key" class="input-item">
+                <label class="input-label">{{ formatLabel(item.key) }}</label>
+                <input
+                  v-model="item.value"
+                  type="number"
+                  class="input-field"
+                  @input="updateSetting(item.key, ($event.target as HTMLInputElement).value)"
+                />
+              </div>
             </div>
-          </v-col>
-        </v-row>
-      </v-col>
-    </v-row>
+          </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div v-if="activeTab === 'security'" class="tab-content">
+          <div class="empty-state">
+            <v-icon size="32" color="#475569">mdi-shield-lock-outline</v-icon>
+            <span>Sắp ra mắt</span>
+          </div>
+        </div>
+
+        <!-- Advanced Tab -->
+        <div v-if="activeTab === 'advanced'" class="tab-content">
+          <div class="empty-state">
+            <v-icon size="32" color="#475569">mdi-cog-outline</v-icon>
+            <span>Sắp ra mắt</span>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Snackbar -->
-    <v-snackbar
-      v-model="snackbar.show"
-      :color="snackbar.color"
-      timeout="3000"
-      location="top"
-    >
+    <v-snackbar v-model="snackbar.show" :color="snackbar.color" timeout="2000" location="top">
       {{ snackbar.message }}
-      <template #actions>
-        <v-btn variant="text" @click="snackbar.show = false">Đóng</v-btn>
-      </template>
     </v-snackbar>
   </v-container>
 </template>
@@ -520,39 +267,13 @@ const snackbar = ref({
   color: "success",
 });
 
-// Sidebar Tabs
 const tabs = [
-  {
-    value: "general",
-    title: "Cài đặt chung",
-    icon: "mdi-tune-variant",
-    color: "#7c3aed",
-    gradient: "linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%)",
-  },
-  {
-    value: "mini",
-    title: "Cài đặt Mini",
-    icon: "mdi-scale-balance",
-    color: "#a78bfa",
-    gradient: "linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%)",
-  },
-  {
-    value: "security",
-    title: "Bảo mật",
-    icon: "mdi-shield-lock",
-    color: "#10b981",
-    gradient: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
-  },
-  {
-    value: "advanced",
-    title: "Nâng cao",
-    icon: "mdi-cog-outline",
-    color: "#f59e0b",
-    gradient: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-  },
+  { value: "general", title: "Chung", icon: "mdi-tune" },
+  { value: "mini", title: "Mini", icon: "mdi-scale-balance" },
+  { value: "security", title: "Bảo mật", icon: "mdi-shield-lock" },
+  { value: "advanced", title: "Nâng cao", icon: "mdi-cog" },
 ];
 
-// Keys
 const ROOT_KEYS = [
   "ENABLE_BUY",
   "ENABLE_SELL",
@@ -582,7 +303,6 @@ const SUPER_MINI_KEYS = [
   "SUPER_MINI_BUY_AMOUNT",
 ];
 
-// Computed groups
 const rootSettings = computed(() =>
   settings.value
     .filter((s) => ROOT_KEYS.includes(s.key))
@@ -601,37 +321,24 @@ const miniSettings = computed(() =>
 const superMiniSettings = computed(() =>
   settings.value
     .filter((s) => SUPER_MINI_KEYS.includes(s.key))
-    .sort(
-      (a, b) => SUPER_MINI_KEYS.indexOf(a.key) - SUPER_MINI_KEYS.indexOf(b.key)
-    )
+    .sort((a, b) => SUPER_MINI_KEYS.indexOf(a.key) - SUPER_MINI_KEYS.indexOf(b.key))
 );
 
-// Sub-fields
-const rootFields = computed(() =>
-  rootSettings.value.filter((s) => !s.key.startsWith("ENABLE"))
-);
+const rootFields = computed(() => rootSettings.value.filter((s) => !s.key.startsWith("ENABLE")));
 const miniCommonFields = computed(() =>
   miniSettings.value.filter((s) =>
-    ["MAX_BNB_PRICE_MINI", "MAX_SOL_PRICE_MINI", "MAX_BTC_PRICE_MINI"].includes(
-      s.key
-    )
+    ["MAX_BNB_PRICE_MINI", "MAX_SOL_PRICE_MINI", "MAX_BTC_PRICE_MINI"].includes(s.key)
   )
 );
 const miniSpecificFields = computed(() =>
   miniSettings.value.filter(
     (s) =>
-      ![
-        "MAX_BNB_PRICE_MINI",
-        "MAX_SOL_PRICE_MINI",
-        "MAX_BTC_PRICE_MINI",
-      ].includes(s.key) && !s.key.startsWith("ENABLE")
+      !["MAX_BNB_PRICE_MINI", "MAX_SOL_PRICE_MINI", "MAX_BTC_PRICE_MINI"].includes(s.key) &&
+      !s.key.startsWith("ENABLE")
   )
 );
-const superMiniFields = computed(() =>
-  superMiniSettings.value.filter((s) => !s.key.startsWith("ENABLE"))
-);
+const superMiniFields = computed(() => superMiniSettings.value.filter((s) => !s.key.startsWith("ENABLE")));
 
-// Helpers
 function getBool(key: string) {
   const s = settings.value.find((x) => x.key === key);
   return s?.value === true || s?.value === "true";
@@ -642,7 +349,28 @@ function updateSetting(key: string, value: string | boolean) {
   if (s) s.value = value;
 }
 
-// Fetch settings
+function formatLabel(key: string): string {
+  const labels: Record<string, string> = {
+    MAX_BNB_PRICE: "BNB",
+    MAX_SOL_PRICE: "SOL",
+    MAX_BTC_PRICE: "BTC",
+    DCA_WHEN_DROP_PERCENT: "DCA Drop %",
+    MAX_PAXG_PRICE: "Giá tối đa",
+    PAXG_BUY_AMOUNT: "Số lượng mua",
+    MAX_BNB_PRICE_MINI: "BNB",
+    MAX_SOL_PRICE_MINI: "SOL",
+    MAX_BTC_PRICE_MINI: "BTC",
+    DCA_WHEN_DROP_PERCENT_MINI: "DCA Drop %",
+    MINI_BUY_AMOUNT: "Số lượng",
+    MAX_BNB_PRICE_SUPERMINI: "BNB",
+    MAX_SOL_PRICE_SUPERMINI: "SOL",
+    MAX_BTC_PRICE_SUPERMINI: "BTC",
+    DCA_WHEN_DROP_PERCENT_SUPERMINI: "DCA Drop %",
+    SUPER_MINI_BUY_AMOUNT: "Số lượng",
+  };
+  return labels[key] || key;
+}
+
 async function fetchSettings() {
   loading.value = true;
   try {
@@ -657,7 +385,6 @@ async function fetchSettings() {
   }
 }
 
-// Save all
 const hasChanges = computed(
   () => JSON.stringify(settings.value) !== JSON.stringify(initialSettings.value)
 );
@@ -674,17 +401,9 @@ async function saveAllSettings() {
     );
     await api.patch("binance/settings", payload);
     initialSettings.value = JSON.parse(JSON.stringify(settings.value));
-    snackbar.value = {
-      show: true,
-      message: "✅ Lưu cài đặt thành công!",
-      color: "success",
-    };
+    snackbar.value = { show: true, message: "Đã lưu", color: "success" };
   } catch {
-    snackbar.value = {
-      show: true,
-      message: "❌ Lưu cài đặt thất bại!",
-      color: "error",
-    };
+    snackbar.value = { show: true, message: "Lỗi!", color: "error" };
   } finally {
     saving.value = false;
   }
@@ -694,381 +413,232 @@ onMounted(fetchSettings);
 </script>
 
 <style scoped>
-.settings-container {
-  max-width: 1400px;
-  padding: 24px;
+.settings-page {
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  background: #0f172a;
 }
 
-/* Page Header */
-.page-header {
+.settings-wrapper {
+  width: 100%;
+  max-width: 560px;
+  padding: 8px 0;
+}
+
+.settings-header {
   display: flex;
+  align-items: center;
   justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px;
-  margin-bottom: 32px;
-}
-
-.header-icon-wrapper {
-  width: 56px;
-  height: 56px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-}
-
-.page-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin: 0;
-}
-
-.page-subtitle {
-  font-size: 14px;
-  color: #94a3b8;
-  margin: 4px 0 0 0;
-}
-
-/* Sidebar */
-.sidebar-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 20px;
-  border: 1px solid rgba(167, 139, 250, 0.1);
-  overflow: hidden;
-  position: sticky;
-  top: 24px;
-}
-
-.sidebar-header {
-  padding: 20px;
-  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
-  background: rgba(167, 139, 250, 0.05);
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.sidebar-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: #f1f5f9;
-}
-
-.sidebar-nav {
-  background: transparent;
-  padding: 8px;
-}
-
-.nav-item {
-  border-radius: 12px;
-  margin-bottom: 6px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  border: 1px solid transparent;
-  padding: 12px 16px !important;
-  min-height: 60px;
-}
-
-.nav-item:hover {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.2);
-}
-
-.nav-item-active {
-  background: rgba(124, 58, 237, 0.15) !important;
-  border-color: rgba(167, 139, 250, 0.3) !important;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.2);
-}
-
-.nav-icon-wrapper {
-  width: 40px;
-  height: 40px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  padding: 12px 16px;
+  background: #1e293b;
   border-radius: 10px;
-  transition: all 0.3s ease;
-}
-
-.nav-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #f1f5f9;
-}
-
-.nav-item-active .nav-title {
-  color: #a78bfa;
-}
-
-/* Content Wrapper */
-.content-wrapper {
-  animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Settings Card */
-.settings-card {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 20px;
-  border: 1px solid rgba(167, 139, 250, 0.1);
-  overflow: hidden;
-  transition: all 0.3s ease;
-}
-
-.settings-card:hover {
-  border-color: rgba(167, 139, 250, 0.2);
-  box-shadow: 0 8px 24px rgba(124, 58, 237, 0.15);
-}
-
-.card-header {
-  padding: 24px;
-  border-bottom: 1px solid rgba(167, 139, 250, 0.1);
-  background: rgba(167, 139, 250, 0.03);
-}
-
-.section-icon-wrapper {
-  width: 48px;
-  height: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.root-icon {
-  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%);
-}
-
-.paxg-icon {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.mini-icon {
-  background: linear-gradient(135deg, #a78bfa 0%, #8b5cf6 100%);
-}
-
-.supermini-icon {
-  background: linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-}
-
-.security-icon {
-  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-}
-
-.advanced-icon {
-  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-}
-
-.section-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin: 0;
-}
-
-.section-subtitle {
-  font-size: 13px;
-  color: #94a3b8;
-  margin: 4px 0 0 0;
-}
-
-.subsection-title {
-  font-size: 16px;
-  font-weight: 600;
-  color: #f1f5f9;
-}
-
-/* Switch Card */
-.switch-card {
-  background: rgba(167, 139, 250, 0.05);
-  border: 1px solid rgba(167, 139, 250, 0.15);
-  border-radius: 12px;
-  padding: 16px;
-  transition: all 0.3s ease;
-}
-
-.switch-card:hover {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.3);
-}
-
-.switch-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   margin-bottom: 12px;
 }
 
-.switch-label {
-  font-size: 14px;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.header-title {
+  font-size: 15px;
   font-weight: 600;
   color: #f1f5f9;
 }
 
-.switch-custom :deep(.v-label) {
-  font-size: 14px;
+.save-btn {
+  background: linear-gradient(135deg, #7c3aed, #a78bfa) !important;
+  color: white !important;
+  font-size: 12px;
   font-weight: 600;
+  text-transform: none;
+  border-radius: 6px;
+  padding: 0 12px !important;
+  height: 28px !important;
 }
 
-.switch-on {
-  color: #10b981;
+.tabs-nav {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #1e293b;
+  border-radius: 8px;
+  margin-bottom: 12px;
 }
 
-.switch-off {
+.tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: none;
+  background: transparent;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tab-btn:hover {
+  color: #94a3b8;
+  background: rgba(148, 163, 184, 0.1);
+}
+
+.tab-btn.active {
+  background: #334155;
+  color: #f1f5f9;
+}
+
+.settings-content {
+  background: #1e293b;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tab-content {
+  padding: 16px;
+}
+
+.section {
+  margin-bottom: 20px;
+}
+
+.section:last-child {
+  margin-bottom: 0;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #334155;
+}
+
+.section-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  background: #0f172a;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.toggle-item:hover {
+  background: #1a2744;
+}
+
+.toggle-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.toggle-info span {
+  font-size: 12px;
+  font-weight: 500;
+  color: #e2e8f0;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.input-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.input-label {
+  font-size: 11px;
+  font-weight: 500;
   color: #64748b;
 }
 
-/* Input Field */
-.input-field :deep(.v-field) {
-  background: rgba(167, 139, 250, 0.05);
-  border: 1px solid rgba(167, 139, 250, 0.15);
+.input-field {
+  width: 100%;
+  padding: 8px 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 6px;
   color: #f1f5f9;
-  transition: all 0.3s ease;
-}
-
-.input-field :deep(.v-field:hover) {
-  background: rgba(167, 139, 250, 0.08);
-  border-color: rgba(167, 139, 250, 0.3);
-}
-
-.input-field :deep(.v-field--focused) {
-  background: rgba(167, 139, 250, 0.1);
-  border-color: #7c3aed;
-  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.1);
-}
-
-.input-field :deep(.v-label) {
-  color: #94a3b8;
+  font-size: 13px;
   font-weight: 500;
+  transition: all 0.2s;
+}
+
+.input-field:hover {
+  border-color: #475569;
+}
+
+.input-field:focus {
+  outline: none;
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px rgba(124, 58, 237, 0.2);
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px 20px;
+  color: #475569;
   font-size: 13px;
 }
 
-.input-field :deep(.v-field__input) {
-  color: #f1f5f9;
-  font-weight: 600;
-}
-
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 60px 24px;
-}
-
-.empty-title {
-  font-size: 20px;
-  font-weight: 700;
-  color: #f1f5f9;
-  margin-top: 20px;
-  margin-bottom: 8px;
-}
-
-.empty-subtitle {
-  font-size: 14px;
-  color: #94a3b8;
-  margin: 0;
-}
-
-/* Save Buttons */
-.save-all-btn,
-.save-bottom-btn {
-  background: linear-gradient(135deg, #7c3aed 0%, #a78bfa 100%) !important;
-  color: white !important;
-  text-transform: none;
-  font-weight: 700;
-  border-radius: 12px;
-  font-size: 15px;
-  padding: 12px 32px !important;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
-  transition: all 0.3s ease;
-}
-
-.save-all-btn:hover,
-.save-bottom-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4);
-}
-
-.save-bottom-btn {
-  font-size: 16px;
-  padding: 16px 48px !important;
-}
-
-/* Responsive */
-@media (max-width: 960px) {
-  .settings-container {
-    padding: 16px;
-  }
-
-  .page-title {
-    font-size: 24px;
-  }
-
-  .header-icon-wrapper {
-    width: 48px;
-    height: 48px;
-  }
-
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .save-all-btn {
-    width: 100%;
-  }
-
-  .sidebar-card {
-    position: relative;
-    top: 0;
-    margin-bottom: 24px;
-  }
-
-  .card-header {
-    padding: 20px;
-  }
-
-  .section-title {
-    font-size: 18px;
-  }
+/* Compact switch */
+:deep(.v-switch) {
+  transform: scale(0.8);
+  transform-origin: right center;
 }
 
 @media (max-width: 600px) {
-  .page-title {
-    font-size: 20px;
+  .settings-wrapper {
+    padding: 0;
   }
 
-  .section-title {
-    font-size: 16px;
+  .toggle-grid {
+    grid-template-columns: 1fr;
   }
 
-  .card-header {
-    padding: 16px;
+  .input-grid {
+    grid-template-columns: 1fr;
   }
 
-  .switch-card {
-    padding: 12px;
+  .tabs-nav {
+    overflow-x: auto;
   }
 
-  .save-bottom-btn {
-    width: 100%;
-    font-size: 15px;
-    padding: 14px 24px !important;
+  .tab-btn {
+    white-space: nowrap;
   }
 }
 </style>
