@@ -236,7 +236,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
         const dcaIndex = dcaTimes + 1;
 
         const dcaPriceSetting = await this.binanceService.getSettingByKey(
-          SETTING_KEY.DCA_WHEN_DROP_PERCENT_SUPERMINI,
+          SETTING_KEY.DCA_WHEN_DROP_PERCENT_MINI,
         );
         const DCA_PRICE_DROP_PCT = Number(dcaPriceSetting || 0.02);
         const DCA_PERCENT = 1 - DCA_PRICE_DROP_PCT;
@@ -267,9 +267,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
             this.binanceService.getSettingByKey(
               getSettingKeyBySymbolMini(this.symbol),
             ),
-            this.binanceService.getSettingByKey(
-              SETTING_KEY.ENABLE_BUY_SUPERMINI,
-            ),
+            this.binanceService.getSettingByKey(SETTING_KEY.ENABLE_BUY_MINI),
           ]);
 
           if (
@@ -297,7 +295,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
         });
 
         const enableSell = await this.binanceService.getSettingByKey(
-          SETTING_KEY.ENABLE_SELL_SUPERMINI,
+          SETTING_KEY.ENABLE_SELL_MINI,
         );
 
         if (!sellablePositions.length || enableSell !== 'true') {
@@ -328,7 +326,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
     sizeMultiplier = 1,
   ) {
     const baseBuyUsd = await this.binanceService.getSettingByKey(
-      SETTING_KEY.SUPER_MINI_BUY_AMOUNT,
+      SETTING_KEY.MINI_BUY_AMOUNT,
     );
     const usdToSpend = Math.max(Number(baseBuyUsd || 0) * sizeMultiplier, 10);
 
