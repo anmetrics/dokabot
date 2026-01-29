@@ -67,7 +67,7 @@
                   class="menu-icon-wrapper"
                   :class="{ active: isActive(item.to) }"
                 >
-                  <v-icon size="20">{{ item.icon }}</v-icon>
+                  <v-icon>{{ item.icon }}</v-icon>
                 </div>
                 <span class="menu-title" v-if="!isCollapsed">{{
                   item.title
@@ -382,12 +382,16 @@ const toggleTheme = () =>
 }
 
 .menu-item {
-  padding: 0;
+  padding: 0 !important;
   margin: 2px 0;
   border-radius: 8px;
   transition: all 0.2s ease;
   position: relative;
   min-height: auto;
+}
+
+.drawer-glass.collapsed .menu-item {
+  padding-inline: 0 !important;
 }
 
 .menu-item:hover {
@@ -417,11 +421,11 @@ const toggleTheme = () =>
 
 .drawer-glass.collapsed .menu-item.active::before {
   left: 50%;
-  transform: translate(-50%, -50%);
-  width: 50%;
+  transform: translateX(-50%);
+  width: 24px;
   height: 3px;
   top: auto;
-  bottom: 4px;
+  bottom: 8px;
   border-radius: 3px 3px 0 0;
 }
 
@@ -435,12 +439,14 @@ const toggleTheme = () =>
 
 .drawer-glass.collapsed .menu-item-container {
   justify-content: center;
-  padding: 8px;
+  padding: 10px 0;
 }
 
 .menu-icon-wrapper {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -449,10 +455,11 @@ const toggleTheme = () =>
   border-radius: 8px;
   color: #94a3b8;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
 .menu-icon-wrapper .v-icon {
-  font-size: 16px !important;
+  font-size: 18px !important;
 }
 
 .menu-item:hover .menu-icon-wrapper {
@@ -491,7 +498,7 @@ const toggleTheme = () =>
 }
 
 .drawer-glass.collapsed .menu-icon-wrapper {
-  margin: 0;
+  margin: 0 auto;
 }
 
 /* --- BACKGROUND MAIN --- */
@@ -589,16 +596,27 @@ const toggleTheme = () =>
   }
 
   .drawer-glass.collapsed .menu-item-container {
-    padding: 6px;
+    padding: 8px 0;
   }
 
   .menu-icon-wrapper {
-    width: 28px;
-    height: 28px;
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    min-height: 30px;
+  }
+
+  .menu-icon-wrapper .v-icon {
+    font-size: 16px !important;
   }
 
   .menu-title {
     font-size: 12px;
+  }
+
+  .drawer-glass.collapsed .menu-item.active::before {
+    width: 20px;
+    bottom: 6px;
   }
 }
 
