@@ -36,7 +36,7 @@
           <v-col cols="12" sm="6" md="3" v-for="(stat, i) in stats" :key="i">
             <v-card class="stat-card">
               <div class="stat-icon-wrapper-small">
-                <v-icon :color="stat.color" size="24">{{ stat.icon }}</v-icon>
+                <v-icon :color="stat.color" size="18">{{ stat.icon }}</v-icon>
               </div>
               <div class="stat-content">
                 <div class="stat-label">{{ stat.label }}</div>
@@ -597,8 +597,8 @@ onMounted(fetchPositions);
     rgba(124, 58, 237, 0.1) 0%,
     rgba(167, 139, 250, 0.05) 100%
   );
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 10px 12px;
   border: 1px solid rgba(167, 139, 250, 0.15);
   transition: all 0.3s ease;
   position: relative;
@@ -618,15 +618,15 @@ onMounted(fetchPositions);
 
 .stat-icon-wrapper-small {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 48px;
-  height: 48px;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(167, 139, 250, 0.1);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .stat-content {
@@ -635,14 +635,14 @@ onMounted(fetchPositions);
 }
 
 .stat-label {
-  font-size: 13px;
+  font-size: 11px;
   color: #94a3b8;
   font-weight: 500;
-  margin-bottom: 8px;
+  margin-bottom: 3px;
 }
 
 .stat-value {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 700;
   color: #f1f5f9;
 }
@@ -839,6 +839,10 @@ onMounted(fetchPositions);
   .action-btn {
     flex: 1;
   }
+
+  .stat-value {
+    font-size: 14px;
+  }
 }
 
 @media (max-width: 600px) {
@@ -846,8 +850,12 @@ onMounted(fetchPositions);
     font-size: 20px;
   }
 
+  .stat-card {
+    padding: 8px 10px !important;
+  }
+
   .stat-value {
-    font-size: 20px;
+    font-size: 12px;
   }
 }
 </style>

@@ -30,7 +30,7 @@
           <v-col cols="12" sm="6" md="3">
             <v-card class="summary-card">
               <div class="summary-icon-wrapper">
-                <v-icon size="24" color="#3b82f6">mdi-swap-horizontal</v-icon>
+                <v-icon size="18" color="#3b82f6">mdi-swap-horizontal</v-icon>
               </div>
               <div class="summary-content">
                 <div class="summary-label">Tổng giao dịch</div>
@@ -41,7 +41,7 @@
           <v-col cols="12" sm="6" md="3">
             <v-card class="summary-card">
               <div class="summary-icon-wrapper">
-                <v-icon size="24" color="#10b981">mdi-trending-up</v-icon>
+                <v-icon size="18" color="#10b981">mdi-trending-up</v-icon>
               </div>
               <div class="summary-content">
                 <div class="summary-label">Tổng lợi nhuận</div>
@@ -52,7 +52,7 @@
           <v-col cols="12" sm="6" md="3">
             <v-card class="summary-card">
               <div class="summary-icon-wrapper">
-                <v-icon size="24" color="#f59e0b">mdi-currency-usd</v-icon>
+                <v-icon size="18" color="#f59e0b">mdi-currency-usd</v-icon>
               </div>
               <div class="summary-content">
                 <div class="summary-label">Tổng vốn</div>
@@ -63,7 +63,7 @@
           <v-col cols="12" sm="6" md="3">
             <v-card class="summary-card">
               <div class="summary-icon-wrapper">
-                <v-icon size="24" color="#a78bfa">mdi-chart-line</v-icon>
+                <v-icon size="18" color="#a78bfa">mdi-chart-line</v-icon>
               </div>
               <div class="summary-content">
                 <div class="summary-label">Tỷ suất ROI</div>
@@ -311,8 +311,8 @@ onMounted(fetchTrades);
     rgba(124, 58, 237, 0.1) 0%,
     rgba(167, 139, 250, 0.05) 100%
   );
-  border-radius: 16px;
-  padding: 20px;
+  border-radius: 10px;
+  padding: 10px 12px;
   border: 1px solid rgba(167, 139, 250, 0.15);
   transition: all 0.3s ease;
   position: relative;
@@ -332,15 +332,15 @@ onMounted(fetchTrades);
 
 .summary-icon-wrapper {
   position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 48px;
-  height: 48px;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
   background: rgba(167, 139, 250, 0.1);
-  border-radius: 12px;
+  border-radius: 8px;
 }
 
 .summary-content {
@@ -349,14 +349,14 @@ onMounted(fetchTrades);
 }
 
 .summary-label {
-  font-size: 13px;
+  font-size: 11px;
   color: #94a3b8;
   font-weight: 500;
-  margin-bottom: 8px;
+  margin-bottom: 3px;
 }
 
 .summary-value {
-  font-size: 24px;
+  font-size: 16px;
   font-weight: 700;
   color: #f1f5f9;
 }
@@ -511,7 +511,7 @@ onMounted(fetchTrades);
   }
 
   .summary-value {
-    font-size: 20px;
+    font-size: 14px;
   }
 }
 
@@ -520,8 +520,12 @@ onMounted(fetchTrades);
     font-size: 20px;
   }
 
+  .summary-card {
+    padding: 8px 10px !important;
+  }
+
   .summary-value {
-    font-size: 18px;
+    font-size: 12px;
   }
 
   .dark-table :deep(.v-data-table-header th),

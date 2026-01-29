@@ -26,9 +26,9 @@
       <v-row class="mb-6" dense>
         <v-col cols="12" sm="4">
           <v-sheet class="summary-card">
-            <v-icon size="28" color="#a78bfa">mdi-finance</v-icon>
-            <div class="text-subtitle-2 text-grey mt-2">Tổng tài sản</div>
-            <div class="text-h6 font-weight-bold mt-1" style="color: #f1f5f9">
+            <v-icon size="18" color="#a78bfa">mdi-finance</v-icon>
+            <div class="card-label mt-1">Tổng tài sản</div>
+            <div class="card-value mt-1">
               {{ balances.length }}
             </div>
           </v-sheet>
@@ -36,9 +36,9 @@
 
         <v-col cols="12" sm="4">
           <v-sheet class="summary-card">
-            <v-icon size="28" color="#10b981">mdi-lock</v-icon>
-            <div class="text-subtitle-2 text-grey mt-2">Đang khóa</div>
-            <div class="text-h6 font-weight-bold mt-1" style="color: #f1f5f9">
+            <v-icon size="18" color="#10b981">mdi-lock</v-icon>
+            <div class="card-label mt-1">Đang khóa</div>
+            <div class="card-value mt-1">
               {{
                 totalLocked.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -51,9 +51,9 @@
 
         <v-col cols="12" sm="4">
           <v-sheet class="summary-card">
-            <v-icon size="28" color="#f59e0b">mdi-currency-usd</v-icon>
-            <div class="text-subtitle-2 text-grey mt-2">Tổng USD</div>
-            <div class="text-h6 font-weight-bold mt-1" style="color: #f1f5f9">
+            <v-icon size="18" color="#f59e0b">mdi-currency-usd</v-icon>
+            <div class="card-label mt-1">Tổng USD</div>
+            <div class="card-value mt-1">
               {{
                 totalUSD.toLocaleString(undefined, {
                   minimumFractionDigits: 2,
@@ -208,9 +208,9 @@ function refresh() {
 /* Summary cards */
 .summary-card {
   background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(167, 139, 250, 0.05) 100%);
-  border-radius: 16px;
+  border-radius: 10px;
   text-align: center;
-  padding: 24px;
+  padding: 10px 12px;
   color: #f1f5f9;
   transition: all 0.3s ease;
   border: 1px solid rgba(167, 139, 250, 0.15);
@@ -282,15 +282,38 @@ function refresh() {
   filter: brightness(1.1);
 }
 
+/* Card Label & Value */
+.card-label {
+  font-size: 11px;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.card-value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
 /* Text */
 .text-grey {
   color: #94a3b8;
 }
 
 /* Responsive */
+@media (max-width: 960px) {
+  .card-value {
+    font-size: 14px;
+  }
+}
+
 @media (max-width: 600px) {
   .summary-card {
-    padding: 18px !important;
+    padding: 8px 10px !important;
+  }
+
+  .card-value {
+    font-size: 12px;
   }
   .v-card {
     padding: 16px !important;
