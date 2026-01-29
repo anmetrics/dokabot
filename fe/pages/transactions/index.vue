@@ -534,4 +534,34 @@ onMounted(fetchTrades);
     padding: 10px 8px;
   }
 }
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 18px;
+  }
+
+  .summary-card {
+    padding: 6px 4px !important;
+  }
+
+  .summary-label {
+    font-size: 10px;
+  }
+
+  .summary-value {
+    font-size: 11px;
+  }
+
+  .refresh-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    min-height: 40px;
+  }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 11px;
+    padding: 8px 4px;
+  }
+}
 </style>

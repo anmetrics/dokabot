@@ -587,4 +587,65 @@ onMounted(() => {
     height: 220px;
   }
 }
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 12px;
+  }
+
+  .welcome-header h1 {
+    font-size: 20px;
+  }
+
+  .stat-card {
+    padding: 8px 4px;
+  }
+
+  .stat-icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-icon-wrapper .v-icon {
+    font-size: 20px !important;
+  }
+
+  .stat-value {
+    font-size: 18px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+  }
+
+  .period-btn {
+    padding: 4px 8px;
+    font-size: 9px;
+    min-height: 28px;
+  }
+
+  .chart-wrapper {
+    height: 200px;
+  }
+
+  .activity-card {
+    padding: 8px 4px;
+  }
+
+  .activity-title-text {
+    font-size: 12px;
+  }
+
+  .activity-subtitle {
+    font-size: 10px;
+  }
+
+  .activity-value {
+    font-size: 12px;
+  }
+
+  .activity-date {
+    font-size: 9px;
+  }
+}
 </style>

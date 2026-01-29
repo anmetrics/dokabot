@@ -308,4 +308,31 @@ watch(
     height: 250px;
   }
 }
+
+@media (max-width: 480px) {
+  .main-content {
+    padding: 3px;
+    gap: 3px;
+  }
+
+  .chart-section {
+    min-height: 240px;
+  }
+
+  .order-book-wrapper {
+    height: 220px;
+  }
+
+  .recent-trades-wrapper {
+    height: 180px;
+  }
+
+  .order-form-section {
+    height: 320px;
+  }
+
+  .tabs-section {
+    height: 220px;
+  }
+}
 </style>

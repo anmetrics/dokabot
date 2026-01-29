@@ -309,19 +309,52 @@ function refresh() {
 
 @media (max-width: 600px) {
   .summary-card {
-    padding: 8px 10px !important;
+    padding: 8px 6px !important;
   }
 
   .card-value {
     font-size: 12px;
   }
   .v-card {
-    padding: 16px !important;
+    padding: 16px 8px !important;
   }
   .dark-table :deep(.v-data-table-header th),
   .dark-table :deep(.v-data-table__td) {
     font-size: 0.8rem !important;
     padding: 10px 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 18px;
+  }
+
+  .summary-card {
+    padding: 6px 4px !important;
+  }
+
+  .card-label {
+    font-size: 10px;
+  }
+
+  .card-value {
+    font-size: 11px;
+  }
+
+  .v-card {
+    padding: 12px 6px !important;
+  }
+
+  .refresh-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 11px !important;
+    padding: 8px 6px;
   }
 }
 </style>

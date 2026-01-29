@@ -1020,4 +1020,233 @@ onUnmounted(() => {
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
+@media (max-width: 768px) {
+  .page-header {
+    padding: 16px;
+  }
+
+  .page-title {
+    font-size: 22px;
+  }
+
+  .mini-stats-grid {
+    gap: 8px;
+  }
+
+  .mini-stat {
+    padding: 10px 6px;
+  }
+
+  .mini-stat-label {
+    font-size: 10px;
+  }
+
+  .mini-stat-value {
+    font-size: 18px;
+  }
+
+  .structure-card {
+    padding: 14px 8px;
+  }
+
+  .structure-title {
+    font-size: 12px;
+  }
+
+  .structure-label {
+    font-size: 12px;
+  }
+
+  .structure-value {
+    font-size: 11px;
+  }
+
+  .ob-grid,
+  .fvg-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .signal-card {
+    padding: 14px 8px;
+  }
+
+  .signal-header h3 {
+    font-size: 13px;
+  }
+
+  .signal-chip {
+    font-size: 10px;
+    padding: 3px 8px;
+  }
+
+  .confidence-label {
+    font-size: 11px;
+  }
+
+  .confidence-value {
+    font-size: 16px;
+  }
+
+  .level-label {
+    font-size: 10px;
+  }
+
+  .level-value {
+    font-size: 13px;
+  }
+
+  .perf-label {
+    font-size: 10px;
+  }
+
+  .perf-value {
+    font-size: 16px;
+  }
+
+  .period-label,
+  .period-profit {
+    font-size: 12px;
+  }
+
+  .period-trades {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-header {
+    padding: 12px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .refresh-btn {
+    padding: 6px;
+    font-size: 11px;
+    min-height: 36px;
+  }
+
+  .mini-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+  }
+
+  .mini-stat {
+    padding: 8px 4px;
+  }
+
+  .mini-stat-label {
+    font-size: 9px;
+  }
+
+  .mini-stat-value {
+    font-size: 16px;
+  }
+
+  .structure-card {
+    padding: 12px 6px;
+  }
+
+  .structure-title {
+    font-size: 11px;
+  }
+
+  .structure-label {
+    font-size: 11px;
+  }
+
+  .structure-value {
+    font-size: 10px;
+  }
+
+  .ob-grid,
+  .fvg-grid {
+    gap: 6px;
+  }
+
+  .ob-item,
+  .fvg-item {
+    padding: 8px 4px;
+  }
+
+  .ob-type,
+  .fvg-type {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  .ob-price,
+  .fvg-price {
+    font-size: 11px;
+  }
+
+  .ob-detail,
+  .fvg-detail {
+    font-size: 9px;
+  }
+
+  .signal-card {
+    padding: 12px 6px;
+  }
+
+  .signal-header h3 {
+    font-size: 12px;
+  }
+
+  .signal-chip {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+
+  .confidence-label {
+    font-size: 10px;
+  }
+
+  .confidence-value {
+    font-size: 14px;
+  }
+
+  .level-label {
+    font-size: 9px;
+  }
+
+  .level-value {
+    font-size: 12px;
+  }
+
+  .reason-item {
+    font-size: 11px;
+    padding: 6px 8px;
+  }
+
+  .perf-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .perf-label {
+    font-size: 9px;
+  }
+
+  .perf-value {
+    font-size: 14px;
+  }
+
+  .period-label,
+  .period-profit {
+    font-size: 11px;
+  }
+
+  .period-trades {
+    font-size: 10px;
+  }
+
+  .chart-wrapper {
+    height: 180px;
+  }
+}
 </style>

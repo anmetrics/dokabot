@@ -857,5 +857,41 @@ onMounted(fetchPositions);
   .stat-value {
     font-size: 12px;
   }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-title {
+    font-size: 18px;
+  }
+
+  .stat-card {
+    padding: 6px 4px !important;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .stat-value {
+    font-size: 11px;
+  }
+
+  .action-btn {
+    padding: 6px 12px;
+    font-size: 11px;
+    min-height: 40px;
+  }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 11px;
+    padding: 6px 4px;
+  }
 }
 </style>

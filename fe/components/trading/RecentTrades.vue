@@ -302,4 +302,74 @@ onBeforeUnmount(() => {
   background: rgba(167, 139, 250, 0.2);
   border-radius: 2px;
 }
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .rt-header {
+    padding: 6px 8px;
+  }
+
+  .rt-title {
+    font-size: 10px;
+  }
+
+  .auto-scroll-btn {
+    padding: 4px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .rt-columns {
+    padding: 3px 8px;
+    font-size: 8px;
+  }
+
+  .rt-row {
+    padding: 3px 8px;
+    min-height: 24px;
+  }
+
+  .rt-price,
+  .rt-amount {
+    font-size: 9px;
+  }
+
+  .rt-time {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rt-header {
+    padding: 5px 6px;
+  }
+
+  .rt-title {
+    font-size: 9px;
+  }
+
+  .auto-scroll-btn {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .rt-columns span:last-child,
+  .rt-time {
+    display: none;
+  }
+
+  .rt-columns {
+    padding: 2px 6px;
+  }
+
+  .rt-row {
+    padding: 4px 6px;
+    min-height: 28px;
+  }
+
+  .rt-price,
+  .rt-amount {
+    font-size: 8px;
+  }
+}
 </style>

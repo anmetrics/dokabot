@@ -514,4 +514,103 @@ onBeforeUnmount(() => {
 .pairs-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(167, 139, 250, 0.3);
 }
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .pairs-header {
+    padding: 8px;
+  }
+
+  .pairs-title {
+    font-size: 11px;
+  }
+
+  .search-wrapper {
+    padding: 5px 6px;
+  }
+
+  .quote-btn {
+    padding: 4px 5px;
+    font-size: 9px;
+  }
+
+  .sort-btn {
+    font-size: 8px;
+  }
+
+  .pair-item {
+    padding: 4px 6px;
+  }
+
+  .pair-symbol {
+    font-size: 10px;
+  }
+
+  .pair-price,
+  .pair-change {
+    font-size: 9px;
+  }
+
+  .star-btn {
+    min-width: 24px;
+    min-height: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pairs-header {
+    padding: 6px;
+  }
+
+  .pairs-title {
+    font-size: 10px;
+  }
+
+  .collapse-btn {
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .search-wrapper {
+    padding: 4px;
+  }
+
+  .quote-filters {
+    padding: 2px 6px 4px;
+    gap: 2px;
+  }
+
+  .quote-btn {
+    padding: 3px 4px;
+    font-size: 8px;
+  }
+
+  .sort-btn {
+    font-size: 7px;
+    padding: 3px;
+  }
+
+  .pair-item {
+    padding: 6px 4px;
+    min-height: 36px;
+  }
+
+  .pair-symbol {
+    font-size: 9px;
+  }
+
+  .pair-price {
+    font-size: 8px;
+  }
+
+  .pair-change {
+    font-size: 8px;
+    flex: 1;
+  }
+
+  .star-btn {
+    min-width: 28px;
+    min-height: 28px;
+  }
+}
 </style>

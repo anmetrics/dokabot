@@ -413,6 +413,16 @@ function cancelOrder(orderId: string) {
 }
 
 @media (max-width: 768px) {
+  .tabs-header {
+    padding: 6px 8px;
+  }
+
+  .tab-btn {
+    padding: 6px 8px;
+    font-size: 9px;
+    min-height: 32px;
+  }
+
   .panel-header,
   .panel-row {
     padding: 5px 8px;
@@ -421,6 +431,78 @@ function cancelOrder(orderId: string) {
   .cell {
     min-width: 50px;
     font-size: 9px;
+  }
+
+  .cancel-btn {
+    padding: 4px 6px;
+    font-size: 8px;
+    min-height: 28px;
+  }
+}
+
+@media (max-width: 480px) {
+  .tabs-header {
+    padding: 4px 6px;
+    gap: 2px;
+  }
+
+  .tab-btn {
+    padding: 5px 6px;
+    font-size: 8px;
+    min-height: 28px;
+  }
+
+  .tab-count {
+    font-size: 7px;
+    padding: 1px 4px;
+  }
+
+  .panel-header span:nth-child(2),
+  .cell:nth-child(2) {
+    display: none;
+  }
+
+  .panel-header {
+    font-size: 8px;
+    padding: 4px 6px;
+  }
+
+  .panel-row {
+    padding: 6px;
+    flex-wrap: wrap;
+    min-height: 48px;
+  }
+
+  .cell {
+    font-size: 8px;
+    min-width: 40px;
+  }
+
+  .cell.symbol {
+    flex: 1.5;
+  }
+
+  .cell.action {
+    flex: 1;
+    margin-top: 4px;
+    width: 100%;
+  }
+
+  .cancel-btn {
+    width: 100%;
+    padding: 6px;
+    font-size: 9px;
+    min-height: 36px;
+  }
+
+  .cell.time,
+  .cell.fee {
+    font-size: 7px;
+  }
+
+  .empty-state {
+    padding: 24px 12px;
+    font-size: 10px;
   }
 }
 </style>

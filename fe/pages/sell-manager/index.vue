@@ -652,5 +652,88 @@ onMounted(fetchPositions);
   .dialog-header {
     padding: 20px 20px 12px 20px;
   }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 12px;
+    padding: 8px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .sell-manager-container {
+    padding: 12px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .header-icon-wrapper {
+    width: 40px;
+    height: 40px;
+  }
+
+  .stat-card {
+    padding: 8px 4px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .stat-value {
+    font-size: 16px;
+  }
+
+  .refresh-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+
+  .update-btn {
+    padding: 4px 8px;
+    font-size: 10px;
+    min-height: 32px;
+  }
+
+  .dialog-header {
+    padding: 16px;
+  }
+
+  .dialog-header h3 {
+    font-size: 16px;
+  }
+
+  .v-dialog {
+    max-width: 95vw !important;
+  }
+
+  .dialog-content {
+    padding: 16px;
+  }
+
+  .sell-price-input {
+    font-size: 13px;
+  }
+
+  .profit-alert {
+    font-size: 12px;
+    padding: 10px;
+  }
+
+  .cancel-btn,
+  .confirm-btn {
+    padding: 10px 16px;
+    font-size: 12px;
+    min-height: 44px;
+  }
+
+  .dark-table :deep(.v-data-table-header th),
+  .dark-table :deep(.v-data-table__td) {
+    font-size: 11px;
+    padding: 6px 4px;
+  }
 }
 </style>

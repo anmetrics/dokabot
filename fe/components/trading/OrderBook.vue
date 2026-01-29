@@ -417,4 +417,96 @@ onBeforeUnmount(() => {
   background: rgba(167, 139, 250, 0.2);
   border-radius: 2px;
 }
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .ob-header {
+    padding: 6px 8px;
+  }
+
+  .ob-title {
+    font-size: 10px;
+  }
+
+  .agg-btn {
+    padding: 3px 5px;
+    font-size: 8px;
+  }
+
+  .ob-columns {
+    padding: 3px 8px;
+    font-size: 8px;
+  }
+
+  .ob-row {
+    padding: 3px 8px;
+    min-height: 24px;
+  }
+
+  .ob-price,
+  .ob-amount,
+  .ob-total {
+    font-size: 9px;
+  }
+
+  .ob-spread {
+    padding: 4px 8px;
+  }
+
+  .spread-price {
+    font-size: 11px;
+  }
+
+  .spread-value {
+    font-size: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .ob-header {
+    padding: 5px 6px;
+  }
+
+  .ob-title {
+    font-size: 9px;
+  }
+
+  .agg-btn {
+    padding: 2px 4px;
+    font-size: 7px;
+    min-height: 24px;
+    min-width: 44px;
+  }
+
+  .ob-columns span:last-child,
+  .ob-total {
+    display: none;
+  }
+
+  .ob-columns {
+    padding: 2px 6px;
+  }
+
+  .ob-row {
+    padding: 4px 6px;
+    min-height: 28px;
+  }
+
+  .ob-price,
+  .ob-amount {
+    font-size: 8px;
+  }
+
+  .ob-spread {
+    padding: 3px 6px;
+  }
+
+  .spread-price {
+    font-size: 10px;
+  }
+
+  .spread-value {
+    font-size: 7px;
+  }
+}
 </style>

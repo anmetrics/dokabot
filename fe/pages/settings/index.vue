@@ -646,4 +646,122 @@ onMounted(fetchSettings);
     white-space: nowrap;
   }
 }
+
+@media (max-width: 768px) {
+  .settings-wrapper {
+    padding: 8px;
+  }
+
+  .page-title {
+    font-size: 20px;
+  }
+
+  .tabs-nav {
+    gap: 6px;
+    padding: 4px;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 11px;
+    min-height: 40px;
+  }
+
+  .section-title {
+    font-size: 13px;
+  }
+
+  .input-label {
+    font-size: 12px;
+  }
+
+  .input-field {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  .toggle-item {
+    padding: 12px;
+  }
+
+  .toggle-label {
+    font-size: 13px;
+  }
+
+  .toggle-description {
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 480px) {
+  .settings-wrapper {
+    padding: 6px;
+  }
+
+  .page-title {
+    font-size: 18px;
+  }
+
+  .tabs-nav {
+    gap: 4px;
+    padding: 3px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab-btn {
+    padding: 6px 10px;
+    font-size: 10px;
+    min-height: 36px;
+    white-space: nowrap;
+  }
+
+  .section-title {
+    font-size: 12px;
+    margin-bottom: 10px;
+  }
+
+  .input-label {
+    font-size: 11px;
+  }
+
+  .input-field {
+    padding: 8px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+
+  .toggle-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .input-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .toggle-item {
+    padding: 10px;
+  }
+
+  .toggle-label {
+    font-size: 12px;
+  }
+
+  .toggle-description {
+    font-size: 10px;
+  }
+
+  :deep(.v-switch) {
+    transform: scale(1);
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .empty-state {
+    padding: 30px 15px;
+    font-size: 12px;
+  }
+}
 </style>

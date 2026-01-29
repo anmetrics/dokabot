@@ -587,4 +587,128 @@ watch(sliderPercent, (pct) => {
 .demo-notice .v-icon {
   font-size: 12px !important;
 }
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .of-header {
+    padding: 6px;
+  }
+
+  .of-form {
+    padding: 6px;
+    gap: 6px;
+  }
+
+  .of-type-selector {
+    padding: 5px 6px;
+  }
+
+  .type-btn {
+    padding: 4px 6px;
+    font-size: 9px;
+  }
+
+  .of-tab {
+    padding: 8px 10px;
+    font-size: 10px;
+    min-height: 36px;
+  }
+
+  .field-label {
+    font-size: 9px;
+  }
+
+  .of-input {
+    font-size: 10px;
+    padding: 5px;
+  }
+
+  .input-btn {
+    padding: 6px;
+    min-width: 32px;
+    min-height: 32px;
+  }
+
+  .mark-btn {
+    padding: 5px;
+    font-size: 8px;
+    min-height: 28px;
+  }
+
+  .of-submit {
+    padding: 10px;
+    font-size: 11px;
+    min-height: 44px;
+  }
+
+  .demo-notice {
+    font-size: 8px;
+    padding: 5px;
+  }
+}
+
+@media (max-width: 480px) {
+  .of-header {
+    padding: 5px;
+  }
+
+  .of-form {
+    padding: 5px;
+    gap: 5px;
+  }
+
+  .of-type-selector {
+    padding: 4px 5px;
+  }
+
+  .type-btn {
+    padding: 3px 5px;
+    font-size: 8px;
+  }
+
+  .of-tab {
+    padding: 6px 8px;
+    font-size: 9px;
+    min-height: 32px;
+  }
+
+  .field-label {
+    font-size: 8px;
+  }
+
+  .of-input {
+    font-size: 9px;
+    padding: 4px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .input-btn {
+    padding: 5px;
+    min-width: 28px;
+    min-height: 28px;
+  }
+
+  .of-balance {
+    font-size: 9px;
+  }
+
+  .mark-btn {
+    padding: 4px;
+    font-size: 7px;
+    min-height: 24px;
+  }
+
+  .of-submit {
+    padding: 12px;
+    font-size: 10px;
+    min-height: 48px;
+  }
+
+  .demo-notice {
+    font-size: 7px;
+    padding: 4px;
+  }
+}
 </style>
