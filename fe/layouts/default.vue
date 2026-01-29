@@ -97,8 +97,11 @@
         :value="item.to"
         @click="navigate(item.to)"
         class="nav-btn"
+        stacked
       >
-        <v-icon :class="{ active: isActive(item.to) }">{{ item.icon }}</v-icon>
+        <v-icon size="14" :class="{ active: isActive(item.to) }">{{
+          item.icon
+        }}</v-icon>
         <span :class="{ active: isActive(item.to) }">{{
           item.short || item.title
         }}</span>
@@ -528,12 +531,11 @@ const toggleTheme = () =>
 /* --- MOBILE NAV FLOAT OVER GLASS --- */
 .bottom-float-nav {
   position: fixed;
-  bottom: 16px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  width: 92%;
-  max-width: 440px;
-  border-radius: 20px;
+  width: 90%;
+  border-radius: 14px;
   background: linear-gradient(
     180deg,
     rgba(30, 41, 59, 0.98) 0%,
@@ -541,29 +543,48 @@ const toggleTheme = () =>
   );
   backdrop-filter: blur(30px) saturate(180%);
   border: 1px solid rgba(167, 139, 250, 0.15);
-  padding: 6px 8px;
+  padding: 5px;
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(167, 139, 250, 0.05) inset;
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 4px;
+  align-items: center;
 }
 
 .nav-btn {
-  flex: 1;
-  font-size: 10px;
+  font-size: clamp(6px, 1.2vw, 8px);
   color: #64748b;
   font-weight: 500;
   transition: all 0.2s ease;
-  border-radius: 12px;
-  padding: 8px 4px;
+  border-radius: 8px;
+  padding: 6px 2px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.nav-btn span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: center;
 }
 
 .nav-btn:hover {
   background: rgba(167, 139, 250, 0.08);
 }
 
-.nav-btn v-icon {
-  font-size: 20px;
+.nav-btn :deep(.v-icon) {
+  font-size: clamp(12px, 2.5vw, 18px) !important;
   transition: all 0.2s ease;
+  margin-bottom: 2px;
 }
 
 /* ACTIVE GLOW */
@@ -579,10 +600,55 @@ const toggleTheme = () =>
 
 @media (max-width: 600px) {
   .d-sm-none {
-    display: flex !important;
+    display: grid !important;
   }
   .d-sm-flex {
     display: none !important;
+  }
+
+  .bottom-float-nav {
+    width: 90%;
+    padding: 4px;
+    gap: 3px;
+  }
+
+  .nav-btn {
+    padding: 5px 2px;
+  }
+}
+
+@media (max-width: 450px) {
+  .bottom-float-nav {
+    padding: 4px 3px;
+    gap: 2px;
+  }
+
+  .nav-btn {
+    padding: 4px 1px;
+  }
+}
+
+@media (max-width: 380px) {
+  .bottom-float-nav {
+    width: 92%;
+    padding: 3px;
+    gap: 2px;
+  }
+
+  .nav-btn {
+    padding: 4px 1px;
+  }
+}
+
+@media (max-width: 340px) {
+  .bottom-float-nav {
+    width: 94%;
+    padding: 3px 2px;
+    gap: 1px;
+  }
+
+  .nav-btn {
+    padding: 3px 0.5px;
   }
 }
 

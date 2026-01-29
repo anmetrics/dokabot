@@ -669,11 +669,13 @@ onBeforeUnmount(() => {
   flex: 1;
   position: relative;
   min-height: 300px;
+  overflow: hidden;
 }
 
 .chart-wrapper {
   width: 100%;
   height: 100%;
+  position: relative;
 }
 
 .loading-overlay {
@@ -705,8 +707,35 @@ onBeforeUnmount(() => {
     font-size: 10px;
   }
 
+  .trading-chart {
+    min-height: 300px;
+  }
+
   .chart-container {
-    min-height: 250px;
+    flex: 1;
+    min-height: 240px;
+  }
+
+  .chart-wrapper {
+    min-height: 240px;
+  }
+}
+
+@media (max-width: 640px) {
+  .trading-chart {
+    min-height: 280px;
+  }
+
+  .chart-container {
+    min-height: 220px;
+  }
+
+  .chart-wrapper {
+    min-height: 220px;
+  }
+
+  .market-stats {
+    display: none;
   }
 }
 </style>

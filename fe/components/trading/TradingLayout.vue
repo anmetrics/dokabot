@@ -282,7 +282,9 @@ watch(
   }
 
   .chart-section {
-    height: 300px;
+    height: auto;
+    min-height: 280px;
+    flex-shrink: 0;
   }
 
   .right-sidebar {
