@@ -11,7 +11,7 @@
         <div class="brand-icon">
           <v-icon size="20" color="white">mdi-chart-timeline-variant</v-icon>
         </div>
-        <span class="brand">Reveli</span>
+        <span class="brand">BNB</span>
       </div>
 
       <v-spacer />
