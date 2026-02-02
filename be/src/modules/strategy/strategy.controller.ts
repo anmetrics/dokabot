@@ -1,9 +1,11 @@
 import {
+  Body,
   Controller,
   Get,
   HttpCode,
   HttpStatus,
   Param,
+  Post,
   UseGuards,
 } from '@nestjs/common';
 import { StrategyService } from './strategy.service';
@@ -227,5 +229,35 @@ export class StrategyController {
     }
 
     return signals;
+  }
+
+  // ============================================================================
+  // BACKTEST ENDPOINT
+  // ============================================================================
+
+  @Post('backtest')
+  @HttpCode(HttpStatus.OK)
+  async runBacktest(
+    @Body()
+    params: {
+      symbol?: string;
+      ltfTimeframe?: string;
+      days?: number;
+      leverage?: number;
+      usdPerTrade?: number;
+      profitTargetPct?: number;
+      stopLossPct?: number;
+      minConfidence?: number;
+      rsiOverbought?: number;
+      rsiOversold?: number;
+    },
+  ) {
+    return this.strategyService.runBacktest(params);
+  }
+
+  @Get('backtest/settings')
+  @HttpCode(HttpStatus.OK)
+  getBacktestSettings() {
+    return this.strategyService.getBacktestSettings();
   }
 }

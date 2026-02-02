@@ -8,6 +8,8 @@ import { FuturesEmaStrategy } from './strategies/futures/future.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini/mini_reversal_dca.strategy';
 import { GoldReversalDcaStrategy } from './strategies/gold/gold-rsi-reversal.strategy';
 import { IctSclapingStrategy } from './strategies/mini/ict.strategy';
+import * as fs from 'fs';
+import * as path from 'path';
 
 @Injectable()
 export class StrategyService {
@@ -138,5 +140,143 @@ export class StrategyService {
     const strategies = this.getICTStrategies();
     const strategy = strategies.find((s) => s.getSymbol() === symbol);
     return strategy ? strategy.getCandleData() : null;
+  }
+
+  // ============================================================================
+  // BACKTEST
+  // ============================================================================
+
+  private loadBacktestData(filename: string): any[] {
+    const filePath = path.join(__dirname, '..', '..', '..', 'data', filename);
+    if (!fs.existsSync(filePath)) {
+      this.logger.warn(`File not found: ${filePath}`);
+      return [];
+    }
+    const data = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
+    // Convert to Candle format
+    return data.map((c: any) => ({
+      openTime: c.openTime,
+      open: String(c.open),
+      high: String(c.high),
+      low: String(c.low),
+      close: String(c.close),
+      volume: String(c.volume),
+      closeTime: c.closeTime,
+      quoteVolume: '0',
+      trades: 0,
+      baseAssetVolume: '0',
+      quoteAssetVolume: '0',
+    }));
+  }
+
+  getBacktestSettings() {
+    return {
+      symbols: ['BTCUSDT'],
+      timeframes: ['1m', '3m', '5m', '15m'],
+      defaults: {
+        symbol: 'BTCUSDT',
+        ltfTimeframe: '3m',
+        days: 90,
+        leverage: 50,
+        usdPerTrade: 20,
+        profitTargetPct: 0.005,
+        stopLossPct: 0.005,
+        minConfidence: 200,
+        rsiOverbought: 72,
+        rsiOversold: 28,
+      },
+      availableData: {
+        '1m': fs.existsSync(
+          path.join(__dirname, '..', '..', '..', 'data', 'btc_1m_90d.json'),
+        ),
+        '3m': fs.existsSync(
+          path.join(__dirname, '..', '..', '..', 'data', 'btc_3m_90d.json'),
+        ),
+        '5m': fs.existsSync(
+          path.join(__dirname, '..', '..', '..', 'data', 'btc_5m_90d.json'),
+        ),
+      },
+    };
+  }
+
+  async runBacktest(params: {
+    symbol?: string;
+    ltfTimeframe?: string;
+    days?: number;
+    leverage?: number;
+    usdPerTrade?: number;
+    profitTargetPct?: number;
+    stopLossPct?: number;
+    minConfidence?: number;
+    rsiOverbought?: number;
+    rsiOversold?: number;
+  }) {
+    const {
+      ltfTimeframe = '3m',
+      leverage = 50,
+      usdPerTrade = 20,
+      profitTargetPct = 0.005,
+      stopLossPct = 0.005,
+      minConfidence = 200,
+      rsiOverbought = 72,
+      rsiOversold = 28,
+    } = params;
+
+    // Load data from files
+    const dailyData = this.loadBacktestData('btc_1d_365d.json');
+    const h8Data = this.loadBacktestData('btc_8h_365d.json');
+    const h4Data = this.loadBacktestData('btc_4h_365d.json');
+    const htfData = this.loadBacktestData('btc_1h_180d.json');
+
+    // Load LTF data based on selected timeframe
+    let ltfFilename = 'btc_3m_90d.json';
+    if (ltfTimeframe === '1m') ltfFilename = 'btc_1m_90d.json';
+    else if (ltfTimeframe === '5m') ltfFilename = 'btc_5m_90d.json';
+    const ltfData = this.loadBacktestData(ltfFilename);
+
+    if (!dailyData.length || !h4Data.length || !ltfData.length) {
+      return {
+        success: false,
+        error: 'Missing data files. Run: npx tsx scripts/fetch-btc-data.ts',
+      };
+    }
+
+    // Create strategy instance with custom settings
+    const strategy = new FuturesEmaStrategy(null);
+
+    // Apply custom settings (need to modify FuturesEmaStrategy to accept these)
+    strategy.setBacktestData({
+      daily: dailyData,
+      h8: h8Data.length ? h8Data : h4Data,
+      h4: h4Data,
+      htf: htfData,
+      ltf: ltfData,
+    });
+
+    // Run backtest and capture results
+    const results = strategy.runBacktestAndGetResults({
+      leverage,
+      usdPerTrade,
+      profitTargetPct,
+      stopLossPct,
+      minConfidence,
+      rsiOverbought,
+      rsiOversold,
+    });
+
+    return {
+      success: true,
+      params: {
+        ltfTimeframe,
+        leverage,
+        usdPerTrade,
+        profitTargetPct,
+        stopLossPct,
+        minConfidence,
+        rsiOverbought,
+        rsiOversold,
+      },
+      results,
+    };
   }
 }
