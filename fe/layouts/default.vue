@@ -146,6 +146,12 @@ const menuItems = [
     to: "/ict-dashboard",
   },
   {
+    title: "Volume",
+    short: "Volume",
+    icon: "mdi-chart-bar-stacked",
+    to: "/volume-resistance",
+  },
+  {
     title: "Thị trường",
     short: "Trade",
     icon: "mdi-swap-horizontal-bold",
@@ -554,7 +560,7 @@ const toggleTheme = () =>
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(167, 139, 250, 0.05) inset;
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(8, 1fr);
   gap: 4px;
   align-items: center;
 }

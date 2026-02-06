@@ -4,6 +4,7 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { StrategyService } from './strategy.service';
@@ -189,6 +190,28 @@ export class StrategyController {
       dailyProfits: profits,
       cumulativeProfits: cumulative,
     };
+  }
+
+  // ============================================================================
+  // VOLUME RESISTANCE ANALYSIS ENDPOINTS
+  // ============================================================================
+
+  @Get('volume/analysis')
+  @HttpCode(HttpStatus.OK)
+  async getVolumeAnalysis() {
+    return this.strategyService.getVolumeResistanceAnalysis();
+  }
+
+  @Get('volume/analysis/:symbol')
+  @HttpCode(HttpStatus.OK)
+  async getVolumeAnalysisBySymbol(
+    @Param('symbol') symbol: string,
+    @Query('timeframe') timeframe?: '1h' | '4h',
+  ) {
+    return this.strategyService.getVolumeResistanceBySymbol(
+      symbol.toUpperCase(),
+      timeframe || '1h',
+    );
   }
 
   // ============================================================================

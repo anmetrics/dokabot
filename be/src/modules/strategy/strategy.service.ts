@@ -8,10 +8,15 @@ import { FuturesEmaStrategy } from './strategies/futures/future.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini/mini_reversal_dca.strategy';
 import { GoldReversalDcaStrategy } from './strategies/gold/gold-rsi-reversal.strategy';
 import { IctSclapingStrategy } from './strategies/mini/ict.strategy';
+import {
+  VolumeProfileAnalyzer,
+  VolumeResistanceAnalysis,
+} from './helpers/volume-profile';
 
 @Injectable()
 export class StrategyService {
   private logger = new Logger('StrategyService');
+  private volumeAnalyzer = new VolumeProfileAnalyzer();
 
   private mini1: IStrategy;
   private mini2: IStrategy;
@@ -138,5 +143,48 @@ export class StrategyService {
     const strategies = this.getICTStrategies();
     const strategy = strategies.find((s) => s.getSymbol() === symbol);
     return strategy ? strategy.getCandleData() : null;
+  }
+
+  // ============================================================================
+  // VOLUME RESISTANCE ANALYSIS API
+  // ============================================================================
+
+  async getVolumeResistanceAnalysis(): Promise<VolumeResistanceAnalysis[]> {
+    const symbols = ['BNBUSDT', 'BTCUSDT', 'SOLUSDT'];
+    const results: VolumeResistanceAnalysis[] = [];
+
+    for (const symbol of symbols) {
+      const candles = await this.binanceService.getHistoricalCandles(
+        symbol,
+        '1h',
+        500,
+      );
+      if (!candles.length) continue;
+      const currentPrice = +candles[candles.length - 1].close;
+      results.push(
+        this.volumeAnalyzer.analyze(candles, currentPrice, symbol, '1h'),
+      );
+    }
+
+    return results;
+  }
+
+  async getVolumeResistanceBySymbol(
+    symbol: string,
+    timeframe: '1h' | '4h' = '1h',
+  ): Promise<VolumeResistanceAnalysis | null> {
+    const candles = await this.binanceService.getHistoricalCandles(
+      symbol,
+      timeframe,
+      500,
+    );
+    if (!candles.length) return null;
+    const currentPrice = +candles[candles.length - 1].close;
+    return this.volumeAnalyzer.analyze(
+      candles,
+      currentPrice,
+      symbol,
+      timeframe,
+    );
   }
 }
