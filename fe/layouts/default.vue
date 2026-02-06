@@ -176,6 +176,12 @@ const menuItems = [
   //   to: "/sell-manager",
   // },
   {
+    title: "Sideway",
+    short: "Sideway",
+    icon: "mdi-swap-vertical-bold",
+    to: "/sideway",
+  },
+  {
     title: "Cài đặt",
     short: "Cài đặt",
     icon: "mdi-cog-outline",
@@ -548,7 +554,7 @@ const toggleTheme = () =>
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(167, 139, 250, 0.05) inset;
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(7, 1fr);
   gap: 4px;
   align-items: center;
 }

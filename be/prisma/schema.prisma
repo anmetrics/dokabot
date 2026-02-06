@@ -58,3 +58,21 @@ model SellSuccess {
 
   @@map("sell_successes")
 }
+
+model SidewayScenario {
+  id               String    @id @default(uuid())
+  name             String    @map("name")
+  symbol           String    @map("symbol")
+  qty              Float     @map("qty")
+  steps            Json      @map("steps")
+  currentStepIndex Int       @default(0) @map("current_step_index")
+  isLoop           Boolean   @default(false) @map("is_loop")
+  enabled          Boolean   @default(false) @map("enabled")
+  status           String    @default("idle") @map("status")
+  lastExecutedAt   DateTime? @map("last_executed_at")
+
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime? @updatedAt @map("updated_at")
+
+  @@map("sideway_scenarios")
+}

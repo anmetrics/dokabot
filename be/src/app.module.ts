@@ -9,6 +9,7 @@ import { ConfigModule } from '@nestjs/config';
 import { TelegramModule } from './modules/telegram/telegram.module';
 import { SharedModule } from './modules/shared/shared.module';
 import { AuthenticationModule } from './modules/authentication/authentication.module';
+import { SidewayModule } from './modules/sideway/sideway.module';
 
 @Global()
 @Module({
@@ -23,6 +24,7 @@ import { AuthenticationModule } from './modules/authentication/authentication.mo
     TelegramModule,
     BinanceModule,
     StrategyModule,
+    SidewayModule,
   ],
   controllers: [AppController],
   providers: [AppService],
