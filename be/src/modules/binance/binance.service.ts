@@ -73,6 +73,8 @@ export class BinanceService implements OnModuleInit {
       [SETTING_KEY.MAX_BTC_PRICE_ICT]: '110000',
       [SETTING_KEY.DCA_WHEN_DROP_PERCENT_ICT]: '0.02',
       [SETTING_KEY.ICT_BUY_AMOUNT]: '10',
+      // BNB Accumulation Strategy
+      [SETTING_KEY.ENABLE_ACCUMULATE]: 'false',
     };
 
     const missingKeys = Object.keys(SETTING_KEY).filter(

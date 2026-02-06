@@ -25,6 +25,8 @@ export const SETTING_KEY = keyMirror({
   MAX_BTC_PRICE_ICT: null,
   DCA_WHEN_DROP_PERCENT_ICT: null,
   ICT_BUY_AMOUNT: null,
+  // BNB Accumulation Strategy
+  ENABLE_ACCUMULATE: null,
 });
 
 export type SETTING_KEY = keyof typeof SETTING_KEY;

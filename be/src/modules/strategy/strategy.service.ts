@@ -8,6 +8,7 @@ import { FuturesEmaStrategy } from './strategies/futures/future.strategy';
 import { MiniReversalDcaStrategy } from './strategies/mini/mini_reversal_dca.strategy';
 import { GoldReversalDcaStrategy } from './strategies/gold/gold-rsi-reversal.strategy';
 import { IctSclapingStrategy } from './strategies/mini/ict.strategy';
+import { BnbAccumulateStrategy } from './strategies/accumulate/bnb-accumulate.strategy';
 import {
   VolumeProfileAnalyzer,
   VolumeResistanceAnalysis,
@@ -29,6 +30,7 @@ export class StrategyService {
   private goldStrategy1: IStrategy;
 
   private future: IStrategy;
+  private accumulate: IStrategy;
 
   constructor(
     private readonly binanceService: BinanceService,
@@ -112,6 +114,10 @@ export class StrategyService {
 
     // Gold
     // this.goldStrategy1.startAll();
+
+    // BNB Accumulation
+    this.accumulate = new BnbAccumulateStrategy(this.binanceService);
+    this.accumulate.startAll();
 
     this.logger.log(`Started strategy: ${name}`);
   }
