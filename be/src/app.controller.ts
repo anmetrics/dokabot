@@ -1,16 +1,10 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
-import { BinanceService } from './modules/binance/binance.service';
 
 @Controller()
 export class AppController {
-  constructor(
-    private readonly appService: AppService,
-    private readonly binanceService: BinanceService,
-  ) {}
-
+  /** Root ping. Real probes live under /api/health. */
   @Get()
-  getLog() {
-    // return this.binanceService.getLog();
+  root() {
+    return { name: 'dokabot-api', docs: '/api/health' };
   }
 }

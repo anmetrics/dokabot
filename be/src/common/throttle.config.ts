@@ -1,9 +1,14 @@
 /**
  * Rate limits, tunable per environment.
  *
- * Read at import time so route decorators pick them up. Production keeps the
- * defaults; the e2e suite raises them so the limiter does not decide the result
- * of tests that are about something else.
+ * Read at import time so route decorators pick them up.
+ *
+ * The defaults are the production numbers and are deliberately tight: a login
+ * endpoint that allows a thousand guesses a minute is not protecting anything.
+ * Raise them for a specific environment with the env vars below — never by
+ * editing these constants, or every deployment inherits the loosened value.
+ *
+ *   THROTTLE_LOGIN_LIMIT=1000 yarn start:dev
  */
 const num = (name: string, fallback: number): number => {
   const value = Number(process.env[name]);

@@ -355,13 +355,212 @@ E2E chạy trên MySQL thật (`dokabot_test`), sàn được thay bằng fake a
 3. `minCandles` cố định trong khi nhu cầu dữ liệu phụ thuộc tham số: EMA cross 50/200 cần 250 nến,
    nhưng cùng chiến lược ở 10/30 chỉ cần 50. User rút ngắn chu kỳ sẽ bị báo "thiếu dữ liệu" vĩnh viễn.
 
+### Phase 2d — Đã xong (strategy runner: signal → lệnh)
+
+`StrategyRunnerService` là mắt xích nối "chiến lược nghĩ gì" với "tiền chuyển đi".
+Ba nguyên tắc chi phối toàn bộ thiết kế:
+
+1. **Chỉ dùng nến đã đóng.** Nến đang hình thành còn thay đổi, nên tín hiệu tính từ nó
+   có thể xuất hiện rồi biến mất trong cùng một cây nến — đúng lỗi *repainting* mà backtest
+   không bao giờ lộ ra.
+2. **Mỗi nến tối đa một quyết định.** Idempotency key sinh từ `openTime` của nến
+   (`bot:{id}:{openTime}:{action}`), nên chạy lại tick, restart process, hay hai worker cùng
+   cầm một bot đều không thể đặt lệnh thứ hai cho cùng cây nến đó.
+3. **Lệnh thoát rủi ro chạy trước chiến lược.** Chốt lời / cắt lỗ được xét *trước khi* hỏi
+   chiến lược — một stop-loss chỉ kích hoạt khi chiến lược đồng ý thì không phải stop-loss.
+
+Chi tiết khác:
+- **Vị thế được tính lại từ bảng `orders`, không cache.** Vị thế cache lệch khỏi lịch sử lệnh
+  chính là loại bug âm thầm nhân đôi lệnh. Bảng orders là thứ sàn cũng đồng ý.
+  Dùng weighted-average cost; bán một phần không làm đổi giá vốn trung bình của phần còn lại
+  (đúng kỳ vọng của chiến lược DCA).
+- **Không bao giờ bán khi không có hàng** — spot, và nền tảng không tự mở short thay user.
+- **Làm tròn khối lượng luôn xuống** theo `stepSize`: làm tròn lên có thể vượt số dư,
+  và khi bán thì bán nhiều hơn số đang giữ.
+- Kiểm tra `minNotional` trước khi gửi, thay vì để sàn từ chối.
+- **Cách ly lỗi theo bot**: một bot hỏng (symbol bị huỷ niêm yết, key bị thu hồi) không làm dừng
+  các bot khác. Lỗi 5 lần liên tiếp thì bot bị chuyển `ERROR` — lỗi lặp lại là vấn đề cấu hình,
+  không phải tạm thời, và cứ retry mãi chỉ đốt hạn mức API.
+- **Sharding**: `WORKER_SHARD_INDEX` + `WORKER_COUNT`; worker nhận các shard thoả
+  `shardId % WORKER_COUNT === index`. Thêm worker là reshuffle xác định, không cần điều phối.
+- `RUNNER_ENABLED=false` cho pod chỉ phục vụ API.
+
+Test: 22 test cho phần toán vị thế (gồm satoshi-scale và case `0.1 + 0.2`), 15 e2e cho runner
+(một lệnh mỗi nến, bỏ nến đang hình thành, TP/SL thắng tín hiệu chiến lược, không bán khi
+không có hàng, kill switch, cách ly lỗi, tự dừng khi hỏng liên tục).
+
+### Phase 2e — Đã xong (dọn dead code + Đầu tư tự động)
+
+**Xoá toàn bộ tầng single-tenant cũ** (45 file):
+
+- BE: `modules/binance`, `modules/strategy` (ICT, mini reversal DCA, futures EMA, gold RSI),
+  `modules/sideway`, `modules/settings`, `modules/telegram`.
+- Prisma: bỏ 4 model `Setting` / `Position` / `SellSuccess` / `SidewayScenario`
+  + migration `20260807020000_drop_legacy_single_tenant`.
+- Env: **không còn `BINANCE_API_KEY` / `BINANCE_API_SECRET` / `TELEGRAM_*` / `RUN_LEGACY_STRATEGIES`.**
+  Credential sàn giờ chỉ tồn tại ở `exchange_accounts`, mã hoá theo từng user.
+- Dependency bỏ: `binance-api-node`, `@binance/spot`, `technicalindicators`,
+  `chart.js`, `lightweight-charts`.
+- FE: xoá 9 trang chỉ phục vụ API cũ + `services/binanceService.ts`,
+  `composables/useTradingState.ts`, `plugins/auth.client.ts` (dead).
+  Dashboard viết lại trên API mới. Menu còn 4 mục.
+
+Code cũ vẫn nằm trong git history nếu cần tham chiếu để port lại sau.
+
+**Đầu tư tự động** (`/api/auto-invest`)
+
+Lời hứa sản phẩm là "bật một công tắc, hệ thống giao dịch giúp bạn", nên user chọn
+**khẩu vị rủi ro** chứ không chọn chiến lược:
+
+| Profile | Danh mục | Dừng ở |
+|---|---|---|
+| Thận trọng | BTC · RSI 4h (60%) + EMA cross 1d (40%) | −10% |
+| Cân bằng | BTC · MACD 1h + Bollinger 1h · BNB · RSI 1h + Supertrend 4h | −15% |
+| Tăng trưởng | BTC · Donchian 15m + Stochastic 15m · BNB · MACD 15m + Grid DCA 15m | −25% |
+
+- Mỗi profile **cố tình dùng nhiều chiến lược mâu thuẫn nhau** — một cái theo xu hướng,
+  một cái hồi quy trung bình — vì chúng thua ở hai loại thị trường ngược nhau.
+  Đó chính là lý do chạy danh mục thay vì một bot.
+- Ngân sách **chia theo tỷ trọng**, mỗi leg chỉ dùng 1/4 phần được chia cho mỗi lệnh,
+  nên không leg nào nuốt hết vốn dù kích hoạt liên tục.
+- Bot do tính năng này tạo được đánh dấu `config.__auto`. Bật/tắt/đổi profile
+  **chỉ đụng vào bot nó sở hữu** — bot user tự tạo hoàn toàn vô hình với nó.
+- Đổi profile thì **dựng lại danh mục từ đầu**: để bot của profile cũ chạy tiếp nghĩa là
+  giao dịch trên một ngân sách không còn tồn tại.
+- Tắt là **dừng chứ không bán**: bán ép sẽ chốt lỗ mà user không yêu cầu.
+- Mặc định paper, kể cả sau một cú bấm.
+
+21 e2e test, gồm: tỷ trọng cộng đúng bằng 1, mọi strategyKey trong preset đều tồn tại thật,
+mỗi profile phải có hơn một chiến lược, và bot tự tạo của user không bị xoá khi đổi profile.
+
+### Phase 2f — Đã xong (rule builder + khoảng giá + redesign UI)
+
+**Tầng chỉ báo mở rộng** — tự cài đặt, đúng định nghĩa gốc:
+
+`ADX/DMI` (Wilder smoothing, đo *độ mạnh* xu hướng chứ không đo hướng — hướng đọc từ +DI/−DI),
+`CCI` (mean **absolute** deviation, không phải std — hằng số 0.015 chỉ hiệu chuẩn với định nghĩa gốc của Lambert),
+`Williams %R`, `MFI` (RSI có trọng số khối lượng), `ROC`, `OBV`, `VWAP` (rolling, không phải session VWAP của sàn),
+`Keltner`, `Parabolic SAR` (có state, AF chỉ reset khi đảo chiều), `Ichimoku`.
+
+**Rule builder** — chiến lược `custom-rules`:
+
+- Toán hạng: chỉ báo (chọn output + tham số) · giá (open/high/low/close) · hằng số.
+- Toán tử: `>` `≥` `<` `≤` `cắt lên` `cắt xuống` `trong khoảng` `ngoài khoảng`.
+- Nhóm AND / OR riêng cho **điều kiện mua** và **điều kiện bán**.
+- Điều kiện bán được xét **trước** điều kiện mua — luật user viết để thoát không được
+  bị luật vào lệnh che khuất.
+- Chỉ báo đang warm-up trả NaN ⇒ điều kiện **không bao giờ pass**: một chuỗi tính dở
+  không được phép mở lệnh.
+- Nhóm rỗng không bao giờ khớp — nếu không, bot chưa cấu hình sẽ giao dịch mọi cây nến.
+- `requiredCandlesForGroup` suy ra lượng nến cần từ chính chỉ báo user chọn.
+- `GET /api/strategies/indicators` trả catalog để FE dựng form.
+
+**Khoảng giá mua/bán** — áp dụng cho **mọi** chiến lược, không riêng custom:
+
+`minBuyPrice` / `maxBuyPrice` / `minSellPrice` / `maxSellPrice`, 0 = không giới hạn.
+Đây là phát biểu của user về *giá trị*, nên nó thắng cả khi chỉ báo đang gào lên.
+**Ngoại lệ duy nhất: lệnh cắt lỗ** — sàn giá bán mà chặn cả stop-loss thì vị thế
+không bao giờ đóng được.
+
+**Redesign màn hình cấu hình**: dialog chật thay bằng trang `/bots/new` bố cục 2 cột,
+chia 5 bước (thị trường → chiến lược → điều kiện → khoảng giá → rủi ro), sidebar tóm tắt
+dính theo cuộn. Tham số được **nhóm theo vai trò** thay vì đổ một danh sách phẳng —
+đó chính là thứ khiến form cũ không đọc được.
+
+Test: 148 unit + 129 e2e. Riêng phần này có 37 test cho chỉ báo/rule engine
+(gồm: ADX cao ở cả hai chiều xu hướng, MFI phản ứng với khối lượng khác RSI,
+PSAR đổi phía sau đảo chiều, cross không được báo khi đã nằm trên sẵn,
+`between` chịu được hai cận đảo ngược) và 16 e2e cho rule builder + khoảng giá.
+
+### Phase 2g — Đã xong (cài đặt theo user, thay bảng settings toàn cục)
+
+Bảng `settings` cũ có **một dòng cứng cho mỗi coin** (`MAX_BNB_PRICE`, `MAX_SOL_PRICE`,
+`MAX_BTC_PRICE`, `MAX_PAXG_PRICE`, `DCA_WHEN_DROP_PERCENT`…). Thêm một thị trường
+nghĩa là sửa enum, sửa schema, deploy lại — và nó chỉ mô tả được **một** tenant.
+
+Thay bằng `user_settings`, một dòng mỗi user:
+
+- **Quy tắc giá theo cặp, danh sách không giới hạn** (`symbolRules`): mỗi cặp có
+  trần/sàn giá mua và trần/sàn giá bán, bật/tắt riêng. Thêm cặp mới là thao tác của user,
+  không phải của kỹ sư.
+- **Mặc định cho bot mới**: giá trị mỗi lệnh, chốt lời, cắt lỗ, ngưỡng dừng.
+  Bot mới kế thừa; giá trị nhập riêng cho bot vẫn thắng.
+- **Trần tài khoản**: số bot tối đa (bị chặn trên bởi trần nền tảng), lỗ tối đa mỗi ngày.
+- **Công tắc tạm dừng riêng của user** — tách khỏi kill switch nền tảng: một user đi vắng
+  không cần operator can thiệp.
+- **Bảo mật**: đổi mật khẩu (thu hồi mọi phiên khác — đổi mật khẩu là việc bạn làm khi
+  nghi bị xâm nhập), danh sách phiên đăng nhập kèm IP/thiết bị, thu hồi từng phiên.
+- **Nhật ký hoạt động** của chính user.
+
+Thứ tự áp dụng khoảng giá: **band riêng của bot → quy tắc tài khoản theo cặp**.
+Quy tắc tài khoản thắng vì nó là phát biểu rộng hơn về ý định.
+Ngoại lệ vẫn là **cắt lỗ luôn đi qua**.
+
+Dòng settings được tạo **lazy** khi user chạm vào lần đầu, và hai request đồng thời
+được unique index phân xử — bên thua đọc lại thứ bên thắng vừa ghi.
+
+Test: 25 e2e, gồm cách ly giữa hai user, quy tắc cặp chặn đúng cặp đó thôi,
+tạm dừng của user A không ảnh hưởng user B, và danh sách phiên không lộ token.
+
+FE: trang `/settings` 5 tab (Giao dịch · Quy tắc theo cặp · Bảo mật · Thông báo · Hoạt động),
+sửa trên bản nháp cục bộ, nút Lưu chỉ bật khi thực sự có thay đổi.
+
+### Phase 2h — Đã xong (thanh toán gói Pro 4$/tháng trên BSC)
+
+**Ba câu trả lời kỹ thuật, trước khi nói tới code:**
+
+1. **Permit không dùng được với USDT trên BSC.** `BSC-USD`
+   (`0x55d398326f99059fF775485246999027B3197955`) — đồng USDT mà thực tế mọi người giữ —
+   **không implement EIP-2612**. Binance-Peg USDC cũng vậy. Bắt buộc permit nghĩa là
+   chỉ nhận được những token gần như không ai dùng. Luồng thực tế: `approve()` một lần
+   trên token, sau đó `transferFrom` hàng tháng.
+2. **Contract: về chức năng thì không cần, nhưng nên có.** `approve(EOA)` rồi backend
+   `transferFrom` là đủ, event `Transfer` cũng đủ để biết ai trả. Lý do duy nhất để có
+   contract là **bán kính thiệt hại**: approve không giới hạn cho một EOA nghĩa là
+   **một private key bị lộ rút sạch USDT của mọi subscriber**. Contract giới hạn xuống
+   `maxChargeAmount` mỗi subscriber mỗi `period`, và chỉ chuyển được về `treasury`.
+3. **Websocket được, nhưng không đủ.** Xem phần listener bên dưới.
+
+**`contracts/SubscriptionManager.sol`** — `maxChargeAmount` và `period` là `immutable`
+(không ai, kể cả owner, nâng được trần sau khi deploy); `charger` tách khỏi `owner`
+để xoay key mà không đụng tới ai kiểm soát tiền; `unsubscribe()` chặn pull kể cả khi
+approval còn nguyên; `chargeBatch` không revert cả lô vì một ví rỗng.
+**Chưa có test Solidity và chưa audit — không deploy mainnet.**
+
+**Listener** — đây là chỗ dễ mất tiền nhất:
+
+- **Đúng đắn đến từ backfill, không phải websocket.** Socket chết âm thầm là chuyện thường;
+  nếu chỉ dựa vào stream thì mọi thanh toán trong lúc rớt mạng biến mất và user trả tiền
+  vô ích. Stream chỉ để giảm độ trễ; con trỏ block được lưu và quét lại bằng `getLogs`.
+- **Chờ 15 xác nhận.** Ghi nhận ở đầu chuỗi sẽ có ngày cấp Pro cho giao dịch bị reorg rollback.
+- **Idempotency là `(txHash, logIndex)`**, không phải địa chỉ user — backfill chồng lên
+  stream sẽ giao cùng một log hai lần.
+- **Chỉ event `Charged` của chính contract mới tính.** `Transfer` của token không chứng minh
+  gì cả: ai cũng chuyển USDT vào treasury được.
+- Con trỏ chỉ tiến **sau khi** cả lô đã ghi bền — crash giữa chừng phải đọc lại đoạn đó,
+  không được nhảy qua.
+
+**Vòng đời**: `Charged` → gia hạn 30 ngày (cộng dồn từ mốc muộn hơn giữa "hết hạn hiện tại"
+và "bây giờ", nên trả sớm không mất ngày đã mua) → hết hạn thì vào **ân hạn 3 ngày**
+(pull thất bại thường là ví hết tiền chứ không phải huỷ) → hết ân hạn mới `EXPIRED`.
+Huỷ giữa kỳ vẫn dùng hết chu kỳ đã trả.
+
+**Liên kết ví**: user ký một nonce, backend verify chữ ký (EIP-191). Bắt buộc vì subscription
+gắn theo ví — không có bước này thì ai cũng khai một ví đang trả tiền để thừa hưởng gói.
+Nonce xoay sau mỗi lần verify nên chữ ký không replay được.
+
+Test: 21 e2e, gồm chữ ký từ key khác bị từ chối, chữ ký trên message khác bị từ chối,
+replay bị chặn, log trùng không cộng thêm tháng, và ví chưa xác minh không được ghi nhận.
+Test bắt được một bug thật: `blockNumber` kiểu `BigInt` làm `JSON.stringify` ném lỗi → API 500.
+
 ### Còn lại của Phase 2 (chưa làm)
 
-- **Vòng lặp chạy bot chưa được nối**: chiến lược đã có, adapter đã có, đặt lệnh đã có,
-  nhưng chưa có worker nào gọi `evaluate()` theo từng nến rồi đẩy signal thành lệnh.
-  Đây là mắt xích còn thiếu giữa Phase 2 và Phase 3.
-- Port 4 strategy cũ (ICT, mini reversal DCA, futures EMA, gold RSI) sang `IExchangeAdapter`.
-  Cần test hồi quy trước vì đây là IP chính của sản phẩm.
+- **Contract chưa có test và chưa audit** — đây là code giữ tiền, phải làm trước khi lên mainnet.
+- Job gọi `charge()` định kỳ (relayer ký giao dịch) chưa viết; hiện mới có phần ghi nhận
+  khi tiền đã vào.
+- Gating theo gói (`requirePro`) đã có hàm nhưng chưa gắn vào tính năng nào.
+- Port lại ICT / mini reversal DCA / futures EMA / gold RSI thành `StrategyDefinition`
+  trong thư viện mới (code cũ còn trong git history, commit trước `20260807`).
 - Contract test chạy chung cho cả hai adapter trên testnet.
 - WebSocket stream trong adapter (hiện chỉ có REST).
 - Reconciler hiện chạy in-process theo cron; Phase 3 chuyển vào execution worker,

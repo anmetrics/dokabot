@@ -47,11 +47,34 @@ export type Order = {
   createdAt: string;
 };
 
+export type Operand =
+  | { type: "indicator"; name: string; output?: string; params?: Record<string, number> }
+  | { type: "price"; source?: "open" | "high" | "low" | "close" }
+  | { type: "constant"; value: number };
+
+export type Condition = {
+  left: Operand;
+  operator: string;
+  right: Operand;
+  right2?: Operand;
+};
+
+export type RuleGroup = { logic: "AND" | "OR"; conditions: Condition[] };
+
+export type IndicatorMeta = {
+  name: string;
+  label: string;
+  description: string;
+  range?: [number, number];
+  outputs: { key: string; label: string }[];
+  params: { key: string; label: string; default: number; min: number; max: number }[];
+};
+
 export type ParamSpec = {
   key: string;
   label: string;
-  type: "number" | "boolean" | "enum";
-  default: number | boolean | string;
+  type: "number" | "boolean" | "enum" | "rules";
+  default: number | boolean | string | RuleGroup;
   min?: number;
   max?: number;
   step?: number;
@@ -127,22 +150,46 @@ export function useBots() {
 export function useStrategies() {
   const api = useApi();
   const strategies = ref<StrategyInfo[]>([]);
+  const indicators = ref<IndicatorMeta[]>([]);
+  const operators = ref<{ value: string; label: string }[]>([]);
   const loading = ref(false);
 
   const fetchStrategies = async () => {
     loading.value = true;
     try {
-      strategies.value = await api.get<StrategyInfo[]>("strategies");
+      const [list, catalog] = await Promise.all([
+        api.get<StrategyInfo[]>("strategies"),
+        api.get<{ indicators: IndicatorMeta[]; operators: { value: string; label: string }[] }>(
+          "strategies/indicators",
+        ),
+      ]);
+      strategies.value = list;
+      indicators.value = catalog.indicators;
+      operators.value = catalog.operators;
     } finally {
       loading.value = false;
     }
   };
 
-  /** Builds the default settings object for a strategy's form. */
+  /**
+   * Builds the default settings object for a strategy's form.
+   *
+   * Deep-cloned: rule groups are nested objects, and sharing one between the
+   * catalogue and the form would let edits leak back into the defaults.
+   */
   const defaultsFor = (strategy: StrategyInfo): Record<string, unknown> =>
-    Object.fromEntries(strategy.params.map((p) => [p.key, p.default]));
+    Object.fromEntries(
+      strategy.params.map((p) => [p.key, JSON.parse(JSON.stringify(p.default))]),
+    );
 
-  return { strategies, loading, fetchStrategies, defaultsFor };
+  return {
+    strategies,
+    indicators,
+    operators,
+    loading,
+    fetchStrategies,
+    defaultsFor,
+  };
 }
 
 export function useOrders() {

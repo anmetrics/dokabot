@@ -932,3 +932,362 @@ describe('Strategy runner (e2e)', () => {
     expect((log.metadata as any).side).toBe('BUY');
   });
 });
+
+describe('Rule builder & price bands (e2e)', () => {
+  let ctx: TestContext;
+  let runner: import('../src/modules/trading/strategy-runner.service').StrategyRunnerService;
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+    const { StrategyRunnerService } = await import(
+      '../src/modules/trading/strategy-runner.service'
+    );
+    runner = ctx.app.get(StrategyRunnerService);
+  });
+
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase(ctx.prisma);
+    ctx.fake.reset();
+  });
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+  const candles = (prices: number[], intervalMs = 300_000) => {
+    const end = Date.now() - intervalMs;
+    return prices.map((price, i) => {
+      const openTime = end - (prices.length - 1 - i) * intervalMs;
+      return {
+        openTime,
+        open: String(i === 0 ? price : prices[i - 1]),
+        high: String(price * 1.002),
+        low: String(price * 0.998),
+        close: String(price),
+        volume: '100',
+        closeTime: openTime + intervalMs - 1,
+      };
+    });
+  };
+
+  /** Long decline then a bounce: deeply oversold, last close 125. */
+  const oversold = () =>
+    candles([...Array.from({ length: 60 }, (_, i) => 300 - i * 3), 125]);
+
+  const makeBot = async (
+    user: { accessToken: string; accountId: string },
+    config: Record<string, unknown>,
+    strategyKey = 'custom-rules',
+  ) => {
+    const created = await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey,
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+        isPaper: false,
+        config,
+      })
+      .expect(201);
+
+    await ctx
+      .http()
+      .post(`/api/bots/${created.body.id}/start`)
+      .set(auth(user.accessToken))
+      .expect(201);
+
+    return ctx.prisma.bot.findUniqueOrThrow({ where: { id: created.body.id } });
+  };
+
+  describe('indicator catalogue', () => {
+    it('publishes indicators and operators for the builder', async () => {
+      const user = await registerUser(ctx);
+      const response = await ctx
+        .http()
+        .get('/api/strategies/indicators')
+        .set(auth(user.accessToken))
+        .expect(200);
+
+      expect(response.body.indicators.length).toBeGreaterThanOrEqual(18);
+      expect(response.body.operators.map((o: any) => o.value)).toContain(
+        'crossesAbove',
+      );
+      for (const indicator of response.body.indicators) {
+        expect(indicator.outputs.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
+  describe('custom rules', () => {
+    it('buys when the user’s entry conditions hold', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: {
+          logic: 'AND',
+          conditions: [
+            {
+              left: { type: 'indicator', name: 'RSI', params: { period: 14 } },
+              operator: 'lt',
+              right: { type: 'constant', value: 30 },
+            },
+          ],
+        },
+        exitRules: { logic: 'OR', conditions: [] },
+        orderSizeUsd: 500,
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(true);
+      expect(ctx.fake.placed[0].side).toBe('BUY');
+    });
+
+    it('holds when an AND group is only partly satisfied', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: {
+          logic: 'AND',
+          conditions: [
+            {
+              left: { type: 'indicator', name: 'RSI', params: { period: 14 } },
+              operator: 'lt',
+              right: { type: 'constant', value: 30 },
+            },
+            {
+              // This series is a steady decline, so ADX reads high — a rule that
+              // demands a *quiet* market cannot hold here.
+              left: { type: 'indicator', name: 'ADX', output: 'adx', params: { period: 14 } },
+              operator: 'lt',
+              right: { type: 'constant', value: 5 },
+            },
+          ],
+        },
+        exitRules: { logic: 'OR', conditions: [] },
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(false);
+      expect(ctx.fake.placed).toHaveLength(0);
+    });
+
+    it('fires when either arm of an OR group holds', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: {
+          logic: 'OR',
+          conditions: [
+            {
+              left: { type: 'indicator', name: 'ADX', output: 'adx' },
+              operator: 'gt',
+              right: { type: 'constant', value: 99 },
+            },
+            {
+              left: { type: 'indicator', name: 'RSI', params: { period: 14 } },
+              operator: 'lt',
+              right: { type: 'constant', value: 30 },
+            },
+          ],
+        },
+        exitRules: { logic: 'OR', conditions: [] },
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(true);
+    });
+
+    it('never trades on an empty rule set', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: { logic: 'AND', conditions: [] },
+        exitRules: { logic: 'OR', conditions: [] },
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(false);
+    });
+
+    it('rejects a malformed rule group at save time', async () => {
+      const user = await registerUserWithAccount(ctx);
+      await ctx
+        .http()
+        .post('/api/bots')
+        .set(auth(user.accessToken))
+        .send({
+          exchangeAccountId: user.accountId,
+          strategyKey: 'custom-rules',
+          symbol: 'BTCUSDT',
+          timeframe: '5m',
+          config: { entryRules: 'buy low sell high' },
+        })
+        .expect(400);
+    });
+
+    it('asks for as much history as the slowest indicator needs', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: {
+          logic: 'AND',
+          conditions: [
+            {
+              left: { type: 'indicator', name: 'EMA', params: { period: 200 } },
+              operator: 'gt',
+              right: { type: 'constant', value: 0 },
+            },
+          ],
+        },
+        exitRules: { logic: 'OR', conditions: [] },
+      });
+      ctx.fake.candles = oversold(); // only 61 bars
+
+      expect(await runner.runBot(bot)).toBe(false);
+      const updated = await ctx.prisma.bot.findUniqueOrThrow({ where: { id: bot.id } });
+      expect(updated.lastError).toMatch(/Chưa đủ nến/);
+    });
+  });
+
+  describe('price bands', () => {
+    const entryAlwaysBuy = {
+      logic: 'AND',
+      conditions: [
+        {
+          left: { type: 'indicator', name: 'RSI', params: { period: 14 } },
+          operator: 'lt',
+          right: { type: 'constant', value: 30 },
+        },
+      ],
+    };
+
+    it('blocks a buy above the user’s ceiling', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: entryAlwaysBuy,
+        exitRules: { logic: 'OR', conditions: [] },
+        maxBuyPrice: 100, // last close is 125
+      });
+      ctx.fake.candles = oversold();
+
+      // The band is the user's statement about value; indicators do not override it.
+      expect(await runner.runBot(bot)).toBe(false);
+      expect(ctx.fake.placed).toHaveLength(0);
+    });
+
+    it('blocks a buy below the user’s floor', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: entryAlwaysBuy,
+        exitRules: { logic: 'OR', conditions: [] },
+        minBuyPrice: 200,
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(false);
+    });
+
+    it('allows a buy inside the band', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: entryAlwaysBuy,
+        exitRules: { logic: 'OR', conditions: [] },
+        minBuyPrice: 100,
+        maxBuyPrice: 150,
+        orderSizeUsd: 500,
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(true);
+    });
+
+    it('treats zero as no limit', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: entryAlwaysBuy,
+        exitRules: { logic: 'OR', conditions: [] },
+        minBuyPrice: 0,
+        maxBuyPrice: 0,
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(true);
+    });
+
+    it('blocks a take-profit below the sell floor', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: { logic: 'AND', conditions: [] },
+        exitRules: { logic: 'OR', conditions: [] },
+        takeProfitPercent: 1,
+        minSellPrice: 1000, // last close 125
+      });
+
+      await ctx.prisma.order.create({
+        data: {
+          userId: bot.userId,
+          botId: bot.id,
+          exchangeAccountId: bot.exchangeAccountId,
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          side: 'BUY',
+          type: 'MARKET',
+          clientOrderId: 'band-entry',
+          quantity: '1',
+          filledQuantity: '1',
+          averagePrice: '100',
+          state: 'FILLED',
+        },
+      });
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(false);
+      expect(ctx.fake.placed).toHaveLength(0);
+    });
+
+    it('lets a stop-loss through regardless of the sell band', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(user, {
+        entryRules: { logic: 'AND', conditions: [] },
+        exitRules: { logic: 'OR', conditions: [] },
+        stopLossPercent: 10,
+        minSellPrice: 1000,
+      });
+
+      await ctx.prisma.order.create({
+        data: {
+          userId: bot.userId,
+          botId: bot.id,
+          exchangeAccountId: bot.exchangeAccountId,
+          exchange: 'BINANCE',
+          symbol: 'BTCUSDT',
+          side: 'BUY',
+          type: 'MARKET',
+          clientOrderId: 'band-losing-entry',
+          quantity: '1',
+          filledQuantity: '1',
+          averagePrice: '1000',
+          state: 'FILLED',
+        },
+      });
+      ctx.fake.candles = oversold();
+
+      // A floor on the sell price would otherwise turn a stop into a position that
+      // can never be closed.
+      expect(await runner.runBot(bot)).toBe(true);
+      expect(ctx.fake.placed[0].side).toBe('SELL');
+    });
+
+    it('applies to the built-in strategies too', async () => {
+      const user = await registerUserWithAccount(ctx);
+      const bot = await makeBot(
+        user,
+        { maxBuyPrice: 100, orderSizeUsd: 500 },
+        'rsi-reversal',
+      );
+      ctx.fake.candles = oversold();
+
+      expect(await runner.runBot(bot)).toBe(false);
+    });
+  });
+});

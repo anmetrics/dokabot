@@ -15,7 +15,19 @@ export type AppEnv = {
   KEY_VAULT_MASTER_KEY: string;
   KEY_VAULT_KEY_ID: string;
   CORS_ORIGINS: string[];
+  /**
+   * Static outbound IPs (or CIDRs) every exchange call leaves from.
+   *
+   * Users paste these into the exchange's API-key IP allowlist — the standard
+   * practice on every hosted trading platform (3Commas, Cryptohopper, Bitsgap).
+   * Empty means "not behind a static egress"; the UI then tells the user so
+   * instead of showing a wrong IP that would lock their key out.
+   */
+  PLATFORM_EGRESS_IPS: string[];
 };
+
+const IPV4_OR_CIDR =
+  /^((25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(\/(3[0-2]|[12]?\d))?$/;
 
 const WEAK_SECRETS = new Set(['secret', 'changeme', 'password', 'jwt_secret']);
 
@@ -58,6 +70,19 @@ export function validateEnv(): AppEnv {
     );
   }
 
+  const egressIps = (process.env.PLATFORM_EGRESS_IPS ?? '')
+    .split(',')
+    .map((ip) => ip.trim())
+    .filter(Boolean);
+
+  const badIp = egressIps.find((ip) => !IPV4_OR_CIDR.test(ip));
+  if (badIp) {
+    throw new Error(
+      `[config] PLATFORM_EGRESS_IPS contains an invalid entry: "${badIp}". ` +
+        'Expected a comma-separated list of IPv4 addresses or CIDR blocks.',
+    );
+  }
+
   return {
     NODE_ENV: nodeEnv,
     PORT: Number(process.env.PORT ?? 3000),
@@ -68,5 +93,6 @@ export function validateEnv(): AppEnv {
     KEY_VAULT_MASTER_KEY: masterKey,
     KEY_VAULT_KEY_ID: process.env.KEY_VAULT_KEY_ID ?? 'local-master-v1',
     CORS_ORIGINS: corsOrigins.length ? corsOrigins : ['http://localhost:3001'],
+    PLATFORM_EGRESS_IPS: egressIps,
   };
 }

@@ -11,7 +11,7 @@
         <div class="brand-icon">
           <v-icon size="20" color="white">mdi-chart-timeline-variant</v-icon>
         </div>
-        <span class="brand">BNB</span>
+        <span class="brand">DokaBot</span>
       </div>
 
       <v-spacer />
@@ -137,58 +137,16 @@ const currentTab = ref(route.path);
 /** Menu Navigation */
 const menuItems = [
   {
-    title: "Trang chủ",
+    title: "Tổng quan",
     short: "Home",
     icon: "mdi-view-dashboard-outline",
     to: "/",
   },
   {
-    title: "ICT",
-    short: "ICT",
-    icon: "mdi-chart-timeline-variant-shimmer",
-    to: "/ict-dashboard",
-  },
-  {
-    title: "Volume",
-    short: "Volume",
-    icon: "mdi-chart-bar-stacked",
-    to: "/volume-resistance",
-  },
-  {
-    title: "Thị trường",
-    short: "Trade",
-    icon: "mdi-swap-horizontal-bold",
-    to: "/trade",
-  },
-  {
-    title: "Tài sản",
-    short: "Tài sản",
-    icon: "mdi-wallet-outline",
-    to: "/assets",
-  },
-  {
-    title: "Vị thế",
-    short: "Vị thế",
-    icon: "mdi-chart-line-variant",
-    to: "/positions",
-  },
-  {
-    title: "Lịch sử",
-    short: "Lịch sử",
-    icon: "mdi-history",
-    to: "/transactions",
-  },
-  // {
-  //   title: "Bán tự động",
-  //   short: "Bán",
-  //   icon: "mdi-cash-minus",
-  //   to: "/sell-manager",
-  // },
-  {
-    title: "Sideway",
-    short: "Sideway",
-    icon: "mdi-swap-vertical-bold",
-    to: "/sideway",
+    title: "Đầu tư tự động",
+    short: "Tự động",
+    icon: "mdi-robot-happy-outline",
+    to: "/auto-invest",
   },
   {
     title: "Bots",
@@ -207,6 +165,12 @@ const menuItems = [
     short: "Keys",
     icon: "mdi-key-outline",
     to: "/api-keys",
+  },
+  {
+    title: "Gói cước",
+    short: "Gói",
+    icon: "mdi-credit-card-outline",
+    to: "/billing",
   },
   {
     title: "Cài đặt",
@@ -581,7 +545,7 @@ const toggleTheme = () =>
     0 8px 32px rgba(0, 0, 0, 0.5),
     0 0 0 1px rgba(167, 139, 250, 0.05) inset;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 4px;
   align-items: center;
 }

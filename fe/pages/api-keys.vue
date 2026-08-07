@@ -22,14 +22,60 @@
           quyền này.
         </li>
         <li>
-          Bật <strong>IP allowlist</strong> trên sàn và thêm các IP:
-          <code>{{ egressIps }}</code>
+          Bật <strong>IP allowlist</strong> trên sàn và chỉ cho phép các IP của hệ
+          thống bên dưới. Key không giới hạn IP sẽ bị sàn tự huỷ sau 90 ngày.
         </li>
         <li>
           Secret chỉ hiển thị một lần trên sàn và không bao giờ được hiển thị lại ở đây.
         </li>
       </ul>
     </v-alert>
+
+    <!-- The IP allowlist. Served by the API so an infrastructure change can never
+         leave users with a stale IP that silently breaks every bot. -->
+    <v-card class="egress-card" flat>
+      <div class="egress-head">
+        <div>
+          <div class="egress-title">
+            <v-icon size="18" start>mdi-shield-lock-outline</v-icon>
+            IP whitelist của hệ thống
+          </div>
+          <p class="egress-sub">
+            Dán các IP này vào ô IP allowlist khi tạo API key trên sàn. Mọi lệnh mua
+            bán của bot đều đi ra từ đúng những IP này.
+          </p>
+        </div>
+        <v-btn
+          v-if="egressIpsConfigured"
+          size="small"
+          variant="tonal"
+          class="copy-btn"
+          @click="copyEgressIps"
+        >
+          <v-icon start size="16">mdi-content-copy</v-icon>
+          {{ copied ? "Đã copy" : "Copy tất cả" }}
+        </v-btn>
+      </div>
+
+      <div v-if="egressIpsConfigured" class="ip-list">
+        <button
+          v-for="ip in egressIps"
+          :key="ip"
+          type="button"
+          class="ip-chip"
+          title="Bấm để copy"
+          @click="copyText(ip)"
+        >
+          <code>{{ ip }}</code>
+          <v-icon size="14">mdi-content-copy</v-icon>
+        </button>
+      </div>
+      <v-alert v-else type="warning" variant="tonal" density="compact" class="mt-1">
+        Bản triển khai này chưa cấu hình dải IP cố định
+        (<code>PLATFORM_EGRESS_IPS</code>). Hãy tạo key <strong>không</strong> giới hạn
+        IP, hoặc liên hệ hỗ trợ để lấy dải IP hiện hành.
+      </v-alert>
+    </v-card>
 
     <v-alert v-if="error" type="error" variant="tonal" class="mb-4">
       {{ error }}
@@ -128,11 +174,84 @@
 
           <v-select
             v-model="form.exchange"
+            data-test="exchange-select"
             :items="exchanges"
             label="Sàn giao dịch"
             variant="outlined"
             density="comfortable"
           />
+          <!-- Exchange-specific setup, so the user never has to leave this screen
+               to work out what to tick on the exchange. -->
+          <v-expansion-panels v-if="selectedGuide" class="guide-panels" flat>
+            <v-expansion-panel elevation="0">
+              <v-expansion-panel-title class="guide-title">
+                <v-icon size="18" start>mdi-book-open-outline</v-icon>
+                Cách tạo key an toàn trên {{ selectedGuide.name }}
+              </v-expansion-panel-title>
+              <v-expansion-panel-text class="guide-body">
+                <div class="guide-row">
+                  <span class="guide-label">Bật quyền</span>
+                  <span>
+                    <v-chip
+                      v-for="perm in selectedGuide.requiredPermissions"
+                      :key="perm"
+                      size="x-small"
+                      color="success"
+                      variant="tonal"
+                      class="mr-1 mb-1"
+                    >
+                      {{ perm }}
+                    </v-chip>
+                  </span>
+                </div>
+                <div class="guide-row">
+                  <span class="guide-label">Tắt quyền</span>
+                  <span>
+                    <v-chip
+                      v-for="perm in selectedGuide.forbiddenPermissions"
+                      :key="perm"
+                      size="x-small"
+                      color="error"
+                      variant="tonal"
+                      class="mr-1 mb-1"
+                    >
+                      {{ perm }}
+                    </v-chip>
+                  </span>
+                </div>
+                <div class="guide-row">
+                  <span class="guide-label">{{ selectedGuide.ipWhitelistLabel }}</span>
+                  <span>
+                    <code v-if="egressIpsConfigured" class="guide-ips">
+                      {{ egressIps.join(", ") }}
+                    </code>
+                    <em v-else class="muted">chưa cấu hình — tạo key không giới hạn IP</em>
+                    <v-btn
+                      v-if="egressIpsConfigured"
+                      size="x-small"
+                      variant="text"
+                      class="ml-1"
+                      @click="copyEgressIps"
+                    >
+                      <v-icon size="14">mdi-content-copy</v-icon>
+                    </v-btn>
+                  </span>
+                </div>
+                <ul class="guide-notes">
+                  <li v-for="note in selectedGuide.notes" :key="note">{{ note }}</li>
+                </ul>
+                <div class="guide-links">
+                  <a :href="selectedGuide.createKeyUrl" target="_blank" rel="noopener">
+                    Tạo API key <v-icon size="12">mdi-open-in-new</v-icon>
+                  </a>
+                  <a :href="selectedGuide.ipWhitelistUrl" target="_blank" rel="noopener">
+                    Hướng dẫn IP whitelist <v-icon size="12">mdi-open-in-new</v-icon>
+                  </a>
+                </div>
+              </v-expansion-panel-text>
+            </v-expansion-panel>
+          </v-expansion-panels>
+
           <v-text-field
             v-model="form.label"
             label="Tên gợi nhớ"

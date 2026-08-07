@@ -51,6 +51,24 @@ export function resolveParams(
         resolved[spec.key] = raw;
         break;
       }
+      case 'rules': {
+        // Structure is validated by the rule engine, which knows the indicators;
+        // here we only insist it is the right shape.
+        const group = raw as { logic?: unknown; conditions?: unknown };
+        if (
+          typeof group !== 'object' ||
+          group === null ||
+          (group.logic !== 'AND' && group.logic !== 'OR') ||
+          !Array.isArray(group.conditions)
+        ) {
+          throw new BadRequestException(
+            `"${spec.label}" phải có dạng { logic: "AND" | "OR", conditions: [...] }`,
+          );
+        }
+        resolved[spec.key] = raw as never;
+        break;
+      }
+
       case 'enum': {
         const allowed = spec.options.map((o) => o.value);
         if (typeof raw !== 'string' || !allowed.includes(raw)) {
@@ -66,6 +84,56 @@ export function resolveParams(
 
   return resolved;
 }
+
+/**
+ * Price guards every strategy obeys.
+ *
+ * Independent of the strategy's own logic on purpose: "never buy above X" is a
+ * statement about the user's view of value, and it must hold even when the
+ * indicators are screaming. Zero disables the bound.
+ */
+export const PRICE_BAND_PARAMS: ParamSpec[] = [
+  {
+    key: 'minBuyPrice',
+    label: 'Chỉ mua khi giá từ',
+    type: 'number',
+    default: 0,
+    min: 0,
+    max: 100_000_000,
+    unit: 'USD',
+    help: '0 = không giới hạn cận dưới.',
+  },
+  {
+    key: 'maxBuyPrice',
+    label: 'Chỉ mua khi giá đến',
+    type: 'number',
+    default: 0,
+    min: 0,
+    max: 100_000_000,
+    unit: 'USD',
+    help: 'Không mua đuổi khi giá đã vượt mức này. 0 = không giới hạn.',
+  },
+  {
+    key: 'minSellPrice',
+    label: 'Chỉ bán khi giá từ',
+    type: 'number',
+    default: 0,
+    min: 0,
+    max: 100_000_000,
+    unit: 'USD',
+    help: 'Không bán dưới mức này — trừ khi lệnh cắt lỗ kích hoạt. 0 = không giới hạn.',
+  },
+  {
+    key: 'maxSellPrice',
+    label: 'Chỉ bán khi giá đến',
+    type: 'number',
+    default: 0,
+    min: 0,
+    max: 100_000_000,
+    unit: 'USD',
+    help: '0 = không giới hạn cận trên.',
+  },
+];
 
 /** Shared risk controls every strategy gets, so the UI is consistent. */
 export const RISK_PARAMS: ParamSpec[] = [
@@ -102,4 +170,45 @@ export const RISK_PARAMS: ParamSpec[] = [
     unit: 'USD',
     help: 'Số tiền dùng cho mỗi lần vào lệnh.',
   },
+  ...PRICE_BAND_PARAMS,
 ];
+
+/**
+ * Applies the price band to a proposed action.
+ *
+ * Returns null when the action is allowed, or the reason it was blocked.
+ * Stop-loss exits are exempt: a floor on the sell price would turn a stop into a
+ * position that can never be closed.
+ */
+export function priceBandBlock(
+  params: StrategyParams,
+  action: 'BUY' | 'SELL',
+  price: number,
+): string | null {
+  const bound = (key: string): number => {
+    const value = Number(params[key]);
+    return Number.isFinite(value) ? value : 0;
+  };
+
+  if (action === 'BUY') {
+    const min = bound('minBuyPrice');
+    const max = bound('maxBuyPrice');
+    if (min > 0 && price < min) {
+      return `Giá ${price} dưới khoảng mua đã đặt (từ ${min})`;
+    }
+    if (max > 0 && price > max) {
+      return `Giá ${price} vượt khoảng mua đã đặt (đến ${max})`;
+    }
+    return null;
+  }
+
+  const min = bound('minSellPrice');
+  const max = bound('maxSellPrice');
+  if (min > 0 && price < min) {
+    return `Giá ${price} dưới khoảng bán đã đặt (từ ${min})`;
+  }
+  if (max > 0 && price > max) {
+    return `Giá ${price} vượt khoảng bán đã đặt (đến ${max})`;
+  }
+  return null;
+}

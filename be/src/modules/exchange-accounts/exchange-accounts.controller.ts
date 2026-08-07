@@ -19,6 +19,8 @@ import {
   UpdateExchangeAccountDto,
 } from './dto/exchange-account.dto';
 import { ExchangeRegistry } from '../exchange/exchange.registry';
+import { EXCHANGE_ONBOARDING } from '../exchange/exchange.onboarding';
+import { PlatformNetworkService } from '../exchange/platform-network.service';
 
 @Controller('exchange-accounts')
 @UseGuards(AuthenticationGuard)
@@ -26,11 +28,25 @@ export class ExchangeAccountsController {
   constructor(
     private readonly service: ExchangeAccountsService,
     private readonly registry: ExchangeRegistry,
+    private readonly network: PlatformNetworkService,
   ) {}
 
+  /**
+   * Everything the "add API key" screen needs before the user touches the
+   * exchange: which exchanges are live, the permissions their key must and must
+   * not have, and the egress IPs to paste into the exchange's allowlist.
+   */
   @Get('supported')
   supported() {
-    return { exchanges: this.registry.supported() };
+    const exchanges = this.registry
+      .supported()
+      .map((id) => EXCHANGE_ONBOARDING[id]);
+
+    return {
+      exchanges,
+      egressIps: this.network.list(),
+      egressIpsConfigured: this.network.configured,
+    };
   }
 
   @Get()

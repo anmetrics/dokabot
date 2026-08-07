@@ -29,6 +29,19 @@ export type ParamSpec =
       default: string;
       options: { value: string; label: string }[];
       help?: string;
+    }
+  | {
+      /**
+       * A user-composed set of indicator conditions.
+       *
+       * Rendered by a dedicated rule builder rather than a plain field — the
+       * catalogue at GET /api/strategies/indicators describes what can go in it.
+       */
+      key: string;
+      label: string;
+      type: 'rules';
+      default: { logic: 'AND' | 'OR'; conditions: unknown[] };
+      help?: string;
     };
 
 export type StrategyCategory =
@@ -56,7 +69,14 @@ export const HOLD = (reason: string): Signal => ({
   reason,
 });
 
-export type StrategyParams = Record<string, number | boolean | string>;
+export type RuleGroupValue = {
+  logic: 'AND' | 'OR';
+  conditions: unknown[];
+};
+
+export type ParamValue = number | boolean | string | RuleGroupValue;
+
+export type StrategyParams = Record<string, ParamValue>;
 
 /**
  * A strategy is a pure function of (candles, params) → signal.

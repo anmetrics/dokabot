@@ -40,7 +40,7 @@ echo "── 3. Catalog chiến lược ──"
 check "cần đăng nhập mới xem được" 401 "$(code $API/strategies)"
 check "lấy catalog" 200 "$(code $API/strategies -H "Authorization: Bearer $TOKEN")"
 COUNT=$(python3 -c "import json;print(len(json.load(open('/tmp/body.json'))))")
-check "số chiến lược" 8 "$COUNT"
+check "số chiến lược" 9 "$COUNT"
 python3 - <<'PY'
 import json
 data = json.load(open('/tmp/body.json'))

@@ -13,6 +13,7 @@ import { PrismaService } from 'src/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ExchangeRegistry } from '../exchange/exchange.registry';
 import { StrategyRegistry } from '../strategies/strategy-registry.service';
+import { SettingsService } from '../settings/settings.service';
 import { RequestContext } from '../authentication/interfaces/authentication.interface';
 import { CreateBotDto, UpdateBotDto } from './dto/bot.dto';
 
@@ -30,6 +31,7 @@ export class BotsService {
     private readonly prisma: PrismaService,
     private readonly registry: ExchangeRegistry,
     private readonly strategies: StrategyRegistry,
+    private readonly settings: SettingsService,
     private readonly audit: AuditService,
   ) {}
 
@@ -41,10 +43,14 @@ export class BotsService {
   }
 
   async create(userId: string, dto: CreateBotDto, context: RequestContext) {
+    const settings = await this.settings.get(userId);
     const count = await this.prisma.bot.count({ where: { userId } });
-    if (count >= MAX_BOTS_PER_USER) {
+
+    // The user's own ceiling, capped by the platform's.
+    const limit = Math.min(settings.maxConcurrentBots, MAX_BOTS_PER_USER);
+    if (count >= limit) {
       throw new BadRequestException(
-        `You can run at most ${MAX_BOTS_PER_USER} bots`,
+        `Bạn chỉ được chạy tối đa ${limit} bot. Tăng giới hạn trong Cài đặt nếu cần.`,
       );
     }
 
@@ -61,7 +67,14 @@ export class BotsService {
     // Fail here rather than on the first candle: an unsupported symbol or an
     // out-of-range setting is a configuration mistake, not a runtime condition.
     await this.registry.get(account.exchange).fetchSymbolInfo(dto.symbol);
-    const config = this.strategies.validateConfig(dto.strategyKey, dto.config);
+    // Anything the user did not specify falls back to their account defaults, so
+    // preferences are set once rather than retyped for every bot.
+    const config = this.strategies.validateConfig(dto.strategyKey, {
+      orderSizeUsd: Number(settings.defaultOrderSizeUsd),
+      takeProfitPercent: Number(settings.defaultTakeProfitPercent),
+      stopLossPercent: Number(settings.defaultStopLossPercent),
+      ...dto.config,
+    });
 
     const id = crypto.randomUUID();
     const bot = await this.prisma.bot.create({
@@ -75,7 +88,8 @@ export class BotsService {
         config: config as object,
         // Real money is opt-in, never the default.
         isPaper: dto.isPaper ?? true,
-        maxLossUsd: dto.maxLossUsd ?? null,
+        maxLossUsd:
+          dto.maxLossUsd ?? settings.defaultMaxLossUsd?.toString() ?? null,
         shardId: this.shardFor(id),
         status: BotStatus.DRAFT,
       },

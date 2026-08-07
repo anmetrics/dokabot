@@ -596,7 +596,10 @@ const gridDca: StrategyDefinition = {
   },
 };
 
+import { customRules } from './custom.strategy';
+
 export const STRATEGY_LIBRARY: StrategyDefinition[] = [
+  customRules,
   rsiReversal,
   macdCross,
   emaCross,

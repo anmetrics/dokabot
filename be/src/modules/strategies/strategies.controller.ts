@@ -1,6 +1,7 @@
 import { Controller, Get, NotFoundException, Param, UseGuards } from '@nestjs/common';
 import { AuthenticationGuard } from '../authentication/guards/authentication.guard';
 import { StrategyRegistry } from './strategy-registry.service';
+import { INDICATORS } from './library/rules';
 
 @Controller('strategies')
 @UseGuards(AuthenticationGuard)
@@ -11,6 +12,27 @@ export class StrategiesController {
   @Get()
   list() {
     return this.registry.catalog();
+  }
+
+  /**
+   * Everything the rule builder needs: which indicators exist, what each one
+   * outputs, and which parameters it takes.
+   */
+  @Get('indicators')
+  indicators() {
+    return {
+      indicators: INDICATORS,
+      operators: [
+        { value: 'gt', label: 'lớn hơn' },
+        { value: 'gte', label: 'lớn hơn hoặc bằng' },
+        { value: 'lt', label: 'nhỏ hơn' },
+        { value: 'lte', label: 'nhỏ hơn hoặc bằng' },
+        { value: 'crossesAbove', label: 'cắt lên trên' },
+        { value: 'crossesBelow', label: 'cắt xuống dưới' },
+        { value: 'between', label: 'nằm trong khoảng' },
+        { value: 'outside', label: 'nằm ngoài khoảng' },
+      ],
+    };
   }
 
   @Get(':key')

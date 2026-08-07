@@ -10,6 +10,8 @@ import { Exchange, ExchangeAccountStatus } from 'generated/prisma';
 import { PrismaService } from 'src/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ExchangeRegistry } from '../exchange/exchange.registry';
+import { looksLikeIpRestriction } from '../exchange/exchange.onboarding';
+import { PlatformNetworkService } from '../exchange/platform-network.service';
 import { KeyPermissions } from '../exchange/exchange.types';
 import { KeyVaultService } from '../security/key-vault.service';
 import { RequestContext } from '../authentication/interfaces/authentication.interface';
@@ -48,6 +50,7 @@ export class ExchangeAccountsService {
     private readonly prisma: PrismaService,
     private readonly vault: KeyVaultService,
     private readonly registry: ExchangeRegistry,
+    private readonly network: PlatformNetworkService,
     private readonly audit: AuditService,
   ) {}
 
@@ -98,7 +101,7 @@ export class ExchangeAccountsService {
         ...context,
       });
       throw new UnprocessableEntityException(
-        `Could not verify these credentials. ${verification.reason}`,
+        `Could not verify these credentials. ${this.explain(verification.reason)}`,
       );
     }
 
@@ -200,7 +203,7 @@ export class ExchangeAccountsService {
         : {
             status: ExchangeAccountStatus.INVALID,
             lastVerifiedAt: new Date(),
-            lastError: verification.reason,
+            lastError: this.explain(verification.reason),
           },
     });
 
@@ -283,6 +286,24 @@ export class ExchangeAccountsService {
       expiresAt: Date.now() + CREDENTIAL_CACHE_TTL_MS,
     });
     return value;
+  }
+
+  /**
+   * Turns a raw exchange rejection into something the user can act on.
+   *
+   * "Invalid API-key, IP, or permissions for action" is three different problems
+   * in one string; when the signature says IP, say IP — and say which ones.
+   */
+  private explain(reason: string): string {
+    if (!looksLikeIpRestriction(reason)) return reason;
+
+    return this.network.configured
+      ? `${reason} — The exchange rejected the request because it did not come ` +
+          `from an allowlisted IP. Add these IPs to this key's allowlist on the ` +
+          `exchange, then try again: ${this.network.asAllowlistString()}`
+      : `${reason} — The exchange rejected the request because of an IP ` +
+          `restriction on this key. Remove the IP allowlist on the key, or ` +
+          `contact support for the current egress IP range.`;
   }
 
   private async mustOwn(userId: string, id: string) {

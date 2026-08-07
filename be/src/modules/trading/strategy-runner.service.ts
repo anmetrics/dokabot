@@ -9,6 +9,9 @@ import { ExchangeRegistry } from '../exchange/exchange.registry';
 import { Candle } from '../exchange/exchange.types';
 import { StrategyRegistry } from '../strategies/strategy-registry.service';
 import { Signal } from '../strategies/strategy.types';
+import { priceBandBlock } from '../strategies/params';
+import { SettingsService } from '../settings/settings.service';
+import { SymbolRule } from '../settings/settings.types';
 import { computePosition, sizeFromBudget, unrealisedReturn } from './position';
 import { OrdersService } from './orders.service';
 
@@ -50,6 +53,7 @@ export class StrategyRunnerService {
     private readonly exchanges: ExchangeRegistry,
     private readonly orders: OrdersService,
     private readonly audit: AuditService,
+    private readonly settings: SettingsService,
     private readonly config: ConfigService,
   ) {}
 
@@ -97,6 +101,14 @@ export class StrategyRunnerService {
 
   /** Returns true when the bot placed an order. */
   async runBot(bot: Bot): Promise<boolean> {
+    // A per-user pause is separate from the platform kill switch: one user
+    // stepping away must not need an operator to act.
+    const userSettings = await this.settings.get(bot.userId);
+    if (userSettings.tradingPaused) {
+      await this.note(bot, 'Bạn đang tạm dừng giao dịch trong Cài đặt');
+      return false;
+    }
+
     const account = await this.prisma.exchangeAccount.findUniqueOrThrow({
       where: { id: bot.exchangeAccountId },
     });
@@ -121,7 +133,8 @@ export class StrategyRunnerService {
     const bar = candles[candles.length - 1];
     const price = new Decimal(bar.close);
 
-    const decision = await this.decide(bot, candles, price, config);
+    const symbolRule = await this.settings.symbolRule(bot.userId, bot.symbol);
+    const decision = await this.decide(bot, candles, price, config, symbolRule);
     await this.prisma.bot.update({
       where: { id: bot.id },
       data: { lastSignalAt: new Date(), lastError: null },
@@ -184,6 +197,7 @@ export class StrategyRunnerService {
     candles: Candle[],
     price: Decimal,
     config: Record<string, unknown>,
+    symbolRule: SymbolRule | null,
   ): Promise<Decision> {
     const fills = await this.prisma.order.findMany({
       where: {
@@ -202,7 +216,13 @@ export class StrategyRunnerService {
       const takeProfit = new Decimal(Number(params.takeProfitPercent)).div(100);
       const stopLoss = new Decimal(Number(params.stopLossPercent)).div(100);
 
+      // Stop-loss is exempt from the sell band: a floor on the sell price would
+      // turn a stop into a position that can never be closed.
       if (change.gte(takeProfit)) {
+        const blocked =
+          priceBandBlock(params, 'SELL', price.toNumber()) ??
+          this.symbolRuleBlock(symbolRule, 'SELL', price.toNumber());
+        if (blocked) return { kind: 'none', reason: `Chốt lời bị chặn — ${blocked}` };
         return {
           kind: 'exit',
           reason: `Chốt lời: +${change.times(100).toFixed(2)}%`,
@@ -221,6 +241,13 @@ export class StrategyRunnerService {
     const signal = this.strategies.evaluate(bot.strategyKey, candles, config);
 
     if (signal.action === 'BUY') {
+      // Two layers: the bot's own band, then the account-wide rule for this pair.
+      // The account rule wins because it is the broader statement of intent.
+      const blocked =
+        priceBandBlock(params, 'BUY', price.toNumber()) ??
+        this.symbolRuleBlock(symbolRule, 'BUY', price.toNumber());
+      if (blocked) return { kind: 'none', reason: blocked };
+
       const info = await this.symbolInfo(bot);
       const quantity = sizeFromBudget(
         Number(params.orderSizeUsd),
@@ -246,10 +273,41 @@ export class StrategyRunnerService {
       if (position.quantity.lte(0)) {
         return { kind: 'none', reason: 'Tín hiệu bán nhưng không có vị thế' };
       }
+      const blocked =
+        priceBandBlock(params, 'SELL', price.toNumber()) ??
+        this.symbolRuleBlock(symbolRule, 'SELL', price.toNumber());
+      if (blocked) return { kind: 'none', reason: blocked };
+
       return { kind: 'exit', reason: signal.reason, quantity: position.quantity };
     }
 
     return { kind: 'none', reason: signal.reason };
+  }
+
+  /**
+   * Account-wide price guard for a pair.
+   *
+   * Same shape as the bot-level band, but set once in Settings and applied to
+   * every bot trading that symbol — replacing the old fixed per-coin fields.
+   */
+  private symbolRuleBlock(
+    rule: SymbolRule | null,
+    action: 'BUY' | 'SELL',
+    price: number,
+  ): string | null {
+    if (!rule || !rule.enabled) return null;
+
+    const min = action === 'BUY' ? rule.minBuyPrice : rule.minSellPrice;
+    const max = action === 'BUY' ? rule.maxBuyPrice : rule.maxSellPrice;
+    const word = action === 'BUY' ? 'mua' : 'bán';
+
+    if (min > 0 && price < min) {
+      return `Quy tắc ${rule.symbol}: giá ${price} dưới mức ${word} tối thiểu ${min}`;
+    }
+    if (max > 0 && price > max) {
+      return `Quy tắc ${rule.symbol}: giá ${price} trên mức ${word} tối đa ${max}`;
+    }
+    return null;
   }
 
   private async symbolInfo(bot: Bot) {

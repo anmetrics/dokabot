@@ -14,73 +14,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Setting {
-  id    String @id @default(uuid())
-  key   String @unique @map("key")
-  value String @map("value")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@map("settings")
-}
-
-model Position {
-  id               String  @id @default(uuid())
-  buyPrice         Float   @map("buy_price")
-  strategy         String  @map("strategy")
-  symbol           String  @map("symbol")
-  qty              Float   @map("qty")
-  usdSpent         Float   @map("usd_spent")
-  totalQtyActual   Float   @map("total_qty_actual")
-  sellPrice        Float?  @map("sell_price")
-  isDualInvestment Boolean @default(false) @map("is_dual_investment")
-  dcaIndex         Int     @map("dca_index")
-  userId           String? @map("user_id")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@map("positions")
-}
-
-model SellSuccess {
-  id                      String @id @default(uuid())
-  symbol                  String @map("symbol")
-  buyPrices               Json   @map("buy_prices")
-  sellPrice               Float  @map("sell_prices")
-  totalAmountBuyActual    Float  @map("total_amount_buy_actual")
-  totalAmountBuyUsdtSpent Float  @map("total_amount_buy_usd_spent")
-  totalProfit             Float  @map("total_profit")
-  totalRevenueUsdt        Float  @map("total_revenue_usdt")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@map("sell_successes")
-}
-
-model SidewayScenario {
-  id               String    @id @default(uuid())
-  name             String    @map("name")
-  symbol           String    @map("symbol")
-  qty              Float     @map("qty")
-  steps            Json      @map("steps")
-  currentStepIndex Int       @default(0) @map("current_step_index")
-  isLoop           Boolean   @default(false) @map("is_loop")
-  enabled          Boolean   @default(false) @map("enabled")
-  status           String    @default("idle") @map("status")
-  lastExecutedAt   DateTime? @map("last_executed_at")
-  userId           String?   @map("user_id")
-
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime? @updatedAt @map("updated_at")
-
-  @@index([userId])
-  @@map("sideway_scenarios")
-}
-
 // ─────────────────────────────────────────────────────────────
 // Multi-tenant foundation (Phase 1)
 // ─────────────────────────────────────────────────────────────
@@ -114,6 +47,9 @@ model User {
   auditLogs        AuditLog[]
   bots             Bot[]
   orders           Order[]
+  settings         UserSettings?
+  walletLinks      WalletLink[]
+  subscription     Subscription?
 
   @@map("users")
 }
@@ -298,4 +234,162 @@ model Order {
   @@index([botId, createdAt])
   @@index([state])
   @@map("orders")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Per-user settings (Phase 2g)
+// ─────────────────────────────────────────────────────────────
+
+/// Account-wide preferences and defaults, one row per user.
+///
+/// Replaces the old global `settings` key/value table, which had one hardcoded
+/// row per coin and could only ever describe a single tenant.
+model UserSettings {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+
+  // Defaults applied to newly created bots, so a user sets them once.
+  defaultOrderSizeUsd      Decimal  @default(50) @map("default_order_size_usd") @db.Decimal(38, 18)
+  defaultTakeProfitPercent Decimal  @default(2) @map("default_take_profit_percent") @db.Decimal(10, 4)
+  defaultStopLossPercent   Decimal  @default(1) @map("default_stop_loss_percent") @db.Decimal(10, 4)
+  defaultMaxLossUsd        Decimal? @map("default_max_loss_usd") @db.Decimal(38, 18)
+
+  /// Account-wide ceiling on how much is at risk across every bot at once.
+  maxConcurrentBots Int      @default(20) @map("max_concurrent_bots")
+  maxDailyLossUsd   Decimal? @map("max_daily_loss_usd") @db.Decimal(38, 18)
+
+  /// Per-user kill switch, independent of the platform-wide one.
+  tradingPaused Boolean @default(false) @map("trading_paused")
+
+  /// Price guards per symbol, unbounded in length — the point of replacing the
+  /// old fixed BNB/SOL/BTC fields. See SymbolRule in settings.types.ts.
+  symbolRules Json @default("[]") @map("symbol_rules")
+
+  notifyOnFill       Boolean @default(true) @map("notify_on_fill")
+  notifyOnError      Boolean @default(true) @map("notify_on_error")
+  notifyOnBotStopped Boolean @default(true) @map("notify_on_bot_stopped")
+  telegramChatId     String? @map("telegram_chat_id")
+
+  timezone String @default("Asia/Ho_Chi_Minh") @map("timezone")
+  locale   String @default("vi") @map("locale")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Billing (Phase 2h) — see contracts/README.md
+// ─────────────────────────────────────────────────────────────
+
+enum PlanTier {
+  FREE
+  PRO
+}
+
+enum SubscriptionStatus {
+  NONE
+  /// Paid and inside the current period.
+  ACTIVE
+  /// Period ended, payment not yet collected. Still has access.
+  GRACE
+  /// Grace elapsed without payment.
+  EXPIRED
+  /// User revoked on-chain.
+  CANCELLED
+}
+
+/// A wallet the user has proven they control, by signing a nonce.
+model WalletLink {
+  id     String @id @default(uuid())
+  userId String @map("user_id")
+
+  /// Lower-cased checksum-free address, so lookups are exact.
+  address String @unique @map("address")
+  chainId Int    @map("chain_id")
+
+  /// Nonce the user signed. Kept to reject a replayed signature.
+  nonce      String    @map("nonce")
+  verifiedAt DateTime? @map("verified_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("wallet_links")
+}
+
+model Subscription {
+  id     String @id @default(uuid())
+  userId String @unique @map("user_id")
+
+  tier   PlanTier           @default(FREE) @map("tier")
+  status SubscriptionStatus @default(NONE) @map("status")
+
+  /// Wallet that pays. Null while the user is on the free tier.
+  walletAddress String? @map("wallet_address")
+
+  priceUsd Decimal @default(4) @map("price_usd") @db.Decimal(18, 6)
+
+  currentPeriodStart DateTime? @map("current_period_start")
+  currentPeriodEnd   DateTime? @map("current_period_end")
+  /// Access survives until here even after the period ends.
+  graceEndsAt        DateTime? @map("grace_ends_at")
+
+  cancelledAt DateTime? @map("cancelled_at")
+  lastError   String?   @map("last_error") @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  payments Payment[]
+
+  @@index([status, currentPeriodEnd])
+  @@map("subscriptions")
+}
+
+/// One confirmed on-chain charge.
+model Payment {
+  id             String @id @default(uuid())
+  subscriptionId String @map("subscription_id")
+  userId         String @map("user_id")
+
+  /// Idempotency key is the log's position on chain, not the user — the same
+  /// wallet pays many times, and a reorg can replay a block.
+  txHash   String @map("tx_hash")
+  logIndex Int    @map("log_index")
+
+  blockNumber   BigInt   @map("block_number")
+  walletAddress String   @map("wallet_address")
+  amountUsd     Decimal  @map("amount_usd") @db.Decimal(18, 6)
+  /// Raw on-chain amount, in the token's smallest unit.
+  amountRaw     String   @map("amount_raw")
+  chargeCount   Int      @map("charge_count")
+  confirmedAt   DateTime @map("confirmed_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@unique([txHash, logIndex])
+  @@index([userId, createdAt])
+  @@map("payments")
+}
+
+/// How far the chain listener has processed, so a restart resumes instead of
+/// rescanning from genesis or silently skipping blocks.
+model ChainCursor {
+  id                 String   @id @default(uuid())
+  chainId            Int      @map("chain_id")
+  contractAddress    String   @map("contract_address")
+  lastProcessedBlock BigInt   @map("last_processed_block")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  @@unique([chainId, contractAddress])
+  @@map("chain_cursors")
 }

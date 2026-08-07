@@ -25,6 +25,25 @@ export type ExchangeAccount = {
   createdAt: string;
 };
 
+/** Onboarding metadata served by the API — never hardcoded in the UI, because a
+ *  stale egress IP here locks every user's key out of the exchange. */
+export type ExchangeOnboarding = {
+  id: Exchange;
+  name: string;
+  createKeyUrl: string;
+  ipWhitelistUrl: string;
+  ipWhitelistLabel: string;
+  requiredPermissions: string[];
+  forbiddenPermissions: string[];
+  notes: string[];
+};
+
+export type SupportedExchanges = {
+  exchanges: ExchangeOnboarding[];
+  egressIps: string[];
+  egressIpsConfigured: boolean;
+};
+
 export type CreateExchangeAccountPayload = {
   exchange: Exchange;
   label: string;
@@ -39,6 +58,9 @@ export function useExchangeAccounts() {
   const api = useApi();
 
   const accounts = ref<ExchangeAccount[]>([]);
+  const onboarding = ref<ExchangeOnboarding[]>([]);
+  const egressIps = ref<string[]>([]);
+  const egressIpsConfigured = ref(false);
   const loading = ref(false);
   const error = ref<string | null>(null);
 
@@ -61,6 +83,19 @@ export function useExchangeAccounts() {
     }
   };
 
+  /** Loads the supported exchanges plus the IP allowlist the user must apply. */
+  const fetchSupported = async () => {
+    try {
+      const data = await api.get<SupportedExchanges>(`${RESOURCE}/supported`);
+      onboarding.value = data.exchanges;
+      egressIps.value = data.egressIps;
+      egressIpsConfigured.value = data.egressIpsConfigured;
+    } catch {
+      // Non-fatal: the key form still works, it just loses its guidance.
+      onboarding.value = [];
+    }
+  };
+
   const createAccount = async (payload: CreateExchangeAccountPayload) => {
     const created = await api.post<ExchangeAccount>(RESOURCE, payload);
     accounts.value = [created, ...accounts.value];
@@ -80,9 +115,13 @@ export function useExchangeAccounts() {
 
   return {
     accounts,
+    onboarding,
+    egressIps,
+    egressIpsConfigured,
     loading,
     error,
     fetchAccounts,
+    fetchSupported,
     createAccount,
     verifyAccount,
     revokeAccount,
