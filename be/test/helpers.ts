@@ -5,6 +5,7 @@ import { AppModule } from '../src/app.module';
 import { PrismaService } from '../src/prisma.service';
 import { ExchangeRegistry } from '../src/modules/exchange/exchange.registry';
 import {
+  Candle,
   ExchangeCredentials,
   IExchangeAdapter,
   OrderResult,
@@ -28,6 +29,10 @@ export class FakeAdapter implements IExchangeAdapter {
     permissions: { canRead: true, canTrade: true, canWithdraw: false, raw: [] },
   };
   placeError: Error | null = null;
+  /** Candle series returned by fetchOHLCV. */
+  candles: Candle[] = [];
+  /** Symbols whose info lookup should fail, to simulate a delisted market. */
+  readonly symbolErrors = new Set<string>();
   readonly placed: PlaceOrderRequest[] = [];
   private readonly orders = new Map<string, OrderResult>();
 
@@ -37,6 +42,8 @@ export class FakeAdapter implements IExchangeAdapter {
       permissions: { canRead: true, canTrade: true, canWithdraw: false, raw: [] },
     };
     this.placeError = null;
+    this.candles = [];
+    this.symbolErrors.clear();
     this.placed.length = 0;
     this.orders.clear();
   }
@@ -46,10 +53,13 @@ export class FakeAdapter implements IExchangeAdapter {
   }
 
   fetchOHLCV() {
-    return Promise.resolve([]);
+    return Promise.resolve(this.candles);
   }
 
   fetchSymbolInfo(symbol: string) {
+    if (this.symbolErrors.has(symbol)) {
+      return Promise.reject(new Error(`Unknown symbol ${symbol}`));
+    }
     return Promise.resolve({
       symbol,
       base: symbol.replace('USDT', ''),

@@ -19,11 +19,13 @@ import { ExchangeModule } from './modules/exchange/exchange.module';
 import { ExchangeAccountsModule } from './modules/exchange-accounts/exchange-accounts.module';
 import { TradingModule } from './modules/trading/trading.module';
 import { StrategiesModule } from './modules/strategies/strategies.module';
+import { HealthModule } from './modules/health/health.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     SharedModule,
+    HealthModule,
     SecurityModule,
     AuditModule,
     ExchangeModule,

@@ -191,7 +191,8 @@ describe('StrategyRegistry', () => {
     it('RSI sells an overbought market', () => {
       const signal = registry.evaluate('rsi-reversal', [
         ...rising(60, 100, 3),
-        ...series([278]),
+        // A pullback, so the "wait for the turn" filter is satisfied.
+        ...series([270]),
       ]);
       expect(signal.action).toBe('SELL');
     });
@@ -205,10 +206,21 @@ describe('StrategyRegistry', () => {
 
     it('RSI respects a user-widened threshold', () => {
       const candles = [...falling(60, 300, 3), ...series([125])];
-      // The same market is not a signal once the user demands a deeper oversold.
+      // RSI reads ~4.9 here: a signal at the default 30, silence once the user
+      // demands a deeper oversold than the market actually reached.
+      expect(registry.evaluate('rsi-reversal', candles).action).toBe('BUY');
       expect(
-        registry.evaluate('rsi-reversal', candles, { oversold: 5 }).action,
+        registry.evaluate('rsi-reversal', candles, { oversold: 3 }).action,
       ).toBe('HOLD');
+    });
+
+    it('asks for only as much history as the configuration needs', () => {
+      // The default 200-period EMA needs 250 candles; 10/30 needs 50. A fixed floor
+      // would tell this user there is never enough data.
+      expect(registry.requiredCandles('ema-cross')).toBe(220);
+      expect(
+        registry.requiredCandles('ema-cross', { fastPeriod: 10, slowPeriod: 30 }),
+      ).toBe(50);
     });
 
     it('EMA cross rejects a configuration where fast is not faster', () => {
@@ -227,7 +239,9 @@ describe('StrategyRegistry', () => {
         ...Array.from({ length: 120 }, (_, i) => 100 + i * 4),
       ]);
       const signals: Signal[] = [];
-      for (let i = 260; i < candles.length; i++) {
+      // Scan from where the configured 30-period EMA becomes defined, not from the
+      // default 200-period requirement — the cross happens around bar 208.
+      for (let i = 60; i < candles.length; i++) {
         signals.push(
           registry.evaluate('ema-cross', candles.slice(0, i), {
             fastPeriod: 10,
@@ -264,12 +278,12 @@ describe('StrategyRegistry', () => {
     it('Grid DCA scales the level with the size of the drop', () => {
       const shallow = registry.evaluate(
         'grid-dca',
-        series([...new Array(19).fill(100), 97]),
+        series([...new Array(39).fill(100), 97]),
         { stepPercent: 2, maxLevels: 5, lookback: 20 },
       );
       const deep = registry.evaluate(
         'grid-dca',
-        series([...new Array(19).fill(100), 90]),
+        series([...new Array(39).fill(100), 90]),
         { stepPercent: 2, maxLevels: 5, lookback: 20 },
       );
 
@@ -281,7 +295,7 @@ describe('StrategyRegistry', () => {
     it('Grid DCA never exceeds the user’s maximum level', () => {
       const crash = registry.evaluate(
         'grid-dca',
-        series([...new Array(19).fill(100), 10]),
+        series([...new Array(39).fill(100), 10]),
         { stepPercent: 1, maxLevels: 3, lookback: 20 },
       );
       expect(crash.indicators!.level).toBeLessThanOrEqual(3);

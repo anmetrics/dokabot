@@ -48,6 +48,7 @@ const rsiReversal: StrategyDefinition = {
     'Mua khi RSI vào vùng quá bán và bắt đầu quay đầu, bán khi vào vùng quá mua. Hợp với thị trường đi ngang.',
   category: 'mean-reversion',
   minCandles: 40,
+  requiredCandles: (p) => num(p, 'period') * 3,
   params: [
     {
       key: 'period',
@@ -130,6 +131,7 @@ const macdCross: StrategyDefinition = {
     'Vào lệnh khi đường MACD cắt đường tín hiệu. Bắt xu hướng sớm, hiệu quả khi thị trường có trend rõ.',
   category: 'momentum',
   minCandles: 60,
+  requiredCandles: (p) => num(p, 'slowPeriod') + num(p, 'signalPeriod') * 3,
   params: [
     { key: 'fastPeriod', label: 'EMA nhanh', type: 'number', default: 12, min: 2, max: 100, unit: 'bars' },
     { key: 'slowPeriod', label: 'EMA chậm', type: 'number', default: 26, min: 3, max: 200, unit: 'bars' },
@@ -200,6 +202,7 @@ const emaCross: StrategyDefinition = {
     'Mua khi EMA ngắn cắt lên EMA dài, bán khi cắt xuống. Chiến lược theo xu hướng kinh điển.',
   category: 'trend',
   minCandles: 250,
+  requiredCandles: (p) => num(p, 'slowPeriod') + 20,
   params: [
     { key: 'fastPeriod', label: 'EMA ngắn', type: 'number', default: 50, min: 2, max: 200, unit: 'bars' },
     { key: 'slowPeriod', label: 'EMA dài', type: 'number', default: 200, min: 3, max: 500, unit: 'bars' },
@@ -266,6 +269,7 @@ const bollingerReversion: StrategyDefinition = {
     'Mua khi giá chạm dải dưới, bán khi chạm dải trên. Kỳ vọng giá quay về đường trung bình.',
   category: 'mean-reversion',
   minCandles: 40,
+  requiredCandles: (p) => num(p, 'period') * 2,
   params: [
     { key: 'period', label: 'Chu kỳ', type: 'number', default: 20, min: 5, max: 100, unit: 'bars' },
     {
@@ -342,6 +346,7 @@ const stochasticCross: StrategyDefinition = {
     'Vào lệnh khi %K cắt %D trong vùng quá mua/quá bán. Nhạy hơn RSI, hợp khung thời gian ngắn.',
   category: 'momentum',
   minCandles: 40,
+  requiredCandles: (p) => num(p, 'period') + num(p, 'smoothing') * 3,
   params: [
     { key: 'period', label: 'Chu kỳ %K', type: 'number', default: 14, min: 2, max: 100, unit: 'bars' },
     { key: 'smoothing', label: 'Làm mượt %D', type: 'number', default: 3, min: 1, max: 20, unit: 'bars' },
@@ -394,6 +399,7 @@ const donchianBreakout: StrategyDefinition = {
     'Mua khi giá phá đỉnh N nến gần nhất, bán khi thủng đáy. Chiến lược turtle trading cổ điển.',
   category: 'breakout',
   minCandles: 60,
+  requiredCandles: (p) => Math.max(num(p, 'period'), num(p, 'atrPeriod')) + 5,
   params: [
     {
       key: 'period',
@@ -465,6 +471,7 @@ const supertrend: StrategyDefinition = {
     'Đường xu hướng bám theo biến động ATR. Đảo chiều tín hiệu khi giá cắt qua đường này.',
   category: 'trend',
   minCandles: 60,
+  requiredCandles: (p) => num(p, 'atrPeriod') * 3,
   params: [
     { key: 'atrPeriod', label: 'Chu kỳ ATR', type: 'number', default: 10, min: 2, max: 100, unit: 'bars' },
     {
@@ -528,6 +535,7 @@ const gridDca: StrategyDefinition = {
     'Mua thêm mỗi khi giá giảm một mức nhất định so với đỉnh gần nhất, chốt lời khi hồi. Không dự đoán hướng.',
   category: 'mean-reversion',
   minCandles: 30,
+  requiredCandles: (p) => num(p, 'lookback') + 5,
   params: [
     {
       key: 'stepPercent',

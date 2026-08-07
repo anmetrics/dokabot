@@ -41,7 +41,7 @@
               {{ bot.symbol }}
               <span class="bot-tf">{{ bot.timeframe }}</span>
             </div>
-            <div class="bot-strategy">{{ bot.strategyKey }}</div>
+            <div class="bot-strategy">{{ strategyName(bot.strategyKey) }}</div>
           </div>
           <v-chip size="small" :color="statusColor(bot.status)" variant="tonal">
             {{ statusLabel(bot.status) }}
@@ -119,11 +119,17 @@
           />
           <v-select
             v-model="form.strategyKey"
-            :items="strategies"
+            :items="strategyOptions"
+            item-title="title"
+            item-value="value"
             label="Chiến lược"
             variant="outlined"
             density="comfortable"
+            @update:model-value="onStrategyChange"
           />
+          <p v-if="selectedStrategy" class="strategy-desc">
+            {{ selectedStrategy.description }}
+          </p>
           <v-text-field
             v-model="form.symbol"
             label="Cặp giao dịch"
@@ -148,6 +154,51 @@
             hint="Bot tự dừng khi lỗ thực tế vượt mức này."
             persistent-hint
           />
+          <!-- Settings form is generated from the strategy's own parameter spec,
+               so adding a strategy on the server needs no front-end change. -->
+          <div v-if="selectedStrategy" class="params-block">
+            <div class="params-title">Thông số chiến lược</div>
+            <template v-for="param in selectedStrategy.params" :key="param.key">
+              <v-text-field
+                v-if="param.type === 'number'"
+                v-model.number="config[param.key]"
+                :label="param.label + (param.unit ? ` (${param.unit})` : '')"
+                type="number"
+                :min="param.min"
+                :max="param.max"
+                :step="param.step ?? 1"
+                :hint="param.help"
+                persistent-hint
+                variant="outlined"
+                density="compact"
+                class="mb-3"
+              />
+              <v-switch
+                v-else-if="param.type === 'boolean'"
+                v-model="config[param.key]"
+                :label="param.label"
+                :hint="param.help"
+                persistent-hint
+                color="primary"
+                density="compact"
+                class="mb-2"
+              />
+              <v-select
+                v-else
+                v-model="config[param.key]"
+                :items="param.options"
+                item-title="label"
+                item-value="value"
+                :label="param.label"
+                :hint="param.help"
+                persistent-hint
+                variant="outlined"
+                density="compact"
+                class="mb-3"
+              />
+            </template>
+          </div>
+
           <v-switch
             v-model="form.isPaper"
             color="primary"
@@ -184,7 +235,13 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { useRouter } from "vue-router";
-import { useBots, type Bot, type BotStatus } from "~/composables/useTrading";
+import {
+  useBots,
+  useStrategies,
+  type Bot,
+  type BotStatus,
+  type StrategyInfo,
+} from "~/composables/useTrading";
 import { useExchangeAccounts } from "~/composables/useExchangeAccounts";
 
 const router = useRouter();
@@ -196,7 +253,7 @@ const {
   fetchAccounts,
 } = useExchangeAccounts();
 
-const strategies = ["ict-scalping", "mini-reversal-dca", "futures-ema", "gold-rsi-reversal"];
+const { strategies, fetchStrategies, defaultsFor } = useStrategies();
 const timeframes = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "1d"];
 
 const dialog = ref(false);
@@ -208,14 +265,31 @@ const snackbar = ref(false);
 const snackbarText = ref("");
 const snackbarColor = ref<"success" | "error">("success");
 
+/** Current strategy's settings, keyed by param. Rebuilt when the strategy changes. */
+const config = ref<Record<string, any>>({});
+
 const form = reactive({
   exchangeAccountId: "",
-  strategyKey: strategies[0],
+  strategyKey: "",
   symbol: "",
   timeframe: "5m",
   maxLossUsd: "",
   isPaper: true,
 });
+
+const strategyOptions = computed(() =>
+  strategies.value.map((s) => ({ title: s.name, value: s.key })),
+);
+
+const selectedStrategy = computed<StrategyInfo | undefined>(() =>
+  strategies.value.find((s) => s.key === form.strategyKey),
+);
+
+const onStrategyChange = () => {
+  // Each strategy has its own parameters; carrying the previous ones over would
+  // send settings the server will reject.
+  config.value = selectedStrategy.value ? defaultsFor(selectedStrategy.value) : {};
+};
 
 const accountOptions = computed(() =>
   accounts.value
@@ -227,7 +301,10 @@ const accountOptions = computed(() =>
 );
 
 const canSubmit = computed(
-  () => !!form.exchangeAccountId && /^[A-Z0-9]{5,20}$/.test(form.symbol),
+  () =>
+    !!form.exchangeAccountId &&
+    !!form.strategyKey &&
+    /^[A-Z0-9]{5,20}$/.test(form.symbol),
 );
 
 const notify = (text: string, color: "success" | "error" = "success") => {
@@ -239,6 +316,8 @@ const notify = (text: string, color: "success" | "error" = "success") => {
 const openDialog = () => {
   formError.value = null;
   form.exchangeAccountId = accountOptions.value[0]?.value ?? "";
+  form.strategyKey = form.strategyKey || strategies.value[0]?.key || "";
+  onStrategyChange();
   form.symbol = "";
   form.maxLossUsd = "";
   form.isPaper = true;
@@ -256,6 +335,7 @@ const onSubmit = async () => {
       timeframe: form.timeframe,
       isPaper: form.isPaper,
       maxLossUsd: form.maxLossUsd || undefined,
+      config: config.value,
     });
     dialog.value = false;
     notify("Đã tạo bot.");
@@ -306,8 +386,11 @@ const statusLabel = (status: BotStatus) =>
     ERROR: "Lỗi",
   })[status];
 
+const strategyName = (key: string) =>
+  strategies.value.find((s) => s.key === key)?.name ?? key;
+
 onMounted(async () => {
-  await Promise.all([fetchBots(), fetchAccounts()]);
+  await Promise.all([fetchBots(), fetchAccounts(), fetchStrategies()]);
 });
 </script>
 
@@ -413,6 +496,27 @@ onMounted(async () => {
   align-items: center;
   gap: 6px;
   margin-top: 14px;
+}
+.strategy-desc {
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: #94a3b8;
+  line-height: 1.5;
+}
+.params-block {
+  margin-top: 8px;
+  padding: 14px;
+  border: 1px solid rgba(167, 139, 250, 0.15);
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.4);
+}
+.params-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #64748b;
+  margin-bottom: 12px;
 }
 .dialog-card {
   background: #1e293b;

@@ -70,8 +70,16 @@ export type StrategyDefinition = {
   name: string;
   description: string;
   category: StrategyCategory;
-  /** Fewest candles the strategy needs before it can say anything. */
+  /** Fewest candles the strategy needs with its default settings. */
   minCandles: number;
+  /**
+   * How many candles the strategy needs for a *specific* configuration.
+   *
+   * A fixed floor is wrong: an EMA cross with 50/200 needs 250 candles, the same
+   * strategy with 10/30 needs 60. Without this, a user who shortens the periods
+   * would be told there is not enough data forever.
+   */
+  requiredCandles?: (params: StrategyParams) => number;
   params: ParamSpec[];
   evaluate: (candles: Candle[], params: StrategyParams) => Signal;
 };

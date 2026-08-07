@@ -433,3 +433,502 @@ describe('Trading (e2e)', () => {
     });
   });
 });
+
+describe('Strategies (e2e)', () => {
+  let ctx: TestContext;
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+  });
+
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase(ctx.prisma);
+    ctx.fake.reset();
+  });
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+  it('publishes a catalogue the UI can build a form from', async () => {
+    const user = await registerUser(ctx);
+    const response = await ctx
+      .http()
+      .get('/api/strategies')
+      .set(auth(user.accessToken))
+      .expect(200);
+
+    expect(response.body.length).toBeGreaterThanOrEqual(8);
+    for (const strategy of response.body) {
+      expect(strategy).toMatchObject({
+        key: expect.any(String),
+        name: expect.any(String),
+        description: expect.any(String),
+        category: expect.any(String),
+        params: expect.any(Array),
+      });
+      expect(strategy).not.toHaveProperty('evaluate');
+    }
+  });
+
+  it('requires authentication to read the catalogue', async () => {
+    await ctx.http().get('/api/strategies').expect(401);
+  });
+
+  it('stores a bot with defaults filled in', async () => {
+    const user = await registerUserWithAccount(ctx);
+
+    const response = await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'rsi-reversal',
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+        config: { period: 7 },
+      })
+      .expect(201);
+
+    expect(response.body.config.period).toBe(7);
+    // Everything the user left blank comes back explicit, so the bot's behaviour
+    // is fully described by its stored config.
+    expect(response.body.config.oversold).toBe(30);
+    expect(response.body.config.takeProfitPercent).toBe(2);
+  });
+
+  it('rejects a setting outside its allowed range', async () => {
+    const user = await registerUserWithAccount(ctx);
+
+    await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'rsi-reversal',
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+        config: { period: 100000 },
+      })
+      .expect(400);
+  });
+
+  it('rejects a setting the strategy does not have', async () => {
+    const user = await registerUserWithAccount(ctx);
+
+    await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'rsi-reversal',
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+        config: { leverage: 100 },
+      })
+      .expect(400);
+  });
+
+  it('rejects an unknown strategy', async () => {
+    const user = await registerUserWithAccount(ctx);
+
+    await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'get-rich-quick',
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+      })
+      .expect(400);
+  });
+
+  it('validates settings again when they are updated', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'rsi-reversal',
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+      })
+      .expect(201);
+
+    await ctx
+      .http()
+      .patch(`/api/bots/${bot.body.id}`)
+      .set(auth(user.accessToken))
+      .send({ config: { oversold: 999 } })
+      .expect(400);
+
+    await ctx
+      .http()
+      .patch(`/api/bots/${bot.body.id}`)
+      .set(auth(user.accessToken))
+      .send({ config: { oversold: 25 } })
+      .expect(200);
+  });
+});
+
+describe('Strategy runner (e2e)', () => {
+  let ctx: TestContext;
+  let runner: import('../src/modules/trading/strategy-runner.service').StrategyRunnerService;
+
+  beforeAll(async () => {
+    ctx = await createTestApp();
+    const { StrategyRunnerService } = await import(
+      '../src/modules/trading/strategy-runner.service'
+    );
+    runner = ctx.app.get(StrategyRunnerService);
+  });
+
+  afterAll(async () => {
+    await ctx.app.close();
+  });
+
+  beforeEach(async () => {
+    await resetDatabase(ctx.prisma);
+    ctx.fake.reset();
+  });
+
+  const auth = (token: string) => ({ Authorization: `Bearer ${token}` });
+
+  /** Candle series ending in the past, so every bar counts as closed. */
+  const candles = (prices: number[], intervalMs = 300_000) => {
+    const end = Date.now() - intervalMs;
+    return prices.map((price, i) => {
+      const openTime = end - (prices.length - 1 - i) * intervalMs;
+      return {
+        openTime,
+        open: String(i === 0 ? price : prices[i - 1]),
+        high: String(price * 1.002),
+        low: String(price * 0.998),
+        close: String(price),
+        volume: '100',
+        closeTime: openTime + intervalMs - 1,
+      };
+    });
+  };
+
+  /** A long decline then a small bounce: deeply oversold on RSI. */
+  const oversold = () =>
+    candles([...Array.from({ length: 60 }, (_, i) => 300 - i * 3), 125]);
+
+  const startBot = async (
+    user: { accessToken: string; accountId: string },
+    overrides: Record<string, unknown> = {},
+  ) => {
+    const created = await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'rsi-reversal',
+        symbol: 'BTCUSDT',
+        timeframe: '5m',
+        isPaper: false,
+        ...overrides,
+      })
+      .expect(201);
+
+    await ctx
+      .http()
+      .post(`/api/bots/${created.body.id}/start`)
+      .set(auth(user.accessToken))
+      .expect(201);
+
+    return ctx.prisma.bot.findUniqueOrThrow({ where: { id: created.body.id } });
+  };
+
+  it('turns a buy signal into an order', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user, { config: { orderSizeUsd: 500 } });
+    ctx.fake.candles = oversold();
+
+    const acted = await runner.runBot(bot);
+
+    expect(acted).toBe(true);
+    expect(ctx.fake.placed).toHaveLength(1);
+    expect(ctx.fake.placed[0].side).toBe('BUY');
+    // 500 USD at ~125 → 4 units, floored to the 0.00001 lot size.
+    expect(Number(ctx.fake.placed[0].quantity)).toBeCloseTo(4, 2);
+  });
+
+  it('places at most one order per candle, however often it runs', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+    ctx.fake.candles = oversold();
+
+    await runner.runBot(bot);
+    await runner.runBot(bot);
+    await runner.runBot(bot);
+
+    // Restarts, overlapping workers and retried ticks all look like this.
+    expect(ctx.fake.placed).toHaveLength(1);
+    expect(await ctx.prisma.order.count()).toBe(1);
+  });
+
+  it('ignores the candle that is still forming', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+
+    const closed = oversold();
+    // A forming bar whose close would flip the signal the other way.
+    ctx.fake.candles = [
+      ...closed,
+      {
+        openTime: Date.now(),
+        open: '125',
+        high: '400',
+        low: '125',
+        close: '400',
+        volume: '100',
+        closeTime: Date.now() + 300_000,
+      },
+    ];
+
+    await runner.runBot(bot);
+
+    // Acting on the forming bar is the repainting bug backtests never show.
+    expect(ctx.fake.placed).toHaveLength(1);
+    expect(ctx.fake.placed[0].side).toBe('BUY');
+  });
+
+  it('does nothing on a HOLD signal', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+    ctx.fake.candles = candles(
+      Array.from({ length: 80 }, (_, i) => 100 + (i % 2 ? 1 : -1)),
+    );
+
+    expect(await runner.runBot(bot)).toBe(false);
+    expect(ctx.fake.placed).toHaveLength(0);
+  });
+
+  it('never sells without inventory', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+    // Overbought, then a pullback: the strategy wants to sell.
+    ctx.fake.candles = candles([
+      ...Array.from({ length: 60 }, (_, i) => 100 + i * 3),
+      270,
+    ]);
+
+    expect(await runner.runBot(bot)).toBe(false);
+    expect(ctx.fake.placed).toHaveLength(0);
+  });
+
+  it('takes profit before consulting the strategy', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user, { config: { takeProfitPercent: 5 } });
+
+    await ctx.prisma.order.create({
+      data: {
+        userId: bot.userId,
+        botId: bot.id,
+        exchangeAccountId: bot.exchangeAccountId,
+        exchange: 'BINANCE',
+        symbol: 'BTCUSDT',
+        side: 'BUY',
+        type: 'MARKET',
+        clientOrderId: 'seed-entry',
+        quantity: '1',
+        filledQuantity: '1',
+        averagePrice: '100',
+        state: 'FILLED',
+      },
+    });
+
+    // Price well above the entry, in a market the strategy itself reads as a buy.
+    ctx.fake.candles = candles([
+      ...Array.from({ length: 60 }, (_, i) => 300 - i * 3),
+      125,
+    ]);
+
+    await runner.runBot(bot);
+
+    expect(ctx.fake.placed).toHaveLength(1);
+    expect(ctx.fake.placed[0].side).toBe('SELL');
+    expect(Number(ctx.fake.placed[0].quantity)).toBe(1);
+  });
+
+  it('stops out a losing position even while the strategy says buy', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user, { config: { stopLossPercent: 10 } });
+
+    await ctx.prisma.order.create({
+      data: {
+        userId: bot.userId,
+        botId: bot.id,
+        exchangeAccountId: bot.exchangeAccountId,
+        exchange: 'BINANCE',
+        symbol: 'BTCUSDT',
+        side: 'BUY',
+        type: 'MARKET',
+        clientOrderId: 'seed-losing-entry',
+        quantity: '2',
+        filledQuantity: '2',
+        averagePrice: '1000',
+        state: 'FILLED',
+      },
+    });
+
+    ctx.fake.candles = oversold(); // last close 125, far below the 1000 entry
+
+    await runner.runBot(bot);
+
+    // A stop-loss that only fires when the strategy agrees is not a stop-loss.
+    expect(ctx.fake.placed).toHaveLength(1);
+    expect(ctx.fake.placed[0].side).toBe('SELL');
+    expect(Number(ctx.fake.placed[0].quantity)).toBe(2);
+  });
+
+  it('holds a position that is inside its risk bands', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user, {
+      config: { takeProfitPercent: 50, stopLossPercent: 50 },
+    });
+
+    await ctx.prisma.order.create({
+      data: {
+        userId: bot.userId,
+        botId: bot.id,
+        exchangeAccountId: bot.exchangeAccountId,
+        exchange: 'BINANCE',
+        symbol: 'BTCUSDT',
+        side: 'BUY',
+        type: 'MARKET',
+        clientOrderId: 'seed-neutral',
+        quantity: '1',
+        filledQuantity: '1',
+        averagePrice: '130',
+        state: 'FILLED',
+      },
+    });
+
+    ctx.fake.candles = oversold();
+    await runner.runBot(bot);
+
+    // Still a BUY (adding to the position), not an exit.
+    expect(ctx.fake.placed[0]?.side).toBe('BUY');
+  });
+
+  it('routes a paper bot through the whole pipeline without touching the exchange', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user, { isPaper: true });
+    ctx.fake.candles = oversold();
+
+    expect(await runner.runBot(bot)).toBe(true);
+    expect(ctx.fake.placed).toHaveLength(0);
+
+    const order = await ctx.prisma.order.findFirstOrThrow();
+    expect(order.isPaper).toBe(true);
+    expect(order.state).toBe('FILLED');
+  });
+
+  it('respects the global kill switch', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+    ctx.fake.candles = oversold();
+
+    process.env.TRADING_KILL_SWITCH = 'true';
+    try {
+      await expect(runner.runBot(bot)).rejects.toThrow();
+      expect(ctx.fake.placed).toHaveLength(0);
+    } finally {
+      process.env.TRADING_KILL_SWITCH = 'false';
+    }
+  });
+
+  it('waits rather than guessing when history is short', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+    ctx.fake.candles = candles([100, 101, 102]);
+
+    expect(await runner.runBot(bot)).toBe(false);
+    const updated = await ctx.prisma.bot.findUniqueOrThrow({ where: { id: bot.id } });
+    expect(updated.lastError).toMatch(/Chưa đủ nến/);
+  });
+
+  it('only runs bots that are RUNNING', async () => {
+    const user = await registerUserWithAccount(ctx);
+    await startBot(user); // running
+    const idle = await ctx
+      .http()
+      .post('/api/bots')
+      .set(auth(user.accessToken))
+      .send({
+        exchangeAccountId: user.accountId,
+        strategyKey: 'rsi-reversal',
+        symbol: 'ETHUSDT',
+        timeframe: '5m',
+      })
+      .expect(201);
+    ctx.fake.candles = oversold();
+
+    const result = await runner.runAll();
+
+    expect(result.evaluated).toBe(1);
+    const untouched = await ctx.prisma.bot.findUniqueOrThrow({
+      where: { id: idle.body.id },
+    });
+    expect(untouched.lastSignalAt).toBeNull();
+  });
+
+  it('keeps going when one bot fails', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const broken = await startBot(user, { symbol: 'BADCOIN' });
+    await startBot(user, { symbol: 'ETHUSDT' });
+    ctx.fake.candles = oversold();
+    ctx.fake.symbolErrors.add('BADCOIN');
+
+    const result = await runner.runAll();
+
+    expect(result.evaluated).toBe(2);
+    // The healthy bot still traded.
+    expect(ctx.fake.placed).toHaveLength(1);
+    const failed = await ctx.prisma.bot.findUniqueOrThrow({ where: { id: broken.id } });
+    expect(failed.lastError).toBeTruthy();
+  });
+
+  it('parks a bot that keeps failing instead of retrying forever', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user, { symbol: 'BADCOIN' });
+    // Candles must be present, or the bot stops at "not enough history" and never
+    // reaches the lookup that fails.
+    ctx.fake.candles = oversold();
+    ctx.fake.symbolErrors.add('BADCOIN');
+
+    for (let i = 0; i < 5; i++) await runner.runAll();
+
+    const parked = await ctx.prisma.bot.findUniqueOrThrow({ where: { id: bot.id } });
+    expect(parked.status).toBe('ERROR');
+    expect(parked.lastError).toMatch(/lỗi liên tiếp/);
+  });
+
+  it('records every executed signal in the audit trail', async () => {
+    const user = await registerUserWithAccount(ctx);
+    const bot = await startBot(user);
+    ctx.fake.candles = oversold();
+
+    await runner.runBot(bot);
+
+    const log = await waitFor(() =>
+      ctx.prisma.auditLog.findFirst({
+        where: { userId: user.id, action: 'bot.signal.executed' },
+      }),
+    );
+    expect((log.metadata as any).side).toBe('BUY');
+  });
+});

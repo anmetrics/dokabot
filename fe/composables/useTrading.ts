@@ -47,6 +47,28 @@ export type Order = {
   createdAt: string;
 };
 
+export type ParamSpec = {
+  key: string;
+  label: string;
+  type: "number" | "boolean" | "enum";
+  default: number | boolean | string;
+  min?: number;
+  max?: number;
+  step?: number;
+  unit?: "%" | "x" | "bars" | "USD";
+  options?: { value: string; label: string }[];
+  help?: string;
+};
+
+export type StrategyInfo = {
+  key: string;
+  name: string;
+  description: string;
+  category: "momentum" | "mean-reversion" | "trend" | "volatility" | "breakout";
+  minCandles: number;
+  params: ParamSpec[];
+};
+
 export type CreateBotPayload = {
   exchangeAccountId: string;
   strategyKey: string;
@@ -54,6 +76,7 @@ export type CreateBotPayload = {
   timeframe: string;
   isPaper: boolean;
   maxLossUsd?: string;
+  config?: Record<string, unknown>;
 };
 
 const readError = async (err: any): Promise<string> => {
@@ -99,6 +122,27 @@ export function useBots() {
   };
 
   return { bots, loading, error, fetchBots, createBot, setStatus, deleteBot, readError };
+}
+
+export function useStrategies() {
+  const api = useApi();
+  const strategies = ref<StrategyInfo[]>([]);
+  const loading = ref(false);
+
+  const fetchStrategies = async () => {
+    loading.value = true;
+    try {
+      strategies.value = await api.get<StrategyInfo[]>("strategies");
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  /** Builds the default settings object for a strategy's form. */
+  const defaultsFor = (strategy: StrategyInfo): Record<string, unknown> =>
+    Object.fromEntries(strategy.params.map((p) => [p.key, p.default]));
+
+  return { strategies, loading, fetchStrategies, defaultsFor };
 }
 
 export function useOrders() {

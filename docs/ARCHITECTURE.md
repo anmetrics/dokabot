@@ -299,10 +299,69 @@ pentest + bug bounty.
 - Test: 17 test cho key vault, rate limiter, client order id, và risk guard
   (gồm case fractional quantity mà float sẽ tính sai).
 
+### Phase 2c — Đã xong (thư viện chiến lược + test suite)
+
+**Thư viện chiến lược, user tự cấu hình**
+
+8 chiến lược, mỗi cái **tự khai báo tham số của mình**; UI sinh form từ khai báo đó,
+nên thêm chiến lược ở server không cần sửa frontend:
+
+| Key | Tên | Nhóm |
+|---|---|---|
+| `rsi-reversal` | RSI Reversal | mean-reversion |
+| `macd-cross` | MACD Crossover | momentum |
+| `ema-cross` | EMA Cross (Golden/Death) | trend |
+| `bollinger-reversion` | Bollinger Bands Reversion | mean-reversion |
+| `stochastic-cross` | Stochastic Oscillator | momentum |
+| `donchian-breakout` | Donchian Breakout | breakout |
+| `supertrend` | Supertrend (ATR) | trend |
+| `grid-dca` | Grid / DCA | mean-reversion |
+
+- Chiến lược là **hàm thuần** `(candles, params) → Signal`. Đây là điểm mấu chốt:
+  backtest được, unit test được, chạy ở worker nào cũng an toàn, và giữ phần *tiêu tiền*
+  (đặt lệnh) hoàn toàn nằm ngoài code chiến lược.
+- Indicator tự viết (`sma`, `ema`, `rsi` Wilder, `macd`, `bollinger`, `atr`, `stochastic`)
+  thay vì phụ thuộc thư viện ngoài — cần kiểm soát chính xác cách căn chỉnh chỉ số và
+  giai đoạn khởi động.
+- `GET /api/strategies` trả catalog kèm `ParamSpec` (type, default, min/max, unit, help).
+- Config được **validate hai lần**: khi tạo/sửa bot, và lại lần nữa khi chạy — bot lưu trong DB
+  có thể cũ hơn thay đổi tham số của chiến lược.
+- Tham số lạ bị **từ chối**, không phải bỏ qua: âm thầm bỏ qua khiến user tưởng hệ thống
+  đã nghe lời mình.
+
+**Test suite: 163 test (86 unit + 77 e2e), toàn bộ pass**
+
+E2E chạy trên MySQL thật (`dokabot_test`), sàn được thay bằng fake adapter — e2e kiểm tra
+*logic của mình*, không kiểm tra uptime của người khác:
+
+- **Auth (21)**: hash bcrypt, chống dò email (wrong password và unknown email trả lời giống hệt),
+  khoá tài khoản có hiệu lực ngay với token còn hạn, refresh token chỉ lưu hash, rotate mỗi lần,
+  **phát hiện replay → thu hồi mọi phiên**, token hết hạn, logout.
+- **API keys (14)**: secret không bao giờ lộ trong response hay DB, **từ chối key có quyền Withdraw**,
+  revoke xoá sạch ciphertext, phát hiện khi user bật quyền rút *sau* khi đã kết nối.
+- **Trading (33)**: idempotency (replay không mở lệnh thứ hai, **kể cả 3 request đồng thời** —
+  đảm bảo nằm ở UNIQUE index chứ không ở code), lỗi retryable giữ `PENDING` còn lỗi vĩnh viễn
+  mới `REJECTED`, paper không chạm sàn, xoá bot không mất lịch sử lệnh.
+- **Tenant isolation**: mọi tài nguyên (API key / bot / order) đều có test cross-tenant,
+  trả **404 chứ không 403** — nói cho Bob biết id đó tồn tại đã là rò rỉ.
+- **Rate limiting (2)**: brute-force login bị chặn.
+- **Chiến lược (29 + 20 indicator)**: mọi chiến lược phải trả signal đúng dạng trên 4 loại
+  thị trường, không throw với input suy biến (toàn 0, số cực lớn), và **là hàm thuần**.
+
+**Ba bug thật do test bắt được:**
+1. `deriveClientOrderId` ghép chuỗi gây va chạm: `("a","b:c")` và `("a:b","c")` sinh cùng order id.
+2. `confidenceFrom` trả `NaN` khi giá đi ngang (Bollinger sập dải → `0/0`) — NaN này sẽ chảy vào
+   phần tính size vị thế.
+3. `minCandles` cố định trong khi nhu cầu dữ liệu phụ thuộc tham số: EMA cross 50/200 cần 250 nến,
+   nhưng cùng chiến lược ở 10/30 chỉ cần 50. User rút ngắn chu kỳ sẽ bị báo "thiếu dữ liệu" vĩnh viễn.
+
 ### Còn lại của Phase 2 (chưa làm)
 
-- Port 4 strategy hiện có sang `IExchangeAdapter` (đang còn gọi `binance-api-node` trực tiếp).
-  Đây là phần lớn nhất còn lại — cần test hồi quy vì đây là IP chính của sản phẩm.
+- **Vòng lặp chạy bot chưa được nối**: chiến lược đã có, adapter đã có, đặt lệnh đã có,
+  nhưng chưa có worker nào gọi `evaluate()` theo từng nến rồi đẩy signal thành lệnh.
+  Đây là mắt xích còn thiếu giữa Phase 2 và Phase 3.
+- Port 4 strategy cũ (ICT, mini reversal DCA, futures EMA, gold RSI) sang `IExchangeAdapter`.
+  Cần test hồi quy trước vì đây là IP chính của sản phẩm.
 - Contract test chạy chung cho cả hai adapter trên testnet.
 - WebSocket stream trong adapter (hiện chỉ có REST).
 - Reconciler hiện chạy in-process theo cron; Phase 3 chuyển vào execution worker,

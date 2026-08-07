@@ -49,15 +49,24 @@ export class StrategyRegistry {
     config: Record<string, unknown> = {},
   ): Signal {
     const strategy = this.get(key);
+    const params = this.validateConfig(key, config);
+    const required = this.requiredCandles(key, config);
 
-    if (candles.length < strategy.minCandles) {
+    if (candles.length < required) {
       return {
         action: 'HOLD',
         confidence: 0,
-        reason: `Cần ít nhất ${strategy.minCandles} nến, hiện có ${candles.length}`,
+        reason: `Cần ít nhất ${required} nến, hiện có ${candles.length}`,
       };
     }
 
-    return strategy.evaluate(candles, this.validateConfig(key, config));
+    return strategy.evaluate(candles, params);
+  }
+
+  /** How much history this configuration actually needs. */
+  requiredCandles(key: string, config: Record<string, unknown> = {}): number {
+    const strategy = this.get(key);
+    if (!strategy.requiredCandles) return strategy.minCandles;
+    return Math.max(10, strategy.requiredCandles(this.validateConfig(key, config)));
   }
 }
