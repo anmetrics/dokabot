@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
+import { THROTTLE } from 'src/common/throttle.config';
 import type { Request } from 'express';
 import { AuthenticationService } from './authentication.service';
 import {
@@ -16,7 +17,7 @@ export class AuthenticationController {
   constructor(private readonly authService: AuthenticationService) {}
 
   @Post('register')
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: THROTTLE.register })
   register(@Body() dto: RegisterDto, @Req() request: Request) {
     return this.authService.register(
       dto.email,
@@ -26,7 +27,7 @@ export class AuthenticationController {
   }
 
   @Post('login')
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @Throttle({ default: THROTTLE.login })
   login(@Body() dto: LoginDto, @Req() request: Request) {
     return this.authService.login(
       dto.email,
@@ -36,7 +37,7 @@ export class AuthenticationController {
   }
 
   @Post('refresh')
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @Throttle({ default: THROTTLE.refresh })
   refresh(@Body() dto: RefreshDto, @Req() request: Request) {
     return this.authService.refresh(dto.refreshToken, this.context(request));
   }

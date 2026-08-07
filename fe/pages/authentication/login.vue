@@ -61,8 +61,8 @@
             />
           </div>
 
-          <!-- Password Field (only for Login) -->
-          <div v-if="!isSignUp" class="mb-4">
+          <!-- Password Field -->
+          <div class="mb-4">
             <label class="field-label">Password</label>
             <v-text-field
               v-model="password"
@@ -75,6 +75,8 @@
               :rules="passwordRules"
               :error="!!error"
               :error-messages="error"
+              :hint="isSignUp ? 'Ít nhất 12 ký tự, có chữ hoa, chữ thường và số' : undefined"
+              persistent-hint
               hide-details="auto"
               class="custom-input"
             />
@@ -167,7 +169,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useCookie, navigateTo } from "#app";
 import { useApi } from "~/apis";
 
@@ -188,6 +190,7 @@ const receiveUpdates = ref(false);
 
 const api = useApi();
 const authToken = useCookie("auth_token");
+const refreshToken = useCookie("refresh_token");
 
 // Validation rules
 const emailRules = [
@@ -195,38 +198,57 @@ const emailRules = [
   (v: string) => /.+@.+\..+/.test(v) || "Email must be valid",
 ];
 
-const passwordRules = [
-  (v: string) => !!v || "Password is required",
-  (v: string) => v.length >= 6 || "Password must be at least 6 characters",
-];
+// Sign-up rules mirror the backend's RegisterDto so the user sees the problem
+// before a round trip. Log-in only checks presence — the server decides.
+const passwordRules = computed(() =>
+  isSignUp.value
+    ? [
+        (v: string) => !!v || "Password is required",
+        (v: string) =>
+          v.length >= 12 || "Password must be at least 12 characters",
+        (v: string) =>
+          /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(v) ||
+          "Password must contain a lowercase letter, an uppercase letter and a digit",
+      ]
+    : [(v: string) => !!v || "Password is required"],
+);
+
+type TokenPair = { accessToken: string; refreshToken: string };
+
+/** Surfaces the server's own validation messages rather than a generic string. */
+const readError = async (err: any, fallback: string): Promise<string> => {
+  const body = await err?.response?.json?.().catch(() => null);
+  const message = body?.message;
+  if (Array.isArray(message)) return message.join(". ");
+  if (typeof message === "string") return message;
+  return err?.message === "Failed to fetch"
+    ? "Không kết nối được tới máy chủ. Kiểm tra API có đang chạy không."
+    : fallback;
+};
 
 const onSubmit = async () => {
-  if (isSignUp.value) {
-    // Handle sign up logic
-    console.log("Sign up with:", email.value, accountType.value);
-    return;
-  }
-
-  // Handle login logic
   error.value = "";
   loading.value = true;
 
   try {
-    const res: {
-      accessToken: string;
-    } = await api.post("auth/login", {
-      email: email.value,
-      password: password.value,
-    });
+    // Only email and password are sent: the API rejects unknown fields, and
+    // account type / referral / newsletter are not implemented server-side yet.
+    const res = await api.post<TokenPair>(
+      isSignUp.value ? "auth/register" : "auth/login",
+      { email: email.value, password: password.value },
+    );
 
     if (!res.accessToken) throw new Error("Không nhận được token");
 
     authToken.value = res.accessToken;
+    refreshToken.value = res.refreshToken;
 
     navigateTo("/");
   } catch (err: any) {
-    console.error("Login failed:", err);
-    error.value = err?.message || "Sai email hoặc mật khẩu";
+    error.value = await readError(
+      err,
+      isSignUp.value ? "Đăng ký thất bại" : "Sai email hoặc mật khẩu",
+    );
   } finally {
     loading.value = false;
   }

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { THROTTLE } from './common/throttle.config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { BinanceModule } from './modules/binance/binance.module';
@@ -26,7 +27,7 @@ import { TradingModule } from './modules/trading/trading.module';
     AuditModule,
     ExchangeModule,
     // Baseline abuse protection. Per-tenant quotas move to the API gateway in Phase 4.
-    ThrottlerModule.forRoot([{ name: 'default', ttl: 60_000, limit: 120 }]),
+    ThrottlerModule.forRoot([{ name: 'default', ...THROTTLE.default }]),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     AuthenticationModule,

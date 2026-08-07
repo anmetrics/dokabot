@@ -4,4 +4,4 @@ node_modules
 
 /generated/prisma
 
-/be/src/positions.json
+/be/src/positions.json.env.test

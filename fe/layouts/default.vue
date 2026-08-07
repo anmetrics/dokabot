@@ -120,11 +120,14 @@ const router = useRouter();
 const route = useRoute();
 const theme = useTheme();
 const authToken = useCookie("auth_token");
+const refreshToken = useCookie("refresh_token");
 
 /** 👉 Logout */
 const logout = () => {
-  authToken.value = "";
-  navigateTo("/login");
+  // Both must go: a stale refresh token would silently resurrect the session.
+  authToken.value = null;
+  refreshToken.value = null;
+  navigateTo("/authentication/login");
 };
 
 const drawer = ref(true);
@@ -186,6 +189,18 @@ const menuItems = [
     short: "Sideway",
     icon: "mdi-swap-vertical-bold",
     to: "/sideway",
+  },
+  {
+    title: "Bots",
+    short: "Bots",
+    icon: "mdi-robot-outline",
+    to: "/bots",
+  },
+  {
+    title: "Lệnh",
+    short: "Lệnh",
+    icon: "mdi-format-list-bulleted",
+    to: "/orders",
   },
   {
     title: "API Keys",

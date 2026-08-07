@@ -282,10 +282,28 @@ pentest + bug bounty.
 - Chuyển MySQL → Postgres + RLS.
 - Dải IP egress tĩnh cho execution worker (hiện là placeholder trên UI).
 
+### Phase 2b — Đã xong (reconciler + risk guard + UI)
+
+- `ReconcilerService` chạy mỗi 30 giây:
+  - Quét lệnh `NEW` / `PARTIALLY_FILLED`, và lệnh `PENDING` cũ hơn 30 giây
+    (PENDING lâu = bị đứt giữa chừng, không phải chậm), đối chiếu lại với sàn.
+  - Giới hạn 200 lệnh mỗi tick: tồn đọng làm chậm chứ không làm sập.
+  - Cờ `running` chặn hai tick chồng nhau — hai lượt cùng settle một lệnh là sai.
+  - Một tài khoản không kết nối được không làm dừng cả batch.
+- **Risk guard**: bot có `maxLossUsd` sẽ tự `STOPPED` khi lỗ thực tế vượt mức.
+  Đây là lưới an toàn cho bug chiến lược — chiến lược nghĩ gì không quan trọng,
+  nền tảng dừng nó khi lỗ thật vượt ngưỡng user đặt.
+  PnL tính bằng `decimal.js`, cố tình bỏ qua vị thế đang mở để không phụ thuộc price feed.
+- FE: màn hình `/bots` (tạo/chạy/tạm dừng/dừng/xoá, cảnh báo rõ khi bật tiền thật)
+  và `/orders` (đồng bộ, huỷ, lọc theo bot).
+- Test: 17 test cho key vault, rate limiter, client order id, và risk guard
+  (gồm case fractional quantity mà float sẽ tính sai).
+
 ### Còn lại của Phase 2 (chưa làm)
 
 - Port 4 strategy hiện có sang `IExchangeAdapter` (đang còn gọi `binance-api-node` trực tiếp).
-- Reconciler định kỳ: quét lệnh `PENDING`/`NEW` và đối chiếu với sàn.
+  Đây là phần lớn nhất còn lại — cần test hồi quy vì đây là IP chính của sản phẩm.
 - Contract test chạy chung cho cả hai adapter trên testnet.
 - WebSocket stream trong adapter (hiện chỉ có REST).
-- FE: màn hình Bots và Orders.
+- Reconciler hiện chạy in-process theo cron; Phase 3 chuyển vào execution worker,
+  lấy user-data websocket làm nguồn chính và giữ poll này làm lưới an toàn.
