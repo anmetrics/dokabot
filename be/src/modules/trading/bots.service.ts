@@ -12,6 +12,7 @@ import {
 import { PrismaService } from 'src/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import { ExchangeRegistry } from '../exchange/exchange.registry';
+import { StrategyRegistry } from '../strategies/strategy-registry.service';
 import { RequestContext } from '../authentication/interfaces/authentication.interface';
 import { CreateBotDto, UpdateBotDto } from './dto/bot.dto';
 
@@ -28,6 +29,7 @@ export class BotsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly registry: ExchangeRegistry,
+    private readonly strategies: StrategyRegistry,
     private readonly audit: AuditService,
   ) {}
 
@@ -56,9 +58,10 @@ export class BotsService {
       );
     }
 
-    // Fail here rather than on the first candle: an unsupported symbol is a
-    // configuration mistake, not a runtime condition.
+    // Fail here rather than on the first candle: an unsupported symbol or an
+    // out-of-range setting is a configuration mistake, not a runtime condition.
     await this.registry.get(account.exchange).fetchSymbolInfo(dto.symbol);
+    const config = this.strategies.validateConfig(dto.strategyKey, dto.config);
 
     const id = crypto.randomUUID();
     const bot = await this.prisma.bot.create({
@@ -69,7 +72,7 @@ export class BotsService {
         strategyKey: dto.strategyKey,
         symbol: dto.symbol,
         timeframe: dto.timeframe,
-        config: (dto.config ?? {}) as object,
+        config: config as object,
         // Real money is opt-in, never the default.
         isPaper: dto.isPaper ?? true,
         maxLossUsd: dto.maxLossUsd ?? null,
@@ -99,7 +102,13 @@ export class BotsService {
     return this.prisma.bot.update({
       where: { id },
       data: {
-        config: dto.config as object | undefined,
+        config:
+          dto.config === undefined
+            ? undefined
+            : (this.strategies.validateConfig(
+                bot.strategyKey,
+                dto.config,
+              ) as object),
         maxLossUsd: dto.maxLossUsd,
         isPaper: dto.isPaper,
       },

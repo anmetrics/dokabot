@@ -18,6 +18,7 @@ import { AuditModule } from './modules/audit/audit.module';
 import { ExchangeModule } from './modules/exchange/exchange.module';
 import { ExchangeAccountsModule } from './modules/exchange-accounts/exchange-accounts.module';
 import { TradingModule } from './modules/trading/trading.module';
+import { StrategiesModule } from './modules/strategies/strategies.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { TradingModule } from './modules/trading/trading.module';
     SecurityModule,
     AuditModule,
     ExchangeModule,
+    StrategiesModule,
     // Baseline abuse protection. Per-tenant quotas move to the API gateway in Phase 4.
     ThrottlerModule.forRoot([{ name: 'default', ...THROTTLE.default }]),
     ScheduleModule.forRoot(),
