@@ -15,46 +15,48 @@ datasource db {
 }
 
 model Setting {
-  id         String   @id @default(uuid())
-  key        String   @unique @map("key")      
-  value      String   @map("value")             
+  id    String @id @default(uuid())
+  key   String @unique @map("key")
+  value String @map("value")
 
-  createdAt   DateTime  @default(now()) @map("created_at") 
-  updatedAt      DateTime? @updatedAt  @map("updated_at") 
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("settings")
 }
 
 model Position {
-  id             String   @id @default(uuid())
-  buyPrice       Float @map("buy_price")
-  strategy       String   @map("strategy")
-    symbol       String   @map("symbol")
-  qty            Float @map("qty")
-  usdSpent       Float @map("usd_spent")
-  totalQtyActual Float  @map("total_qty_actual")
-  sellPrice      Float? @map("sell_price")
-  isDualInvestment Boolean @map("is_dual_investment") @default(false)
-  dcaIndex       Int @map("dca_index")
+  id               String  @id @default(uuid())
+  buyPrice         Float   @map("buy_price")
+  strategy         String  @map("strategy")
+  symbol           String  @map("symbol")
+  qty              Float   @map("qty")
+  usdSpent         Float   @map("usd_spent")
+  totalQtyActual   Float   @map("total_qty_actual")
+  sellPrice        Float?  @map("sell_price")
+  isDualInvestment Boolean @default(false) @map("is_dual_investment")
+  dcaIndex         Int     @map("dca_index")
+  userId           String? @map("user_id")
 
-  createdAt   DateTime  @default(now()) @map("created_at") 
-  updatedAt      DateTime? @updatedAt  @map("updated_at") 
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
-   @@map("positions")
+  @@index([userId])
+  @@map("positions")
 }
 
 model SellSuccess {
-  id                       String   @id @default(uuid())
-  symbol                   String   @map("symbol")
-  buyPrices                 Json   @map("buy_prices")
-  sellPrice                Float  @map("sell_prices")
-  totalAmountBuyActual     Float @map("total_amount_buy_actual")
-  totalAmountBuyUsdtSpent  Float @map("total_amount_buy_usd_spent")
-  totalProfit              Float  @map("total_profit")
-  totalRevenueUsdt         Float @map("total_revenue_usdt")
+  id                      String @id @default(uuid())
+  symbol                  String @map("symbol")
+  buyPrices               Json   @map("buy_prices")
+  sellPrice               Float  @map("sell_prices")
+  totalAmountBuyActual    Float  @map("total_amount_buy_actual")
+  totalAmountBuyUsdtSpent Float  @map("total_amount_buy_usd_spent")
+  totalProfit             Float  @map("total_profit")
+  totalRevenueUsdt        Float  @map("total_revenue_usdt")
 
-  createdAt   DateTime  @default(now()) @map("created_at") 
-  updatedAt      DateTime? @updatedAt  @map("updated_at") 
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
   @@map("sell_successes")
 }
@@ -70,9 +72,230 @@ model SidewayScenario {
   enabled          Boolean   @default(false) @map("enabled")
   status           String    @default("idle") @map("status")
   lastExecutedAt   DateTime? @map("last_executed_at")
+  userId           String?   @map("user_id")
 
-  createdAt        DateTime  @default(now()) @map("created_at")
-  updatedAt        DateTime? @updatedAt @map("updated_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
 
+  @@index([userId])
   @@map("sideway_scenarios")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Multi-tenant foundation (Phase 1)
+// ─────────────────────────────────────────────────────────────
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model User {
+  id           String     @id @default(uuid())
+  email        String     @unique @map("email")
+  passwordHash String     @map("password_hash")
+  role         UserRole   @default(USER) @map("role")
+  status       UserStatus @default(ACTIVE) @map("status")
+  mfaSecret    String?    @map("mfa_secret")
+  mfaEnabled   Boolean    @default(false) @map("mfa_enabled")
+  lastLoginAt  DateTime?  @map("last_login_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  refreshTokens    RefreshToken[]
+  exchangeAccounts ExchangeAccount[]
+  auditLogs        AuditLog[]
+  bots             Bot[]
+  orders           Order[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  tokenHash String    @unique @map("token_hash")
+  expiresAt DateTime  @map("expires_at")
+  revokedAt DateTime? @map("revoked_at")
+  userAgent String?   @map("user_agent") @db.Text
+  ip        String?   @map("ip")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+enum Exchange {
+  BINANCE
+  BYBIT
+}
+
+enum ExchangeAccountStatus {
+  ACTIVE
+  INVALID
+  REVOKED
+}
+
+/// API credentials of a user, stored with envelope encryption.
+/// The plaintext secret NEVER leaves the key vault and is never returned to a client.
+model ExchangeAccount {
+  id       String   @id @default(uuid())
+  userId   String   @map("user_id")
+  exchange Exchange @map("exchange")
+  label    String   @map("label")
+
+  /// Public part of the key. Only the last 4 chars are ever exposed via API.
+  apiKeyCiphertext String @map("api_key_ciphertext") @db.Text
+  apiKeyLast4      String @map("api_key_last4")
+
+  secretCiphertext String @map("secret_ciphertext") @db.Text
+
+  /// Envelope encryption metadata (see docs/ARCHITECTURE.md §2.4)
+  iv         String @map("iv")
+  authTag    String @map("auth_tag")
+  wrappedDek String @map("wrapped_dek") @db.Text
+  kmsKeyId   String @map("kms_key_id")
+
+  isTestnet      Boolean               @default(false) @map("is_testnet")
+  permissions    Json?                 @map("permissions")
+  canWithdraw    Boolean               @default(false) @map("can_withdraw")
+  status         ExchangeAccountStatus @default(ACTIVE) @map("status")
+  lastVerifiedAt DateTime?             @map("last_verified_at")
+  lastError      String?               @map("last_error") @db.Text
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bots Bot[]
+
+  @@unique([userId, exchange, label])
+  @@index([userId])
+  @@map("exchange_accounts")
+}
+
+/// Append-only trail for every security- or money-relevant action.
+model AuditLog {
+  id           String  @id @default(uuid())
+  userId       String? @map("user_id")
+  action       String  @map("action")
+  resourceType String? @map("resource_type")
+  resourceId   String? @map("resource_id")
+  ip           String? @map("ip")
+  userAgent    String? @map("user_agent") @db.Text
+  metadata     Json?   @map("metadata")
+  success      Boolean @default(true) @map("success")
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([action, createdAt])
+  @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// Trading (Phase 2)
+// ─────────────────────────────────────────────────────────────
+
+enum BotStatus {
+  DRAFT
+  RUNNING
+  PAUSED
+  STOPPED
+  ERROR
+}
+
+model Bot {
+  id                String    @id @default(uuid())
+  userId            String    @map("user_id")
+  exchangeAccountId String    @map("exchange_account_id")
+  strategyKey       String    @map("strategy_key")
+  symbol            String    @map("symbol")
+  timeframe         String    @map("timeframe")
+  config            Json      @map("config")
+  status            BotStatus @default(DRAFT) @map("status")
+
+  /// Deterministic assignment to a strategy worker: hash(id) % shardCount.
+  shardId Int @default(0) @map("shard_id")
+
+  /// Paper bots run the full pipeline but never reach the exchange.
+  isPaper Boolean @default(true) @map("is_paper")
+
+  /// Hard per-bot loss limit. The bot stops itself when realised loss exceeds it.
+  maxLossUsd Decimal? @map("max_loss_usd") @db.Decimal(38, 18)
+
+  lastError    String?   @map("last_error") @db.Text
+  lastSignalAt DateTime? @map("last_signal_at")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user            User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exchangeAccount ExchangeAccount @relation(fields: [exchangeAccountId], references: [id], onDelete: Restrict)
+  orders          Order[]
+
+  @@index([userId])
+  @@index([status, shardId])
+  @@map("bots")
+}
+
+enum OrderState {
+  PENDING
+  NEW
+  PARTIALLY_FILLED
+  FILLED
+  CANCELED
+  REJECTED
+  EXPIRED
+}
+
+model Order {
+  id                String  @id @default(uuid())
+  userId            String  @map("user_id")
+  botId             String? @map("bot_id")
+  exchangeAccountId String  @map("exchange_account_id")
+
+  exchange Exchange @map("exchange")
+  symbol   String   @map("symbol")
+  side     String   @map("side")
+  type     String   @map("type")
+
+  /// Deterministic idempotency key. A replay of the same intent reuses this row
+  /// instead of sending a second order to the exchange.
+  clientOrderId   String  @unique @map("client_order_id")
+  exchangeOrderId String? @map("exchange_order_id")
+
+  price          Decimal @default(0) @map("price") @db.Decimal(38, 18)
+  quantity       Decimal @map("quantity") @db.Decimal(38, 18)
+  filledQuantity Decimal @default(0) @map("filled_quantity") @db.Decimal(38, 18)
+  averagePrice   Decimal @default(0) @map("average_price") @db.Decimal(38, 18)
+
+  state     OrderState @default(PENDING) @map("state")
+  isPaper   Boolean    @default(false) @map("is_paper")
+  lastError String?    @map("last_error") @db.Text
+  raw       Json?      @map("raw")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime? @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bot  Bot? @relation(fields: [botId], references: [id], onDelete: SetNull)
+
+  @@index([userId, createdAt])
+  @@index([botId, createdAt])
+  @@index([state])
+  @@map("orders")
 }

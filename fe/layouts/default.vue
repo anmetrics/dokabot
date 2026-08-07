@@ -188,6 +188,12 @@ const menuItems = [
     to: "/sideway",
   },
   {
+    title: "API Keys",
+    short: "Keys",
+    icon: "mdi-key-outline",
+    to: "/api-keys",
+  },
+  {
     title: "Cài đặt",
     short: "Cài đặt",
     icon: "mdi-cog-outline",

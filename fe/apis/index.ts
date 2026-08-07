@@ -1,11 +1,12 @@
 import ky from "ky-universal";
-import { useCookie } from "#app";
+import { useCookie, useRuntimeConfig } from "#app";
 
 export function useApi() {
   const authToken = useCookie("auth_token");
+  const config = useRuntimeConfig();
 
   const api = ky.create({
-    prefixUrl: "https://api.dokasan.com",
+    prefixUrl: config.public.apiBaseUrl,
     timeout: 10000,
     headers: {
       "Content-Type": "application/json",
@@ -31,7 +32,9 @@ export function useApi() {
     } catch (err: any) {
       if (err?.response?.status === 401) {
         authToken.value = null;
-        window.location.href = "/authentication/login";
+        if (import.meta.client) {
+          window.location.href = "/authentication/login";
+        }
       }
       throw err;
     }

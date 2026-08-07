@@ -31,10 +31,15 @@
     "@nestjs/passport": "^11.0.5",
     "@nestjs/platform-express": "^11.0.1",
     "@nestjs/schedule": "^6.0.1",
+    "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^5.16.1",
+    "@types/bcrypt": "^6.0.0",
+    "bcrypt": "^6.0.0",
     "binance-api-node": "^0.12.9",
+    "class-transformer": "^0.5.1",
     "class-validator": "^0.14.2",
     "decimal.js": "^10.6.0",
+    "helmet": "^8.3.0",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^5.16.1",
@@ -78,13 +83,17 @@
     "rootDir": "src",
     "testRegex": ".*\\.spec\\.ts$",
     "transform": {
-      "^.+\\.(t|j)s$": "ts-jest"
+      "^.+\\.ts$": "ts-jest"
     },
     "collectCoverageFrom": [
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "^src/(.*)$": "<rootDir>/$1",
+      "^generated/prisma$": "<rootDir>/../generated/prisma"
+    }
   },
   "engines": {
     "node": "22.19.0"

@@ -2,30 +2,45 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { AuthenticationPayload } from '../interfaces/authentication.interface';
+import { UserStatus } from 'generated/prisma';
+import { PrismaService } from 'src/prisma.service';
+import {
+  AuthenticatedUser,
+  AuthenticationPayload,
+} from '../interfaces/authentication.interface';
 
 @Injectable()
 export class AuthenticationStrategy extends PassportStrategy(
   Strategy,
   'authentication',
 ) {
-  constructor(private readonly configService: ConfigService) {
+  constructor(
+    configService: ConfigService,
+    private readonly prisma: PrismaService,
+  ) {
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: configService.get<string>('JWT_SECRET'),
+      secretOrKey: configService.get<string>('JWT_SECRET') as string,
     });
   }
 
-  // eslint-disable-next-line @typescript-eslint/require-await
-  async validate({ adminId }: AuthenticationPayload) {
-    if (adminId) {
-      return {
-        adminId,
-      };
+  async validate(payload: AuthenticationPayload): Promise<AuthenticatedUser> {
+    if (!payload?.sub) {
+      throw new UnauthorizedException('Invalid token payload');
     }
-    throw new UnauthorizedException('Invalid payload');
+
+    // A valid signature is not enough: a suspended or deleted account must lose
+    // access before its access token expires.
+    const user = await this.prisma.user.findUnique({
+      where: { id: payload.sub },
+      select: { id: true, email: true, role: true, status: true },
+    });
+
+    if (!user || user.status !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException('Account is not active');
+    }
+
+    return { id: user.id, email: user.email, role: user.role };
   }
 }

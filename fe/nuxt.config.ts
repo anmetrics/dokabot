@@ -20,5 +20,10 @@ export default defineNuxtConfig({
   devServer: {
     port: 3001,
   },
-  runtimeConfig: {},
+  runtimeConfig: {
+    public: {
+      // Set NUXT_PUBLIC_API_BASE_URL per environment; never hardcode a host.
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL || "http://localhost:3000/api",
+    },
+  },
 });

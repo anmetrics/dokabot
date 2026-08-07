@@ -349,6 +349,7 @@ export class MiniReversalDcaStrategy implements IStrategy {
     if (this.isRunBacktest) {
       this.backtestPositions.push({
         id: randomUUID(),
+        userId: null,
         buyPrice: price,
         qty,
         usdSpent: usdToSpend,

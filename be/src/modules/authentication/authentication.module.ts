@@ -12,9 +12,10 @@ import { AuthenticationService } from './authentication.service';
       imports: [ConfigModule],
       // eslint-disable-next-line @typescript-eslint/require-await
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get('JWT_SECRET'),
+        secret: configService.get<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn: configService.get('JWT_TOKEN_EXPIRES_IN'),
+          expiresIn: (configService.get<string>('JWT_ACCESS_TTL') ??
+            '15m') as unknown as number,
         },
       }),
       inject: [ConfigService],
@@ -22,6 +23,6 @@ import { AuthenticationService } from './authentication.service';
   ],
   controllers: [AuthenticationController],
   providers: [AuthenticationStrategy, AuthenticationService],
-  exports: [],
+  exports: [AuthenticationService],
 })
 export class AuthenticationModule {}
