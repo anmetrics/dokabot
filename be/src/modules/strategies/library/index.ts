@@ -26,9 +26,17 @@ import {
 const num = (params: StrategyParams, key: string) => Number(params[key]);
 const bool = (params: StrategyParams, key: string) => params[key] === true;
 
-/** Scales a distance past a threshold into the 0–1 confidence band. */
-const confidenceFrom = (distance: number, full: number): number =>
-  Math.max(0, Math.min(1, distance / full));
+/**
+ * Scales a distance past a threshold into the 0–1 confidence band.
+ *
+ * `full` can legitimately be zero — flat prices collapse the Bollinger bands, a
+ * flat channel has no width — and `0 / 0` would put NaN into a signal that callers
+ * use to size positions. There is no information in that case, so confidence is 0.
+ */
+const confidenceFrom = (distance: number, full: number): number => {
+  if (!Number.isFinite(distance) || !Number.isFinite(full) || full <= 0) return 0;
+  return Math.max(0, Math.min(1, distance / full));
+};
 
 // ─────────────────────────────────────────────────────────────
 // RSI mean reversion
